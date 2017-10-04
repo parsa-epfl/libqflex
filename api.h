@@ -10,7 +10,7 @@
 
 
 #ifndef CONFIG_SIAVASH
-#ifndef CONFIG_PERFORMANCE
+#if defined(FLEXUS_TARGET_v9) || defined(FLEXUS_TARGET_ARM)
 #define CONFIG_SIAVASH
 #endif
 #endif
