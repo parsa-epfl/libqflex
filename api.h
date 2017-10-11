@@ -425,7 +425,7 @@ typedef void (*QEMU_CPU_SET_QUANTUM)(const int *val);
 typedef int (*QEMU_SET_TICK_FREQUENCY_PROC)(conf_object_t *cpu, double tick_freq);
 typedef double (*QEMU_GET_TICK_FREQUENCY_PROC)(conf_object_t *cpu);
 typedef uint64_t (*QEMU_GET_PROGRAM_COUNTER_PROC)(conf_object_t *cpu);
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
 typedef void (*QEMU_INCREMENT_DEBUG_STAT_PROC)(int val);
 #endif
 
@@ -472,7 +472,7 @@ typedef uint64_t (*QEMU_GET_INSTRUCTION_COUNT_PROC2)(int cpu_number, int isUser)
 
 /// END DAMIEN
 
-#ifndef QEMUFLEX_PROTOTYPES
+#ifndef CONFIG_FLEXUS
 
 extern CPU_READ_REGISTER_PROC cpu_read_register;
 #ifdef CONFIG_SIAVASH
@@ -539,7 +539,7 @@ extern QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
 
 // get the program counter of a given cpu.
 extern QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
 extern QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
 #endif
 // convert a logical address to a physical address.
@@ -581,7 +581,7 @@ extern QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
 
 extern QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
 
-#else /* QEMUFLEX_PROTOTYPES */
+#else //CONFIG_FLEXUS
 // query the content/size of a register
 // if reg_size != NULL, write the size of the register (in bytes) in reg_size
 // if data_out != NULL, write the content of the register in data_out
@@ -675,7 +675,7 @@ double QEMU_get_tick_frequency(conf_object_t *cpu);
 // get the program counter of a given cpu.
 uint64_t QEMU_get_program_counter(conf_object_t *cpu);
 
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
 void QEMU_increment_debug_stat(int val);
 #endif
 
@@ -731,7 +731,7 @@ uint64_t QEMU_get_instruction_count(int cpu_number, int isUser);
 // Get the total instruction count for all the processors.
 uint64_t QEMU_get_total_instruction_count(void);
 
-#endif /* QEMUFLEX_PROTOTYPES */
+#endif //CONFIG_FLEXUS
 
 ///
 /// Callback API
@@ -856,7 +856,7 @@ typedef struct QEMU_callback_table QEMU_callback_table_t;
 typedef int (*QEMU_INSERT_CALLBACK_PROC)( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
 typedef void (*QEMU_DELETE_CALLBACK_PROC)( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
 
-#ifndef QEMUFLEX_PROTOTYPES
+#ifndef CONFIG_FLEXUS
 // insert a callback specific for the given cpu or -1 for a generic callback
 extern QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;
 
@@ -867,13 +867,13 @@ extern QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback;
 int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
 // delete a callback specific for the given cpu or -1 for a generic callback
 void QEMU_delete_callback( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
-#endif /* QEMUFLEX_PROTOTYPES */
+#endif // CONFIG_FLEXUS
 
 ///
 /// QEMU QEMUFLEX internals
 ///
 
-#ifdef QEMUFLEX_QEMU_INTERNAL
+#ifdef CONFIG_FLEXUS
 // Initialize the callback tables for every processor and also the
 // different counts.
 void QEMU_initialize(void);
@@ -898,7 +898,7 @@ void QEMU_initialize_counts(void);
 void QEMU_deinitialize_counts(void);
 // Increment the instruction count for the given cpu
 void QEMU_increment_instruction_count(int cpu_number, int isUser);
-#endif /* QEMUFLEX_QEMU_INTERNAL */
+#endif //CONFIG_FLEXUS
 
 ///
 /// Simulator interface function passing
@@ -972,7 +972,7 @@ QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
 // get the program counter of a given cpu.
 QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
 
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
 QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
 #endif
 // convert a logical address to a physical address.
@@ -1024,9 +1024,9 @@ QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
 } QFLEX_API_Interface_Hooks_t;
 
 
-#ifdef QEMUFLEX_QEMU_INTERNAL
+#ifdef CONFIG_FLEXUS
 void QFLEX_API_get_interface_hooks(QFLEX_API_Interface_Hooks_t* hooks);
-#endif /* QEMUFLEX_QEMU_INTERNAL */
+#endif //CONFIG_FLEXUS
 
 
 #ifdef QEMUFLEX_FLEXUS_INTERNAL

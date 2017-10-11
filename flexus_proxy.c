@@ -1,7 +1,4 @@
 #include "flexus_proxy.h"
-//#define CONFIG_SIAVASH
-#define QEMUFLEX_QEMU_INTERNAL
-#define QEMUFLEX_PROTOTYPES
 #include "api.h"
 
 #include <stdio.h>
@@ -48,7 +45,7 @@ void QFLEX_API_get_interface_hooks(QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_set_tick_frequency= QEMU_set_tick_frequency;
   hooks->QEMU_get_tick_frequency= QEMU_get_tick_frequency;
   hooks->QEMU_get_program_counter= QEMU_get_program_counter;
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
   hooks->QEMU_increment_debug_stat= QEMU_increment_debug_stat;
 #endif
   hooks->QEMU_logical_to_physical= QEMU_logical_to_physical;

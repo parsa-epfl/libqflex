@@ -1,8 +1,5 @@
 #ifndef __LIBQEMUFLEX_FLEXUS_PROXY_HPP__
 #define __LIBQEMUFLEX_FLEXUS_PROXY_HPP__
-
-#define QEMUFLEX_PROTOTYPES
-#define QEMUFLEX_QEMU_INTERNAL
 #include "api.h"
 
 typedef struct simulator_obj simulator_obj_t;
