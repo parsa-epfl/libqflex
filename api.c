@@ -23,8 +23,6 @@ extern "C" {
 #include "sysemu/cpus.h"
 #include "qmp-commands.h"
 #include "include/exec/exec-all.h"
-#define QEMUFLEX_PROTOTYPES
-#define QEMUFLEX_QEMU_INTERNAL
 #include "api.h"
 
 #if !defined(TARGET_I386) && !defined(TARGET_SPARC64) && !defined(TARGET_ARM)
@@ -42,7 +40,7 @@ extern uint64_t quantum_value;
 static int simulationTime;
 
 
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
 static int debugStats[ALL_DEBUG_TYPE] = {0};
 #endif
 //Functions I am not sure on(wasn't the last person to work on them)
@@ -179,7 +177,7 @@ conf_object_t *QEMU_get_cpu_by_index(int index)
 	conf_object_t *cpu = malloc(sizeof(conf_object_t));
 	//where will it get deleted?
         cpu->name = (char*)"<placeholder_cpu_name>";  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
-	#ifdef CONFIG_SIAVASH
+#ifdef CONFIG_SIAVASH
 	//SIA: Caller should free name of cpu
 	char *name = (char*)malloc(cpu_name_size);
 	sprintf(name, "cpu%d",index);
@@ -341,7 +339,7 @@ conf_object_t *QEMU_get_all_processors(int *numCPUs) {
 
     cpus[i].name = name ;  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
     //End SIA
-	#endif
+#endif
     cpus[i].object = qemu_get_cpu(indexes[i]);
     if(cpus[i].object){//probably not needed error checking
       cpus[i].type = QEMU_CPUState;
@@ -376,7 +374,7 @@ uint64_t QEMU_get_program_counter(conf_object_t *cpu)
 	CPUState * qemucpu = cpu->object;
 	return cpu_get_program_counter(qemucpu);
 }
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
 void QEMU_increment_debug_stat(int val)
 {
     debugStats[val]++;
@@ -615,7 +613,7 @@ void QEMU_break_simulation(const char * msg)
     //I have not found anything that lets you send a message when you pause the simulation, but there can be a wakeup messsage.
     //in vl.c
 //    int num_cpus = QEMU_get_num_cpus();
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
     printf ("----------API-OUTPUT----------\n");
 
     printf ("FETCH ops in io space:         %9i\n",debugStats[FETCH_IO_MEM_OP]);
@@ -922,7 +920,7 @@ static void do_execute_callback(
     break;
     // ncm : conf_object_t, memory_transaction_t
   case QEMU_cpu_mem_trans:
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
       QEMU_increment_debug_stat(CPUMEMTRANS);
  #endif
       if (!curr->obj)
@@ -957,7 +955,7 @@ static void do_execute_callback(
       }
     break;
   default:
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
        QEMU_increment_debug_stat(NON_EXISTING_EVENT);
 #endif
        dbg_printf("Event not found...\n");
@@ -977,7 +975,7 @@ void QEMU_execute_callbacks(
 
   // execute specified callbacks
   for (; curr != NULL; curr = curr->next){
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
       QEMU_increment_debug_stat(ALL_CALLBACKS);
 #endif
       do_execute_callback(curr, event, event_data);
@@ -986,7 +984,7 @@ void QEMU_execute_callbacks(
     // only execudebug_types::te the generic callbacks once
     curr = generic_table->callbacks[event];
     for (; curr != NULL; curr = curr->next){
-#ifdef CONFIG_DEBUG_LIBQEMUFLEX
+#ifdef CONFIG_DEBUG_LIBQFLEX
         QEMU_increment_debug_stat(ALL_GENERIC_CALLBACKS);
 #endif
         do_execute_callback(curr, event, event_data);
