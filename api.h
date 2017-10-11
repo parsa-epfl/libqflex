@@ -3,15 +3,15 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
-
 #define OS_INSTR 0
 #define USER_INSTR 1
 #define BOTH_INSTR 2
 
 
+#ifndef CONFIG_SOFTMMU
 #ifndef CONFIG_SIAVASH
-#if defined(FLEXUS_TARGET_v9) || defined(FLEXUS_TARGET_ARM)
-#define CONFIG_SIAVASH
+    #define CONFIG_SIAVASH
+#include <core/target.hpp>
 #endif
 #endif
 
@@ -327,8 +327,56 @@ typedef enum {
 	QEMU_DI_Data
 } data_or_instr_t;
 
-#if defined(FLEXUS_TARGET_v9) || defined(FLEXUS_TARGET_ARM)
+#ifdef FLEXUS_TARGET_ARM
+typedef struct armInterface {
+    //This is the interface for a Sparc CPU in QEMU. The interface should provide the following functions:
+    //uint64_t read_fp_register_x(conf_object_t *cpu, int reg)
+    //void write_fp_register_x(conf_object_t *cpu, int reg, uint64 value);
+    //uint64_t read_global_register(conf_object_t *cpu, int globals, int reg);
+    //uint64_t read_window_register(conf_object_t *cpu, int window, int reg);
+    //exception_type_t access_asi_handler(conf_object_t *cpu, v9_memory_transaction_t *mem_op);
+} armInterface_t;
+typedef struct {
+    //This is the interface for a Sparc mmu in QEMU. The interface should provide the following functions:
+        //exception_type_t (*logical_to_physical)(conf_object_t *mmu_obj, v9_memory_transaction_t *);
+} mmu_interface_t;
 
+typedef enum {
+        ARM_Access_Normal,
+        ARM_Access_Normal_FP,
+        ARM_Access_Double_FP, /* ldd/std */
+        ARM_Access_Short_FP,
+        ARM_Access_FSR,
+        ARM_Access_Atomic,
+        ARM_Access_Atomic_Load,
+        ARM_Access_Prefetch,
+        ARM_Access_Partial_Store,
+        ARM_Access_Ldd_Std_1,
+        ARM_Access_Ldd_Std_2,
+        ARM_Access_Block,
+        ARM_Access_Internal1
+} arm_access_type_t;
+
+typedef struct arm_memory_transaction {
+        generic_transaction_t s;
+        unsigned              cache_virtual:1;
+        unsigned              cache_physical:1;
+        unsigned              side_effect:1;
+        unsigned              priv:1;
+        unsigned              red:1;
+        unsigned              hpriv:1;
+        unsigned              henb:1;
+        /* Because of a bug in the Sun Studio12 C compiler, bit fields must not
+ *            be followed by members with alignment smaller than 32 bit.
+ *                       See bug 9151. */
+        uint32_t address_space;
+        uint8_t                 prefetch_fcn;
+        arm_access_type_t   access_type;
+
+        /* if non-zero, the id needed to calculate the program counter */
+        intptr_t turbo_miss_id;
+} arm_memory_transaction_t;
+#else
 //TODO: Interfaces for Sparc cpu and mmu
 typedef struct sparc_v9_interface {
 	//This is the interface for a Sparc CPU in QEMU. The interface should provide the following functions:
