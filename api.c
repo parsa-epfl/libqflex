@@ -345,6 +345,12 @@ double QEMU_get_tick_frequency(conf_object_t *cpu){
 	return 3.14;
 }
 
+uint32_t QEMU_get_instruction(conf_object_t *cpu, uint64_t* addr)
+{
+    REQUIRES(cpu->type == QEMU_CPUState);
+    CPUState * qemucpu = cpu->object;
+    return cpu_get_instruction(qemucpu, addr);
+}
 
 uint64_t QEMU_get_program_counter(conf_object_t *cpu) 
 {
@@ -360,6 +366,7 @@ uint64_t QEMU_get_program_counter(conf_object_t *cpu)
 	CPUState * qemucpu = cpu->object;
 	return cpu_get_program_counter(qemucpu);
 }
+
 void QEMU_increment_debug_stat(int val)
 {
     debugStats[val]++;

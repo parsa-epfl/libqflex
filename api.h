@@ -49,6 +49,8 @@ typedef enum {
     SAVED_PROGRAM_STATUS,
     PSTATE,
     SYSTEM,
+    FPCR,
+    FPSR,
 } arm_register_t;
 
 typedef enum {
@@ -432,6 +434,7 @@ typedef void (*CPU_WRITE_REGISTER_PROC)(void* env_ptr, int reg_index, unsigned *
 typedef uint64_t (*READREG_PROC)(void *cs_, int reg_idx, int reg_type);
 typedef physical_address_t (*MMU_LOGICAL_TO_PHYSICAL_PROC)(void *cs, logical_address_t va);
 typedef uint64_t (*CPU_GET_PROGRAM_COUNTER_PROC)(void* cs);
+typedef uint64_t (*CPU_GET_INSTRUCTION_PROC)(void* cs, uint64_t* addr);
 typedef void* (*CPU_GET_ADDRESS_SPACE_PROC)(void* cs);
 typedef int (*CPU_PROC_NUM_PROC)(void* cs);
 typedef void (*CPU_POP_INDEXES_PROC)(int* indexes);
@@ -458,6 +461,7 @@ typedef void (*QEMU_CPU_SET_QUANTUM)(const int *val);
 typedef int (*QEMU_SET_TICK_FREQUENCY_PROC)(conf_object_t *cpu, double tick_freq);
 typedef double (*QEMU_GET_TICK_FREQUENCY_PROC)(conf_object_t *cpu);
 typedef uint64_t (*QEMU_GET_PROGRAM_COUNTER_PROC)(conf_object_t *cpu);
+typedef uint64_t (*QEMU_GET_INSTRUCTION_PROC)(conf_object_t *cpu, uint64_t *addr);
 typedef void (*QEMU_INCREMENT_DEBUG_STAT_PROC)(int val);
 
 typedef physical_address_t (*QEMU_LOGICAL_TO_PHYSICAL_PROC)(conf_object_t *cpu,
@@ -499,6 +503,7 @@ extern CPU_READ_REGISTER_PROC cpu_read_register;
 extern CPU_WRITE_REGISTER_PROC cpu_write_register;
 extern READREG_PROC readReg;
 extern MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical;
+extern CPU_GET_INSTRUCTION_PROC cpu_get_instruction;
 extern CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
 extern CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space_flexus;
 extern CPU_PROC_NUM_PROC cpu_proc_num;
@@ -537,6 +542,8 @@ extern QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency;
 // get freq of given cpu
 extern QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
 // get the program counter of a given cpu.
+extern QEMU_GET_INSTRUCTION_PROC QEMU_get_instruction;
+// get the program counter of a given cpu.
 extern QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
 extern QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
 // convert a logical address to a physical address.
@@ -571,6 +578,7 @@ void cpu_read_register( void *env_ptr, int reg_index, unsigned *reg_size, void *
 void cpu_write_register( void *env_ptr, int reg_index, unsigned *reg_size, uint64_t value );
 uint64_t readReg(void *cs_, int reg_idx, int reg_type); 
 physical_address_t mmu_logical_to_physical(void *cs, logical_address_t va);
+uint32_t cpu_get_instruction(void *cs, uint64_t* addr);
 uint64_t cpu_get_program_counter(void *cs);
 void* cpu_get_address_space_flexus(void *cs);              // Changed the name here
 int cpu_proc_num(void *cs);
@@ -641,6 +649,9 @@ void QEMU_cpu_set_quantum(const int * val);
 int QEMU_set_tick_frequency(conf_object_t *cpu, double tick_freq);
 // get freq of given cpu
 double QEMU_get_tick_frequency(conf_object_t *cpu);
+
+uint32_t QEMU_get_instruction(conf_object_t *cpu,uint64_t* addr);
+
 // get the program counter of a given cpu.
 uint64_t QEMU_get_program_counter(conf_object_t *cpu);
 void QEMU_increment_debug_stat(int val);
@@ -872,7 +883,8 @@ CPU_WRITE_REGISTER_PROC cpu_write_register;
 READREG_PROC readReg;
 MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical;
 CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
-CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space;                           
+CPU_GET_INSTRUCTION_PROC cpu_get_instruction;
+CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space;
 CPU_PROC_NUM_PROC cpu_proc_num;
 CPU_POP_INDEXES_PROC cpu_pop_indexes;
 QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory;
@@ -916,6 +928,9 @@ QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency;
 
 // get freq of given cpu
 QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
+
+// get the converted instruction - endianness
+QEMU_GET_INSTRUCTION_PROC QEMU_get_instruction;
 
 // get the program counter of a given cpu.
 QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;

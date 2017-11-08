@@ -8,6 +8,7 @@ void QFLEX_API_get_interface_hooks(QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->cpu_read_register= cpu_read_register;
   hooks->cpu_write_register= cpu_write_register;
   hooks->mmu_logical_to_physical= mmu_logical_to_physical;
+  hooks->cpu_get_instruction= cpu_get_instruction;
   hooks->cpu_get_program_counter= cpu_get_program_counter;
   hooks->cpu_get_address_space= cpu_get_address_space_flexus;                      // Changed name here
   hooks->cpu_proc_num= cpu_proc_num;
@@ -34,6 +35,7 @@ void QFLEX_API_get_interface_hooks(QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_cpu_set_quantum= QEMU_cpu_set_quantum;
   hooks->QEMU_set_tick_frequency= QEMU_set_tick_frequency;
   hooks->QEMU_get_tick_frequency= QEMU_get_tick_frequency;
+  hooks->QEMU_get_instruction= QEMU_get_instruction;
   hooks->QEMU_get_program_counter= QEMU_get_program_counter;
   hooks->QEMU_increment_debug_stat= QEMU_increment_debug_stat;
   hooks->QEMU_logical_to_physical= QEMU_logical_to_physical;
@@ -76,8 +78,6 @@ simulator_obj_t* simulator_load( const char* path ) {
 
   if( !module )
     return NULL;
-
-  const char* t = "/home/ajallooi/qflex/flexus/simulators/KnottyKraken/libflexus_KnottyKraken_arm_iface_gcc.so";
 
   void* handle = dlopen( path, RTLD_LAZY );
 
