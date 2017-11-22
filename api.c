@@ -37,6 +37,7 @@ extern uint64_t quantum_value;
 #endif
 static int simulationTime;
 
+static bool timing;
 
 static int debugStats[ALL_DEBUG_TYPE] = {0};
 //Functions I am not sure on(wasn't the last person to work on them)
@@ -139,13 +140,13 @@ conf_object_t *QEMU_get_phys_memory(conf_object_t *cpu){
     //As far as I can tell it works.
     conf_object_t *as = malloc(sizeof(conf_object_t));
     as->type = QEMU_AddressSpace;
-
-    //SIA
-    char *name = (char *)malloc(sizeof(cpu->name) + sizeof("_mem " ));
-    sprintf(name,"%s_mem",cpu->name);
-    as->name = name;
-    //End SIA
-
+    if (timing){
+        //SIA
+        char *name = (char *)malloc(sizeof(cpu->name) + sizeof("_mem " ));
+        sprintf(name,"%s_mem",cpu->name);
+        as->name = name;
+        //End SIA
+    }
     as->object = (AddressSpace *)cpu_get_address_space_flexus(cpu->object);
     return as;
 }
@@ -166,14 +167,13 @@ conf_object_t *QEMU_get_cpu_by_index(int index)
 	conf_object_t *cpu = malloc(sizeof(conf_object_t));
 	//where will it get deleted?
         cpu->name = (char*)"<placeholder_cpu_name>";  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
-
-        //SIA: Caller should free name of cpu
-	char *name = (char*)malloc(cpu_name_size);
-	sprintf(name, "cpu%d",index);
-
-        cpu->name = name ;  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
-	//SIA
-
+        if (timing){
+            //SIA: Caller should free name of cpu
+            char *name = (char*)malloc(cpu_name_size);
+            sprintf(name, "cpu%d",index);
+            cpu->name = name ;  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
+            //SIA
+        }
         cpu->object = qemu_get_cpu(index);
 	if(cpu->object){
 		cpu->type = QEMU_CPUState;
@@ -320,12 +320,14 @@ conf_object_t *QEMU_get_all_processors(int *numCPUs) {
   int i = 0;
   for( i = 0; i < ncpus; i++ ) {
     cpus[i].name = (char*)"<placeholder_cpu_name>";  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
-   
-    //SIA: Caller should free name of cpu
-    char *name = (char*)malloc(cpu_name_size);
-    sprintf(name, "cpu%d",i);
 
-    cpus[i].name = name ;  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
+    if (timing){
+        //SIA: Caller should free name of cpu
+        char *name = (char*)malloc(cpu_name_size);
+        sprintf(name, "cpu%d",i);
+        cpus[i].name = name ;  //FIXME: This should be retrieved using a qemu_get_cpu_name(i) function. CPUs should have names, to distinguish CPUs of different machines
+    }
+
     cpus[i].object = qemu_get_cpu(indexes[i]);
     if(cpus[i].object){//probably not needed error checking
       cpus[i].type = QEMU_CPUState;
@@ -490,10 +492,14 @@ void QEMU_flush_tb_cache(void) {
 
 static void QEMU_setup_object_table(void);
 
-void QEMU_initialize(void) {
+void QEMU_initialize(bool timing_mode) {
+
+  timing = timing_mode;
+
   QEMU_initialize_counts();
   QEMU_setup_callback_tables();
-  QEMU_setup_object_table();
+  if (timing_mode)
+    QEMU_setup_object_table();
 }
 
 void QEMU_shutdown(void) {

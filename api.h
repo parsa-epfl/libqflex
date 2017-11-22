@@ -1,6 +1,7 @@
 #ifndef QEMU_API_H
 #define QEMU_API_H
 #include <inttypes.h>
+#include <stdbool.h>
 
 #define OS_INSTR 0
 #define USER_INSTR 1
@@ -850,7 +851,7 @@ void QEMU_delete_callback( int cpu_id, QEMU_callback_event_t event, uint64_t cal
 
 // Initialize the callback tables for every processor and also the
 // different counts.
-void QEMU_initialize(void);
+void QEMU_initialize(bool timing_mode);
 // Free the callback table
 void QEMU_shutdown(void);
 
