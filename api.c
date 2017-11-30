@@ -917,6 +917,13 @@ static void do_execute_callback(
 				    );
       }
     break;
+
+  case QEMU_flexus_save_state:
+    (*(cb_flexus_save_state)callback)("."); //FIXME: snapshot dir
+    break;
+  case QEMU_flexus_load_state:
+    (*(cb_flexus_load_state)callback)("."); //FIXME: snapshot dir
+    break;
   default:
 #ifdef CONFIG_DEBUG_LIBQFLEX
        QEMU_increment_debug_stat(NON_EXISTING_EVENT);

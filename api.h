@@ -749,6 +749,8 @@ typedef void (*cb_func_ncm_t2)(
 		);
 typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
 typedef void (*cb_func_nocs_t2)(void *, void *, conf_object_t *, char *);
+typedef void (*cb_flexus_save_state)(const char *);
+typedef void (*cb_flexus_load_state)(const char *);
 
 
 typedef struct {
@@ -810,6 +812,8 @@ typedef enum {
     QEMU_gfx_break_string,
     QEMU_cpu_mem_trans,
 	QEMU_dma_mem_trans,
+    QEMU_flexus_save_state,
+    QEMU_flexus_load_state,
     QEMU_callback_event_count // MUST BE LAST.
 } QEMU_callback_event_t;
 
