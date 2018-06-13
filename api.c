@@ -449,7 +449,7 @@ conf_object_t *QEMU_get_object(const char *name) {
 
 int QEMU_cpu_exec_proc (conf_object_t *cpu) {
   
-  int ret;
+  int ret = 0;
   CPUState * cpu_state = cpu->object;
   pending_exception = cpu_state->exception_index;
   fprintf(stderr, "\e[1;35m BEFORE ADVANCE: %s:%d: \e[0m \n", __FILE__, __LINE__);
@@ -459,7 +459,7 @@ int QEMU_cpu_exec_proc (conf_object_t *cpu) {
   //ret = cpu_state->exception_index;
   //ret =  get_info(cpu_state);
 
-  return 0;
+  return ret;
 }
 
 int flexus_is_simulating = 0;
