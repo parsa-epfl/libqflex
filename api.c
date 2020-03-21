@@ -58,7 +58,7 @@ extern "C" {
 
 
 static int pending_exception = 0;
-static int64_t simulationTime;
+static int64_t simulationTime = -1;
 static bool timing;
 static int debugStats[ALL_DEBUG_TYPE] = {0};
 static QEMU_callback_table_t * QEMU_all_callbacks_tables = NULL;
@@ -388,12 +388,6 @@ void QEMU_toggle_simulation(int enable) {
     flexus_is_simulating = enable;
     QEMU_flush_tb_cache();
   }
-}
-
-uint64_t flexus_simulation_length = -1;
-
-int64_t QEMU_get_simulation_length(void) {
-  return flexus_simulation_length;
 }
 
 void QEMU_flush_tb_cache(void) {

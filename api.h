@@ -718,7 +718,6 @@ int QEMU_cpu_execute                                        (conf_object_t *cpu)
 int QEMU_is_in_simulation                                   (void);
 void QEMU_toggle_simulation                                 (int enable);
 void  QEMU_cpu_executeation                                 (int enable);
-int64_t QEMU_get_simulation_length                          (void);
 void QEMU_flush_tb_cache                                    (void);
 uint64_t QEMU_get_instruction_count                         (int cpu_number, int isUser);
 uint64_t QEMU_get_total_instruction_count                   (void);
