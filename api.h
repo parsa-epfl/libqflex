@@ -547,11 +547,10 @@ typedef struct arm_memory_transaction {
 // registers
     //write
 typedef void                (*QEMU_WRITE_REGISTER_PROC)         (conf_object_t *cpu, arm_register_t reg_type, int reg_index, uint64_t value);
-//typedef void                (*CPU_WRITE_REGISTER_PROC)          (conf_object_t *cpu, int reg_index, unsigned *reg_size, uint64_t value);
 
     //read
 typedef uint64_t            (*QEMU_READ_REGISTER_PROC)          (conf_object_t *cpu, arm_register_t reg_type, int reg_index);
-//typedef uint64_t            (*CPU_READ_REGISTER_PROC)           (void *cs_, int reg_idx, int reg_type);
+typedef uint64_t            (*QEMU_READ_UNHASHED_SYSREG_PROC)   (conf_object_t *cpu, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
 
 
 typedef uint32_t            (*QEMU_READ_PSTATE_PROC)             (conf_object_t *cpu);
@@ -673,6 +672,7 @@ conf_object_t *QEMU_get_phys_memory                         (conf_object_t *cpu)
 int QEMU_clear_exception                                    (void);
 void QEMU_write_register                                    (conf_object_t *cpu, arm_register_t reg_type, int reg_index, uint64_t value);
 uint64_t QEMU_read_register                                 (conf_object_t *cpu, arm_register_t reg_type, int reg_index);
+uint64_t QEMU_read_unhashed_sysreg                          (conf_object_t *cpu, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crm, uint8_t crn);
 uint64_t QEMU_read_sctlr                                    (uint8_t id, conf_object_t *cpu);
 uint64_t QEMU_read_tpidr                                    (uint8_t id, conf_object_t *cpu);
 void QEMU_read_exception                                    (conf_object_t *cpu, exception_t* exp);
@@ -781,6 +781,7 @@ extern QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
 extern QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory;
 extern QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
 extern QEMU_READ_REGISTER_PROC QEMU_read_register;
+extern QEMU_READ_UNHASHED_SYSREG_PROC QEMU_read_unhashed_sysreg;
 extern QEMU_READ_PSTATE_PROC QEMU_read_pstate;
 extern QEMU_READ_EXCEPTION_PROC QEMU_read_exception;
 extern QEMU_GET_PENDING_INTERRUPT_PROC QEMU_get_pending_interrupt;
@@ -848,6 +849,7 @@ typedef struct QFLEX_API_Interface_Hooks
     QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory;
     QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
     QEMU_READ_REGISTER_PROC QEMU_read_register;
+    QEMU_READ_UNHASHED_SYSREG_PROC QEMU_read_unhashed_sysreg;
     QEMU_READ_DCZID_EL0_PROC QEMU_read_DCZID_EL0;
     QEMU_READ_AARCH64_PROC QEMU_read_AARCH64;
     QEMU_CPU_HAS_WORK_PROC QEMU_cpu_has_work;

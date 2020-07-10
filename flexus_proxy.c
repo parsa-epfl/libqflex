@@ -53,6 +53,7 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_get_ethernet= QEMU_get_ethernet;
   hooks->QEMU_clear_exception= QEMU_clear_exception;
   hooks->QEMU_read_register= QEMU_read_register;
+  hooks->QEMU_read_unhashed_sysreg = QEMU_read_unhashed_sysreg;
   hooks->QEMU_write_register= QEMU_write_register;
   hooks->QEMU_read_sp_el = QEMU_read_sp_el;
 

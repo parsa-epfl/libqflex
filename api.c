@@ -55,7 +55,7 @@ extern "C" {
 #include "include/exec/exec-all.h"
 #include "api.h"
 
-
+#include "target/arm/cpu.h"
 
 static int pending_exception = 0;
 static int64_t simulationTime = -1;
@@ -75,19 +75,41 @@ extern int smp_sockets;
 
 static int flexus_is_simulating;
 
+uint64_t QEMU_read_unhashed_sysreg(conf_object_t *c, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm) {
+    /* First get ARMCPU and the list of sysregs */
+    CPUState *cs = (CPUState*)c->object;
+    ARMCPU *cpu = ARM_CPU(cs);
+    CPUARMState *env = &cpu->env;
 
+    const ARMCPRegInfo *ri;
+    ri = get_arm_cp_reginfo(cpu->cp_regs,
+                            ENCODE_AA64_CP_REG(CP_REG_ARM64_SYSREG_CP,
+                                               crn, crm, op0, op1, op2));
 
-// Read MMU state (just gets a bunch of QEMU registers that are appropriately named)
-//conf_object_t* QEMU_get_mmu_state(int cpu_index) {
-//    conf_object_t* theCPU = QEMU_get_cpu_by_index(cpu_index);
-//    conf_object_t* theRegObject = malloc(sizeof(conf_object_t));
-//    theRegObject->type = QEMU_MMUObject;
-//    theRegObject->object = (void*) malloc( sizeof(mmu_regs_t) );
-//    mmu_regs_t* mmuRegs = (mmu_regs_t*) theRegObject->object;
-
-
-//    return theRegObject;
-//}
+    if (ri && !(ri->type & ARM_CP_NO_RAW)) { 
+        return read_raw_cp_reg(env,ri);
+    } else { /* Msutherl: do it the slow way by linear searching if previous encoding didn't work */
+        for (size_t i = 0; i < cpu->cpreg_array_len; i++) {
+            uint32_t regidx = kvm_to_cpreg_id(cpu->cpreg_indexes[i]);
+            ri = get_arm_cp_reginfo(cpu->cp_regs, regidx);
+            if (ri->opc0 == op0 &&
+                ri->opc1 == op1 &&
+                ri->opc2 == op2 &&
+                ri->crn == crn &&
+                ri->crm == crm && 
+                !(ri->type & ARM_CP_NO_RAW)) {
+                return read_raw_cp_reg(env,ri);
+            }
+        }
+    }
+    /* Unknown register; this might be a guest error or a QEMU
+     * unimplemented feature.
+     */
+    qemu_log_mask(LOG_UNIMP, "Libqflex: %s access to unsupported AArch64 "
+                  "system register op0:%d op1:%d crn:%d crm:%d op2:%d\n",
+                  "read", op0, op1, crn, crm, op2);
+    return 0xcafebabedeadbeef;
+}
 
 void QEMU_dump_state(conf_object_t* cpu, char** buf) {
     qemu_dump_state(cpu->object, buf);
