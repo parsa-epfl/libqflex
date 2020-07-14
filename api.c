@@ -521,7 +521,7 @@ void QEMU_setSimulationTime(uint64_t time)
     simulationTime = time;
 }
 
-static int qemu_stopped;
+static int qemu_stopped = 0;
 
 int QEMU_is_stopped(void)
 {
@@ -536,20 +536,22 @@ conf_object_t *QEMU_get_ethernet(void) {
 //[???]Not sure what this does if there is a simulation_break, shouldn't there be a simulation_resume?
 bool QEMU_break_simulation(const char * msg)
 {
-    flexus_is_simulating = 0;
-    qemu_stopped = 1;
+    if (!qemu_stopped) {
+        flexus_is_simulating = 0;
+        qemu_stopped = 1;
 
-    //[???]it could be pause_all_vcpus(void)
-    //Causes the simulation to pause, can be restarted in qemu monitor by calling stop then cont
-    //or can be restarted by calling resume_all_vcpus();
-    //looking at it some functtions in vl.c might be useful
-    printf("Exiting because of break_simulation\n");
-    printf("With exit message: %s\n", msg);
+        //[???]it could be pause_all_vcpus(void)
+        //Causes the simulation to pause, can be restarted in qemu monitor by calling stop then cont
+        //or can be restarted by calling resume_all_vcpus();
+        //looking at it some functtions in vl.c might be useful
+        printf("Exiting because of break_simulation\n");
+        printf("With exit message: %s\n", msg);
 
-    Error* error_msg = NULL;
-    error_setg(&error_msg, "%s", msg);
-    qmp_quit(&error_msg);
-    error_free(error_msg);
+        Error* error_msg = NULL;
+        error_setg(&error_msg, "%s", msg);
+        qmp_quit(&error_msg);
+        error_free(error_msg);
+    }
 
     //qemu_system_suspend();//from vl.c:1940//doesn't work at all
     //calls pause_all_vcpus(), and some other stuff.
@@ -735,7 +737,7 @@ void QEMU_delete_callback(int cpu_id, QEMU_callback_event_t event, uint64_t call
 }
 
 static void do_execute_callback(QEMU_callback_container_t *curr, QEMU_callback_event_t event, QEMU_callback_args_t *event_data) {
-
+    if (QEMU_is_stopped()) return;
 
   void *callback = curr->callback;
   switch (event) {
