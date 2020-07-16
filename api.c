@@ -536,7 +536,7 @@ conf_object_t *QEMU_get_ethernet(void) {
 //[???]Not sure what this does if there is a simulation_break, shouldn't there be a simulation_resume?
 bool QEMU_break_simulation(const char * msg)
 {
-    if (!qemu_stopped) {
+    if (!QEMU_is_stopped()) {
         flexus_is_simulating = 0;
         qemu_stopped = 1;
 
