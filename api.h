@@ -591,7 +591,7 @@ typedef int                 (*QEMU_GET_NUM_THREADS_PER_CORE_PROC)(void);
 typedef int                 (*QEMU_CPU_GET_SOCKET_ID_PROC)      (conf_object_t *cpu);
 typedef conf_object_t*      (*QEMU_GET_ALL_CPUS_PROC)           (void);
 //typedef int                 (*CPU_PROC_NUM_PROC)                (void* cs);
-typedef int                 (*QEMU_CPU_EXEC_PROC)               (conf_object_t *cpu);
+typedef int                 (*QEMU_CPU_EXEC_PROC)               (conf_object_t *cpu, bool count_time);
 
 //qemu settings
 typedef void                (*QEMU_CPU_SET_QUANTUM)             (const int *val);
@@ -714,7 +714,7 @@ int QEMU_mem_op_is_read                                     (generic_transaction
 instruction_error_t QEMU_instruction_handle_interrupt       (conf_object_t *cpu, pseudo_exceptions_t pendingInterrupt);
 int QEMU_get_pending_exception                              (void);
 conf_object_t *QEMU_get_object_by_name                      (const char *name);
-int QEMU_cpu_execute                                        (conf_object_t *cpu);
+int QEMU_cpu_execute                                        (conf_object_t *cpu, bool count_time);
 int QEMU_is_in_simulation                                   (void);
 void QEMU_toggle_simulation                                 (int enable);
 void  QEMU_cpu_executeation                                 (int enable);

@@ -384,19 +384,17 @@ conf_object_t * QEMU_get_object_by_name(const char *name) {
     return NULL;
 }
 
-int QEMU_cpu_execute (conf_object_t *cpu) {
+int QEMU_cpu_execute (conf_object_t *cpu, bool count_time) {
   
    assert(cpu->type == QEMU_CPUState);
 
   int ret = 0;
   CPUState * cpu_state = cpu->object;
   pending_exception = cpu_state->exception_index;
-  advance_qemu(cpu->object);
-  simulationTime--;
-
-  //ret = cpu_state->exception_index;
-  //ret =  get_info(cpu_state);
-
+  ret = advance_qemu(cpu->object);
+  if (count_time) {
+      simulationTime--;
+  }
   return ret;
 }
 
