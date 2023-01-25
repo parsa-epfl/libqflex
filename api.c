@@ -58,12 +58,11 @@ extern "C" {
 #include "target/arm/cpu.h"
 
 static int pending_exception = 0;
-static int64_t simulationTime = -1;
+static int64_t cyclesLeft = -1;
 static bool timing;
 static int debugStats[ALL_DEBUG_TYPE] = {0};
 static QEMU_callback_table_t * QEMU_all_callbacks_tables = NULL;
 static conf_object_t *qemu_cpus = NULL;
-static conf_object_t *qemu_mems = NULL;
 static conf_object_t* qemu_disas_context = NULL;
 static bool qemu_objects_initialized;
 
@@ -203,15 +202,6 @@ uint32_t QEMU_read_fpcr(conf_object_t *cpu) {
   return cpu_read_fpcr(cpu->object);
 }
 
-conf_object_t * QEMU_get_phys_memory(conf_object_t *cpu){
-
-    if (qemu_objects_initialized)
-        return &(qemu_mems[QEMU_get_cpu_index(cpu)]);
-    assert(false);
-}
-
-
-
 void QEMU_read_phys_memory(uint8_t* buf, physical_address_t pa, int bytes)
 {
   assert(0 <= bytes && bytes <= 16);
@@ -248,7 +238,8 @@ conf_object_t *QEMU_get_cpu_by_index(int index)
 }
 
 int QEMU_get_cpu_index(conf_object_t *cpu){
-    return cpu_proc_num(cpu->object);
+    CPUState *cs = (CPUState *) cpu->object;
+    return cs->cpu_index;
 }
 
 conf_object_t *QEMU_get_phys_mem(conf_object_t *cpu) {
@@ -257,12 +248,6 @@ conf_object_t *QEMU_get_phys_mem(conf_object_t *cpu) {
 
 uint64_t QEMU_step_count(conf_object_t *cpu){
   return QEMU_get_instruction_count(QEMU_get_cpu_index(cpu), BOTH_INSTR);
-}
-
-
-
-int QEMU_get_num_cpus(void) {
-    return smp_cpus;
 }
 
 int QEMU_get_num_sockets(void) {
@@ -373,14 +358,11 @@ conf_object_t * QEMU_get_object_by_name(const char *name) {
         assert(false);
 
     unsigned int i;
-    for(i = 0; i < QEMU_get_num_cpus(); i++) {
+    for(i = 0; i < smp_cpus; i++) {
         if(strcmp(qemu_cpus[i].name, name) == 0){
             return &(qemu_cpus[i]);
         }
-        if(strcmp(qemu_mems[i].name, name) == 0){
-            return &(qemu_mems[i]);
-        }
-	}
+	  }
     return NULL;
 }
 
@@ -393,7 +375,7 @@ int QEMU_cpu_execute (conf_object_t *cpu, bool count_time) {
   pending_exception = cpu_state->exception_index;
   ret = advance_qemu(cpu->object);
   if (count_time) {
-      simulationTime--;
+      cyclesLeft--;
   }
   return ret;
 }
@@ -417,29 +399,14 @@ void QEMU_flush_tb_cache(void) {
   }
 }
 
+uint64_t QEMU_total_instruction_count = 0;
+uint64_t *QEMU_instruction_counts = NULL;
+uint64_t *QEMU_instruction_counts_user = NULL;
+uint64_t *QEMU_instruction_counts_OS = NULL;
 
-static void QEMU_populate_qemu_mems(void)
+static void qflex_api_populate_qemu_cpus(void)
 {
-    int ncpus = QEMU_get_num_cpus();
-    qemu_mems = malloc(sizeof(conf_object_t)*ncpus);
-
-    int i = 0;
-    for ( ; i < ncpus; i++) {
-        qemu_mems[i].type = QEMU_AddressSpace;
-
-        qemu_mems[i].name = (char *)malloc(sizeof(qemu_cpus[i].name) + sizeof("_mem " ));
-        sprintf(qemu_mems[i].name,"%s_mem",qemu_cpus[i].name);
-        qemu_mems[i].object = (AddressSpace *)qemu_cpu_get_address_space(qemu_cpus[i].object);
-        if(! qemu_mems[i].object){
-            assert(false);
-        }
-
-    }
-}
-
-static void QEMU_populate_qemu_cpus(void)
-{
-    int ncpus = QEMU_get_num_cpus();
+    int ncpus = smp_cpus;
     qemu_cpus = malloc(sizeof(conf_object_t)*ncpus);
 
     int i = 0;
@@ -457,38 +424,22 @@ static void QEMU_populate_qemu_cpus(void)
     }
 }
 
-static void QEMU_setup_qemu_objects(void){
-    QEMU_populate_qemu_cpus();
-    QEMU_populate_qemu_mems();
+static void qflex_api_setup_callback_tables(void) {
+  int numTables = smp_cpus + 1;
+  QEMU_all_callbacks_tables = (QEMU_callback_table_t*)malloc(sizeof(QEMU_callback_table_t)*numTables);
+  int i = 0;
+  for( ; i < numTables; i++ ) {
+    QEMU_callback_table_t * table = QEMU_all_callbacks_tables + i;
+    table->next_callback_id = 0;
+    int j = 0;
+    for( ; j < QEMU_callback_event_count; j++ ) {
+      table->callbacks[j] = NULL;
+    }
+  }
 }
 
-void QEMU_initialize(bool timing_mode) {
-
-  if (qemu_objects_initialized)
-      assert(false);
-
-  timing = timing_mode;
-
-  QEMU_initialize_counts();
-  QEMU_setup_callback_tables();
-  QEMU_setup_qemu_objects();
-
-  qemu_objects_initialized = true;
-
-}
-
-void QEMU_shutdown(void) {
-  QEMU_free_callback_tables();
-  QEMU_deinitialize_counts();
-}
-
-uint64_t QEMU_total_instruction_count = 0;
-uint64_t *QEMU_instruction_counts = NULL;
-uint64_t *QEMU_instruction_counts_user = NULL;
-uint64_t *QEMU_instruction_counts_OS = NULL;
-
-void QEMU_initialize_counts(void) {
-  int num_cpus = QEMU_get_num_cpus();
+static void qflex_api_init_counts(void) {
+  int num_cpus = smp_cpus;
   QEMU_instruction_counts= (uint64_t*)malloc(num_cpus*sizeof(uint64_t));
 
   QEMU_instruction_counts_user = (uint64_t*)malloc(num_cpus*sizeof(uint64_t));
@@ -497,26 +448,66 @@ void QEMU_initialize_counts(void) {
   QEMU_total_instruction_count = 0;
   int i = 0;
   for( ; i < num_cpus; i++ ){
-      QEMU_instruction_counts[i] = 0;
+    QEMU_instruction_counts[i] = 0;
 
     QEMU_instruction_counts_user[i] = 0;
     QEMU_instruction_counts_OS[i] = 0;
   }
 }
 
-void QEMU_deinitialize_counts(void) {
-    free(QEMU_instruction_counts);
+void qflex_api_init(bool timing_mode, uint64_t sim_cycles) {
+  if (qemu_objects_initialized)
+      assert(false);
+
+  timing = timing_mode;
+  cyclesLeft = sim_cycles;
+
+  qflex_api_init_counts();
+  qflex_api_populate_qemu_cpus();
+
+  qflex_api_setup_callback_tables();
+
+  qemu_objects_initialized = true;
+}
+
+static void QEMU_free_callback_tables(void) {
+  int numTables = smp_cpus + 1;
+  int i = 0;
+  for( ; i < numTables; i++ ) {
+    QEMU_callback_table_t * table = QEMU_all_callbacks_tables + i;
+    int j = 0;
+    for( ; j < QEMU_callback_event_count; j++ ) {
+      while( table->callbacks[j] != NULL ) {
+        QEMU_callback_container_t *next = table->callbacks[j]->next;
+        free(table->callbacks[j]);
+        table->callbacks[j] = next;
+      }
+    }
+  }
+  free(QEMU_all_callbacks_tables);
+}
+
+static void QEMU_deinitialize_counts(void) {
+  free(QEMU_instruction_counts);
   free(QEMU_instruction_counts_user);
   free(QEMU_instruction_counts_OS);
 }
 
-int64_t QEMU_getSimulationTime(void)
-{
-    return simulationTime;
+void qflex_api_shutdown(void) {
+  QEMU_free_callback_tables();
+  QEMU_deinitialize_counts();
 }
-void QEMU_setSimulationTime(uint64_t time)
+
+
+
+int64_t QEMU_getCyclesLeft(void)
 {
-    simulationTime = time;
+    return cyclesLeft;
+}
+
+void QEMU_setSimCyclesLength(uint64_t time)
+{
+    cyclesLeft = time;
 }
 
 static int qemu_stopped = 0;
@@ -532,7 +523,7 @@ conf_object_t *QEMU_get_ethernet(void) {
 }
 
 //[???]Not sure what this does if there is a simulation_break, shouldn't there be a simulation_resume?
-bool QEMU_break_simulation(const char * msg)
+bool QEMU_quit_simulation(const char * msg)
 {
     if (!QEMU_is_stopped()) {
         flexus_is_simulating = 0;
@@ -560,7 +551,7 @@ bool QEMU_break_simulation(const char * msg)
 
     //I have not found anything that lets you send a message when you pause the simulation, but there can be a wakeup messsage.
     //in vl.c
-//    int num_cpus = QEMU_get_num_cpus();
+//    int num_cpus = smp_cpus;
 #ifdef CONFIG_DEBUG_LIBQFLEX
     printf ("----------API-OUTPUT----------\n");
 
@@ -638,36 +629,9 @@ uint64_t QEMU_get_total_instruction_count(void) {
   return QEMU_total_instruction_count;
 }
 
-void QEMU_setup_callback_tables(void) {
-  int numTables = QEMU_get_num_cpus() + 1;
-  QEMU_all_callbacks_tables = (QEMU_callback_table_t*)malloc(sizeof(QEMU_callback_table_t)*numTables);
-  int i = 0;
-  for( ; i < numTables; i++ ) {
-    QEMU_callback_table_t * table = QEMU_all_callbacks_tables + i;
-    table->next_callback_id = 0;
-    int j = 0;
-    for( ; j < QEMU_callback_event_count; j++ ) {
-      table->callbacks[j] = NULL;
-    }
-  }
-}
 
-void QEMU_free_callback_tables(void) {
-  int numTables = QEMU_get_num_cpus() + 1;
-  int i = 0;
-  for( ; i < numTables; i++ ) {
-    QEMU_callback_table_t * table = QEMU_all_callbacks_tables + i;
-    int j = 0;
-    for( ; j < QEMU_callback_event_count; j++ ) {
-      while( table->callbacks[j] != NULL ) {
-        QEMU_callback_container_t *next = table->callbacks[j]->next;
-        free(table->callbacks[j]);
-        table->callbacks[j] = next;
-      }
-    }
-  }
-  free(QEMU_all_callbacks_tables);
-}
+
+
 // note: see QEMU_callback_table in api.h
 // return a unique identifier to the callback struct or -1
 // if an error occured
@@ -740,11 +704,6 @@ static void do_execute_callback(QEMU_callback_container_t *curr, QEMU_callback_e
   void *callback = curr->callback;
   switch (event) {
     // noc : class_data, conf_object_t
-  case QEMU_config_ready:
-    (*(cb_func_void)callback)(
-							);
-               
-    break;
   case QEMU_magic_instruction:
     if (!curr->obj)
       (*(cb_func_nocI_t)callback)(

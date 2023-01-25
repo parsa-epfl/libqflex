@@ -49,7 +49,6 @@
 #include <errno.h>
 
 void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
-  hooks->QEMU_get_phys_memory= QEMU_get_phys_memory;
   hooks->QEMU_get_ethernet= QEMU_get_ethernet;
   hooks->QEMU_clear_exception= QEMU_clear_exception;
   hooks->QEMU_read_register= QEMU_read_register;
@@ -72,7 +71,6 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_get_cpu_by_index= QEMU_get_cpu_by_index;
   hooks->QEMU_get_cpu_index= QEMU_get_cpu_index;
   hooks->QEMU_step_count= QEMU_step_count;
-  hooks->QEMU_get_num_cpus= QEMU_get_num_cpus;
   hooks->QEMU_get_num_sockets= QEMU_get_num_sockets;
   hooks->QEMU_get_num_cores= QEMU_get_num_cores;
   hooks->QEMU_get_num_threads_per_core= QEMU_get_num_threads_per_core;
@@ -83,9 +81,8 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_get_program_counter= QEMU_get_program_counter;
   hooks->QEMU_increment_debug_stat= QEMU_increment_debug_stat;
   hooks->QEMU_logical_to_physical= QEMU_logical_to_physical;
-  hooks->QEMU_break_simulation= QEMU_break_simulation;
-  hooks->QEMU_getSimulationTime = QEMU_getSimulationTime;
-  hooks->QEMU_setSimulationTime = QEMU_setSimulationTime;
+  hooks->QEMU_quit_simulation= QEMU_quit_simulation;
+  hooks->QEMU_getCyclesLeft = QEMU_getCyclesLeft;
   hooks->QEMU_mem_op_is_data= QEMU_mem_op_is_data;
   hooks->QEMU_mem_op_is_write= QEMU_mem_op_is_write;
   hooks->QEMU_mem_op_is_read= QEMU_mem_op_is_read;
@@ -107,58 +104,43 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
 #include <stdlib.h>
 #include <dlfcn.h>
 
-SIMULATOR_INIT_PROC simulator_init = NULL;
-SIMULATOR_PREPARE_PROC simulator_prepare = NULL;
-SIMULATOR_DEINIT_PROC simulator_deinit = NULL;
-SIMULATOR_START_PROC simulator_start = NULL;
-SIMULATOR_BIND_QMP_PROC simulator_qmp = NULL;
-SIMULATOR_BIND_CONFIG_PROC simulator_config = NULL;
-struct simulator_obj{
-  void* handle;
+FLEXUS_SIM_DYNLIB_t flexus_dynlib_fns = {
+    .qflex_sim_init  =  NULL,
+    .qflex_quit  =  NULL,
+    .startTiming =  NULL,
+    .qmp_call    =  NULL,
 };
+static void *handle = NULL;
 
-simulator_obj_t* simulator_load( const char* path ) {
-
-    simulator_obj_t* module = (simulator_obj_t*)malloc(sizeof(simulator_obj_t));
-
-  if( !module )
-    return NULL;
-
-  void* handle = dlopen( path, RTLD_LAZY );
-
-  module->handle = handle;
+// Dynamic library load
+bool flexus_dynlib_load( const char* path ) {
+  handle = dlopen( path, RTLD_LAZY );
   if( handle == NULL ) {
-    printf("Can not load simulator from path %s\n", path);
+    printf("Can not load simulator dynamic library from path %s\n", path);
     printf("error: %s\n", dlerror() );
-    free ( module );
-    return NULL;
+    free ( handle);
+    return false;
   }
 
-  simulator_init = (SIMULATOR_INIT_PROC)dlsym( handle, "qflex_init" );
-  simulator_prepare = (SIMULATOR_PREPARE_PROC)dlsym( handle, "flexInit" );
-  simulator_deinit = (SIMULATOR_DEINIT_PROC)dlsym( handle, "qflex_quit" );
-  simulator_start = (SIMULATOR_START_PROC)dlsym( handle, "startTiming" );
-  simulator_qmp = (SIMULATOR_BIND_QMP_PROC)dlsym( handle, "qmpcall" );
-  simulator_config = (SIMULATOR_BIND_CONFIG_PROC)dlsym( handle, "setConfig" );
+  flexus_dynlib_fns.qflex_sim_init  = (SIMULATOR_INIT_PROC)        dlsym( handle, "qflex_sim_init" );
+  flexus_dynlib_fns.qflex_quit  = (SIMULATOR_DEINIT_PROC)      dlsym( handle, "qflex_quit" );
+  flexus_dynlib_fns.startTiming = (SIMULATOR_START_PROC)       dlsym( handle, "startTiming" );
+  flexus_dynlib_fns.qmp_call    = (SIMULATOR_BIND_QMP_PROC)    dlsym( handle, "qmp_call" );
 
-  if (simulator_init    == NULL ||
-      simulator_prepare == NULL ||
-      simulator_deinit  == NULL ||
-      simulator_start   == NULL ||
-      simulator_qmp     == NULL ||
-      simulator_config  == NULL ){
-
+  if (flexus_dynlib_fns.qflex_sim_init  == NULL || 
+    flexus_dynlib_fns.qflex_quit  == NULL || 
+    flexus_dynlib_fns.startTiming == NULL || 
+    flexus_dynlib_fns.qmp_call    == NULL) {
       printf("simulator does not support all of APIs modules! - check you simulator for \"c\" functions wrappers\n");
       printf("error: %s\n", dlerror() );
-      return NULL;
+      return false;
   }
 
-  return module;
+  return true;
 }
 
-void simulator_unload( simulator_obj_t* obj ) {
-  if( obj->handle != NULL )
-    dlclose( obj->handle );
-
-  free( obj );
+bool flexus_dynlib_unload(void) {
+  if( handle != NULL )
+    dlclose( handle );
+  return true;
 }
