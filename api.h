@@ -332,7 +332,6 @@ typedef struct conf_object {
 	void *object; // pointer to the struct in question
 	enum { // what kind of QEMU struct does it represent
 		QEMU_CPUState, // add new types as necessary
-		QEMU_AddressSpace,
 		QEMU_NetworkDevice,
         QEMU_MMUObject,
         QEMU_DisasContext,
@@ -353,7 +352,6 @@ typedef struct exception_t{
 
 typedef struct generic_transaction {
     void *cpu_state;// (CPUState*) state of the CPU source of the transaction
-	conf_object_t *ini_ptr; // note: for efficiency, arrange struct from
 	char *real_address;     // largest datatype to smallest to avoid
 	uint64_t bytes;         // unnecessary padding.
     logical_address_t pc; // QEMU pc not updated regularly, need to send pc
@@ -658,8 +656,7 @@ typedef void (*cb_func_nocIs_t)(void *, conf_object_t *, int64_t, char *);
 typedef void (*cb_func_nocIs_t2)(void *, void *, conf_object_t *, int64_t, char *);
 typedef void (*cb_func_noiiI_t)(void *, int, int, int64_t);
 typedef void (*cb_func_noiiI_t2)(void *, void *, int, int, int64_t);
-typedef void (*cb_func_ncm_t)(conf_object_t *, memory_transaction_t *);
-typedef void (*cb_func_ncm_t2)(void *, conf_object_t *, memory_transaction_t *);
+typedef void (*cb_func_ncm_t)(void *, memory_transaction_t *);
 typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
 typedef void (*cb_func_nocs_t2)(void *, void *, conf_object_t *, char *);
 

@@ -781,36 +781,22 @@ static void do_execute_callback(QEMU_callback_container_t *curr, QEMU_callback_e
 #ifdef CONFIG_DEBUG_LIBQFLEX
       QEMU_increment_debug_stat(CPUMEMTRANS);
  #endif
-      if (!curr->obj)
-      (*(cb_func_ncm_t)callback)(
-				 event_data->ncm->space
-				 , event_data->ncm->trans
-				 );
-    else
-      (*(cb_func_ncm_t2)callback)(
-				  (void *) curr->obj
-				  , event_data->ncm->space
-				  , event_data->ncm->trans
-				  );
-
+      if (!curr->obj) {
+        printf("Can't execute without knowing destination");
+        exit(1);
+      } else {
+        (*(cb_func_ncm_t)callback)((void *)curr->obj, event_data->ncm->trans);
+      }
     break;
 
   case QEMU_dma_mem_trans:
     if (!curr->obj){
-      (*(cb_func_ncm_t)callback)(
-				 event_data->ncm->space
-				 , event_data->ncm->trans
-				 );
+        printf("Can't execute without knowing destination");
+        exit(1);
+    } else {
+      //  printf("is this run(ifobj)\n");
+      (*(cb_func_ncm_t)callback)((void *)curr->obj, event_data->ncm->trans);
     }
-    else
-      {
-	//  printf("is this run(ifobj)\n");
-	(*(cb_func_ncm_t2)callback)(
-				    (void *) curr->obj
-				    , event_data->ncm->space
-				    , event_data->ncm->trans
-				    );
-      }
     break;
   default:
 #ifdef CONFIG_DEBUG_LIBQFLEX
