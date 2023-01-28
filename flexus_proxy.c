@@ -106,9 +106,9 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
 
 FLEXUS_SIM_DYNLIB_t flexus_dynlib_fns = {
     .qflex_sim_init  =  NULL,
-    .qflex_quit  =  NULL,
-    .startTiming =  NULL,
-    .qmp_call    =  NULL,
+    .qflex_sim_quit  =  NULL,
+    .qflex_sim_start_timing =  NULL,
+    .qflex_sim_qmp    =  NULL,
 };
 static void *handle = NULL;
 
@@ -123,14 +123,15 @@ bool flexus_dynlib_load( const char* path ) {
   }
 
   flexus_dynlib_fns.qflex_sim_init  = (SIMULATOR_INIT_PROC)        dlsym( handle, "qflex_sim_init" );
-  flexus_dynlib_fns.qflex_quit  = (SIMULATOR_DEINIT_PROC)      dlsym( handle, "qflex_quit" );
-  flexus_dynlib_fns.startTiming = (SIMULATOR_START_PROC)       dlsym( handle, "startTiming" );
-  flexus_dynlib_fns.qmp_call    = (SIMULATOR_BIND_QMP_PROC)    dlsym( handle, "qmp_call" );
+  flexus_dynlib_fns.qflex_sim_quit  = (SIMULATOR_DEINIT_PROC)      dlsym( handle, "qflex_sim_quit" );
+  flexus_dynlib_fns.qflex_sim_start_timing = (SIMULATOR_START_PROC)       dlsym( handle, "qflex_sim_start_timing" );
+  flexus_dynlib_fns.qflex_sim_qmp    = (SIMULATOR_BIND_QMP_PROC)    dlsym( handle, "qflex_sim_qmp" );
+  flexus_dynlib_fns.qflex_sim_callbacks.trace_mem = NULL;
 
   if (flexus_dynlib_fns.qflex_sim_init  == NULL || 
-    flexus_dynlib_fns.qflex_quit  == NULL || 
-    flexus_dynlib_fns.startTiming == NULL || 
-    flexus_dynlib_fns.qmp_call    == NULL) {
+    flexus_dynlib_fns.qflex_sim_quit  == NULL || 
+    flexus_dynlib_fns.qflex_sim_start_timing == NULL || 
+    flexus_dynlib_fns.qflex_sim_qmp    == NULL) {
       printf("simulator does not support all of APIs modules! - check you simulator for \"c\" functions wrappers\n");
       printf("error: %s\n", dlerror() );
       return false;

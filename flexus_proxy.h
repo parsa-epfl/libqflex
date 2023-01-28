@@ -55,11 +55,22 @@ typedef void (*SIMULATOR_DEINIT_PROC)(void);
 typedef void (*SIMULATOR_START_PROC)(void);
 typedef void (*SIMULATOR_BIND_QMP_PROC)(qmp_flexus_cmd_t, const char*);
 typedef void (*SIMULATOR_BIND_CONFIG_PROC)(const char*);
+
+typedef void (*SIMULATOR_BIND_CONFIG_PROC)(const char*);
+
+
+typedef void (*SIMULATOR_TRACE_MEM)(void);
+
+typedef struct FLEXUS_SIM_DYNLIB_CALLBACK_t {
+	SIMULATOR_TRACE_MEM trace_mem;
+} FLEXUS_SIM_DYNLIB_CALLBACK_t;
+
 typedef struct FLEXUS_SIM_DYNLIB_t {
 	SIMULATOR_INIT_PROC        qflex_sim_init;
-	SIMULATOR_DEINIT_PROC      qflex_quit;
-	SIMULATOR_START_PROC       startTiming;
-	SIMULATOR_BIND_QMP_PROC    qmp_call;
+	SIMULATOR_DEINIT_PROC      qflex_sim_quit;
+	SIMULATOR_START_PROC       qflex_sim_start_timing;
+	SIMULATOR_BIND_QMP_PROC    qflex_sim_qmp;
+	FLEXUS_SIM_DYNLIB_CALLBACK_t qflex_sim_callbacks;
 } FLEXUS_SIM_DYNLIB_t;
 extern FLEXUS_SIM_DYNLIB_t flexus_dynlib_fns;
 
