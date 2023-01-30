@@ -91,8 +91,6 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_get_object_by_name = QEMU_get_object_by_name;
   hooks->QEMU_is_in_simulation = QEMU_is_in_simulation;
   hooks->QEMU_toggle_simulation = QEMU_toggle_simulation;
-  hooks->QEMU_insert_callback= QEMU_insert_callback;
-  hooks->QEMU_delete_callback= QEMU_delete_callback;
   hooks->QEMU_get_instruction_count = QEMU_get_instruction_count;
   hooks->QEMU_cpu_execute = QEMU_cpu_execute;
   hooks->QEMU_write_phys_memory= QEMU_write_phys_memory;
@@ -109,6 +107,14 @@ FLEXUS_SIM_DYNLIB_t flexus_dynlib_fns = {
     .qflex_sim_quit  =  NULL,
     .qflex_sim_start_timing =  NULL,
     .qflex_sim_qmp    =  NULL,
+    .qflex_sim_callbacks = {
+      .periodic = NULL,
+      .trace_mem = NULL,
+      .trace_mem_dma = NULL,
+      .magic_inst = NULL,
+      .ethernet_frame = NULL,
+      .xterm_break_string = NULL,
+    },
 };
 static void *handle = NULL;
 
@@ -126,12 +132,25 @@ bool flexus_dynlib_load( const char* path ) {
   flexus_dynlib_fns.qflex_sim_quit  = (SIMULATOR_DEINIT_PROC)      dlsym( handle, "qflex_sim_quit" );
   flexus_dynlib_fns.qflex_sim_start_timing = (SIMULATOR_START_PROC)       dlsym( handle, "qflex_sim_start_timing" );
   flexus_dynlib_fns.qflex_sim_qmp    = (SIMULATOR_BIND_QMP_PROC)    dlsym( handle, "qflex_sim_qmp" );
-  flexus_dynlib_fns.qflex_sim_callbacks.trace_mem = NULL;
+
+  flexus_dynlib_fns.qflex_sim_callbacks.periodic = (SIMULATOR_PERIODIC_EVENT) dlsym( handle, "qflex_sim_callbacks_periodic");
+  flexus_dynlib_fns.qflex_sim_callbacks.trace_mem = (SIMULATOR_TRACE_MEM) dlsym( handle, "qflex_sim_callbacks_trace_mem");
+  flexus_dynlib_fns.qflex_sim_callbacks.trace_mem_dma = (SIMULATOR_TRACE_MEM_DMA) dlsym( handle, "qflex_sim_callbacks_trace_mem_dma");
+  flexus_dynlib_fns.qflex_sim_callbacks.magic_inst = (SIMULATOR_MAGIC_INST) dlsym( handle, "qflex_sim_callbacks_magic_inst");
+  flexus_dynlib_fns.qflex_sim_callbacks.ethernet_frame = (SIMULATOR_ETHERNET_FRAME) dlsym( handle, "qflex_sim_callbacks_ethernet_frame");
+  flexus_dynlib_fns.qflex_sim_callbacks.xterm_break_string = (SIMULATOR_XTERM_BREAK_STRING) dlsym( handle, "qflex_sim_callbacks_xterm_break_string");
 
   if (flexus_dynlib_fns.qflex_sim_init  == NULL || 
     flexus_dynlib_fns.qflex_sim_quit  == NULL || 
     flexus_dynlib_fns.qflex_sim_start_timing == NULL || 
-    flexus_dynlib_fns.qflex_sim_qmp    == NULL) {
+    flexus_dynlib_fns.qflex_sim_qmp    == NULL ||
+    flexus_dynlib_fns.qflex_sim_callbacks.periodic == NULL ||
+    flexus_dynlib_fns.qflex_sim_callbacks.trace_mem == NULL ||
+    flexus_dynlib_fns.qflex_sim_callbacks.trace_mem_dma == NULL ||
+    flexus_dynlib_fns.qflex_sim_callbacks.magic_inst == NULL ||
+    flexus_dynlib_fns.qflex_sim_callbacks.ethernet_frame == NULL ||
+    flexus_dynlib_fns.qflex_sim_callbacks.xterm_break_string == NULL
+  ) {
       printf("simulator does not support all of APIs modules! - check you simulator for \"c\" functions wrappers\n");
       printf("error: %s\n", dlerror() );
       return false;

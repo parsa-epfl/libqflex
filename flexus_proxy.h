@@ -59,10 +59,21 @@ typedef void (*SIMULATOR_BIND_CONFIG_PROC)(const char*);
 typedef void (*SIMULATOR_BIND_CONFIG_PROC)(const char*);
 
 
-typedef void (*SIMULATOR_TRACE_MEM)(void);
-
+// Callbacks for trace mode, see `api.h` at end of file
+typedef void (*SIMULATOR_TRACE_MEM)(int, memory_transaction_t*);
+typedef void (*SIMULATOR_TRACE_MEM_DMA)(memory_transaction_t*);
+typedef void (*SIMULATOR_PERIODIC_EVENT)(void);
+typedef void (*SIMULATOR_MAGIC_INST)(int, long long);
+typedef void (*SIMULATOR_ETHERNET_FRAME)(int32_t, int32_t, long long);
+typedef void (*SIMULATOR_XTERM_BREAK_STRING)(char *);
+	
 typedef struct FLEXUS_SIM_DYNLIB_CALLBACK_t {
 	SIMULATOR_TRACE_MEM trace_mem;
+	SIMULATOR_TRACE_MEM_DMA trace_mem_dma;
+	SIMULATOR_PERIODIC_EVENT periodic;
+	SIMULATOR_MAGIC_INST magic_inst;
+  	SIMULATOR_ETHERNET_FRAME ethernet_frame;
+  	SIMULATOR_XTERM_BREAK_STRING xterm_break_string;
 } FLEXUS_SIM_DYNLIB_CALLBACK_t;
 
 typedef struct FLEXUS_SIM_DYNLIB_t {
@@ -72,6 +83,7 @@ typedef struct FLEXUS_SIM_DYNLIB_t {
 	SIMULATOR_BIND_QMP_PROC    qflex_sim_qmp;
 	FLEXUS_SIM_DYNLIB_CALLBACK_t qflex_sim_callbacks;
 } FLEXUS_SIM_DYNLIB_t;
+
 extern FLEXUS_SIM_DYNLIB_t flexus_dynlib_fns;
 
 #endif /* __LIBQEMUFLEX_FLEXUS_PROXY_HPP__ */

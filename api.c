@@ -61,7 +61,6 @@ static int pending_exception = 0;
 static int64_t cyclesLeft = -1;
 static bool timing;
 static int debugStats[ALL_DEBUG_TYPE] = {0};
-static QEMU_callback_table_t * QEMU_all_callbacks_tables = NULL;
 static conf_object_t *qemu_cpus = NULL;
 static conf_object_t* qemu_disas_context = NULL;
 static bool qemu_objects_initialized;
@@ -424,20 +423,6 @@ static void qflex_api_populate_qemu_cpus(void)
     }
 }
 
-static void qflex_api_setup_callback_tables(void) {
-  int numTables = smp_cpus + 1;
-  QEMU_all_callbacks_tables = (QEMU_callback_table_t*)malloc(sizeof(QEMU_callback_table_t)*numTables);
-  int i = 0;
-  for( ; i < numTables; i++ ) {
-    QEMU_callback_table_t * table = QEMU_all_callbacks_tables + i;
-    table->next_callback_id = 0;
-    int j = 0;
-    for( ; j < QEMU_callback_event_count; j++ ) {
-      table->callbacks[j] = NULL;
-    }
-  }
-}
-
 static void qflex_api_init_counts(void) {
   int num_cpus = smp_cpus;
   QEMU_instruction_counts= (uint64_t*)malloc(num_cpus*sizeof(uint64_t));
@@ -465,26 +450,7 @@ void qflex_api_init(bool timing_mode, uint64_t sim_cycles) {
   qflex_api_init_counts();
   qflex_api_populate_qemu_cpus();
 
-  qflex_api_setup_callback_tables();
-
   qemu_objects_initialized = true;
-}
-
-static void QEMU_free_callback_tables(void) {
-  int numTables = smp_cpus + 1;
-  int i = 0;
-  for( ; i < numTables; i++ ) {
-    QEMU_callback_table_t * table = QEMU_all_callbacks_tables + i;
-    int j = 0;
-    for( ; j < QEMU_callback_event_count; j++ ) {
-      while( table->callbacks[j] != NULL ) {
-        QEMU_callback_container_t *next = table->callbacks[j]->next;
-        free(table->callbacks[j]);
-        table->callbacks[j] = next;
-      }
-    }
-  }
-  free(QEMU_all_callbacks_tables);
 }
 
 static void QEMU_deinitialize_counts(void) {
@@ -494,25 +460,17 @@ static void QEMU_deinitialize_counts(void) {
 }
 
 void qflex_api_shutdown(void) {
-  QEMU_free_callback_tables();
   QEMU_deinitialize_counts();
 }
-
-
 
 int64_t QEMU_getCyclesLeft(void)
 {
     return cyclesLeft;
 }
 
-void QEMU_setSimCyclesLength(uint64_t time)
-{
-    cyclesLeft = time;
-}
-
 static int qemu_stopped = 0;
 
-int QEMU_is_stopped(void)
+static int QEMU_is_stopped(void)
 {
     return qemu_stopped;
 }
@@ -629,210 +587,6 @@ uint64_t QEMU_get_total_instruction_count(void) {
   return QEMU_total_instruction_count;
 }
 
-
-
-
-// note: see QEMU_callback_table in api.h
-// return a unique identifier to the callback struct or -1
-// if an error occured
-int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fn) {
-  //[???]use next_callback_id then update it
-  //If there are multiple callback functions, we must chain them together.
-  //error checking-
-  if(event>=QEMU_callback_event_count){
-    //call some sort of errorthing possibly
-    return -1;
-  }
-  QEMU_callback_table_t * table = &QEMU_all_callbacks_tables[cpu_id+1];
-  QEMU_callback_container_t *container = table->callbacks[event];
-  QEMU_callback_container_t *containerNew = malloc(sizeof(QEMU_callback_container_t));
-
-  // out of memory, return -1
-  if( containerNew == NULL )
-    return -1;
-
-  containerNew->id = table->next_callback_id;
-  containerNew->callback = fn;
-  containerNew->obj = obj;
-  containerNew->next = NULL;
-
-  if(container == NULL){
-    //Simple case there is not a callback function for event 
-    table->callbacks[event] = containerNew;
-  }else{
-    //we need to add another callback to the chain
-    //Now find the current last function in the callbacks list
-    while(container->next!=NULL){
-      container = container->next;
-    }
-    container->next = containerNew;
-  }
-  table->next_callback_id++;
-  return containerNew->id;
-}
-
-// delete a callback specific to the given cpu
-void QEMU_delete_callback(int cpu_id, QEMU_callback_event_t event, uint64_t callback_id) {
-  //need to point prev->next to current->next
-  //start with the first in the list and check its ID
-  QEMU_callback_table_t * table = &QEMU_all_callbacks_tables[cpu_id+1];
-  QEMU_callback_container_t *container = table->callbacks[event];
-  QEMU_callback_container_t *prev = NULL;
-
-  while( container != NULL ) {
-    if( container->id == callback_id ) {
-      // we have found a callback with the right id and cpu_id
-      if( prev != NULL ) {
-        // this is not the first element of he list
-        // remove the element from the list
-        prev->next = container->next;
-      }else {
-        // this is the first element of the list
-        table->callbacks[event] = container->next;
-      }
-      free(container);
-      break;
-    }
-    prev = container;
-    container = container->next;
-  }
-}
-
-static void do_execute_callback(QEMU_callback_container_t *curr, QEMU_callback_event_t event, QEMU_callback_args_t *event_data) {
-    if (QEMU_is_stopped()) return;
-
-  void *callback = curr->callback;
-  switch (event) {
-    // noc : class_data, conf_object_t
-  case QEMU_magic_instruction:
-    if (!curr->obj)
-      (*(cb_func_nocI_t)callback)(
-				  event_data->nocI->class_data
-				  , event_data->nocI->obj
-				  , event_data->nocI->bigint
-				  );
-    else
-      (*(cb_func_nocI_t2)callback)(
-				   (void*)curr->obj,
-				   event_data->nocI->class_data
-				   , event_data->nocI->obj
-				   , event_data->nocI->bigint
-				   );   
-    break;
-  case QEMU_continuation:
-  case QEMU_asynchronous_trap:
-  case QEMU_exception_return:
-  case QEMU_ethernet_network_frame:
-  case QEMU_ethernet_frame:
-  case QEMU_periodic_event:
-    if (!curr->obj){
-      (*(cb_func_noc_t)callback)(
-				 event_data->noc->class_data
-				 , event_data->noc->obj
-				 );
-    }else{
-
-      (*(cb_func_noc_t2)callback)(
-				  (void *) curr->obj
-				  , event_data->noc->class_data
-				  , event_data->noc->obj
-				  );
-    }
-    break;
-    // nocIs : class_data, conf_object_t, int64_t, char*
-  case QEMU_simulation_stopped:
-    if (!curr->obj)
-      (*(cb_func_nocIs_t)callback)(
-				   event_data->nocIs->class_data
-				   , event_data->nocIs->obj
-				   , event_data->nocIs->bigint
-				   , event_data->nocIs->string
-				   );
-    else
-      (*(cb_func_nocIs_t2)callback)(
-				    (void *) curr->obj
-				    , event_data->nocIs->class_data
-				    , event_data->nocIs->obj
-				    , event_data->nocIs->bigint
-				    , event_data->nocIs->string
-				    );
-
-    break;
-    // nocs : class_data, conf_object_t, char*
-  case QEMU_xterm_break_string:
-  case QEMU_gfx_break_string:
-    if (!curr->obj)
-      (*(cb_func_nocs_t)callback)(
-				  event_data->nocs->class_data
-				  , event_data->nocs->obj
-				  , event_data->nocs->string
-				  );
-    else
-      (*(cb_func_nocs_t2)callback)(
-				   (void *) curr->obj
-				   , event_data->nocs->class_data
-				   , event_data->nocs->obj
-				   , event_data->nocs->string
-				   );
-
-    break;
-    // ncm : conf_object_t, memory_transaction_t
-  case QEMU_cpu_mem_trans:
-#ifdef CONFIG_DEBUG_LIBQFLEX
-      QEMU_increment_debug_stat(CPUMEMTRANS);
- #endif
-      if (!curr->obj) {
-        printf("Can't execute without knowing destination");
-        exit(1);
-      } else {
-        (*(cb_func_ncm_t)callback)((void *)curr->obj, event_data->ncm->trans);
-      }
-    break;
-
-  case QEMU_dma_mem_trans:
-    if (!curr->obj){
-        printf("Can't execute without knowing destination");
-        exit(1);
-    } else {
-      //  printf("is this run(ifobj)\n");
-      (*(cb_func_ncm_t)callback)((void *)curr->obj, event_data->ncm->trans);
-    }
-    break;
-  default:
-#ifdef CONFIG_DEBUG_LIBQFLEX
-       QEMU_increment_debug_stat(NON_EXISTING_EVENT);
-#endif
-    break;
-  }
-}
-
-void QEMU_execute_callbacks(
-			       int cpu_id,
-			       QEMU_callback_event_t event,
-			       QEMU_callback_args_t *event_data) {
-
-  QEMU_callback_table_t * generic_table = &QEMU_all_callbacks_tables[0];
-  QEMU_callback_table_t * table = &QEMU_all_callbacks_tables[cpu_id+1];
-  QEMU_callback_container_t *curr = table->callbacks[event];
-
-  // execute specified callbacks
-  for (; curr != NULL; curr = curr->next){
-#ifdef CONFIG_DEBUG_LIBQFLEX
-      QEMU_increment_debug_stat(ALL_CALLBACKS);
-#endif
-      do_execute_callback(curr, event, event_data);
-    }
-  if( cpu_id + 1 != 0 ) {
-    // only execudebug_types::te the generic callbacks once
-    curr = generic_table->callbacks[event];
-    for (; curr != NULL; curr = curr->next){
-#ifdef CONFIG_DEBUG_LIBQFLEX
-        QEMU_increment_debug_stat(ALL_GENERIC_CALLBACKS);
-#endif
-        do_execute_callback(curr, event, event_data);
-    }
-  }
-}
 void QEMU_cpu_set_quantum(const int * val)
 {
 #ifdef CONFIG_QUANTUM

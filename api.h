@@ -51,9 +51,6 @@
 #define USER_INSTR 1
 #define BOTH_INSTR 2
 
-#define QEMUFLEX_GENERIC_CALLBACK -1
-
-
 typedef uint64_t cycles_t;
 typedef uint64_t physical_address_t;
 typedef uint64_t logical_address_t;
@@ -64,23 +61,6 @@ typedef int exception_type_t;
 /*---------------------------------------------------------------
  *-------------------------ENUMERATIONS----------------------------
  *---------------------------------------------------------------*/
-
-typedef enum {
-    QEMU_continuation,
-    QEMU_simulation_stopped,
-    QEMU_asynchronous_trap,
-    QEMU_exception_return,
-    QEMU_magic_instruction,
-    QEMU_ethernet_frame,
-    QEMU_ethernet_network_frame,
-    QEMU_periodic_event,
-    QEMU_xterm_break_string,
-    QEMU_gfx_break_string,
-    QEMU_cpu_mem_trans,
-    QEMU_dma_mem_trans,
-    QEMU_callback_event_count,
-    QEMU_rmc_callback
-} QEMU_callback_event_t;
 
 
 typedef enum {
@@ -443,36 +423,10 @@ typedef struct memory_transaction {
 } memory_transaction_t;
 
 typedef struct {
-    conf_object_t *space;
-    memory_transaction_t *trans;
-} QEMU_ncm;
-
-typedef struct {
     void *class_data;
     conf_object_t *obj;
     char *string;
 } QEMU_nocs;
-
-typedef union {
-    QEMU_noc	*noc;
-    QEMU_nocIs	*nocIs;
-    QEMU_nocI   *nocI;
-    QEMU_noiiI	*noiiI;
-    QEMU_nocs	*nocs;
-    QEMU_ncm	*ncm;
-} QEMU_callback_args_t;
-
-typedef struct QEMU_callback_container {
-    uint64_t id;
-    void *obj;
-    void *callback;
-    struct QEMU_callback_container *next;
-}QEMU_callback_container_t;
-
-typedef struct QEMU_callback_table {
-    uint64_t next_callback_id;
-    QEMU_callback_container_t *callbacks[QEMU_callback_event_count];
-}QEMU_callback_table_t;
 
 typedef struct attr_value {
     attr_kind_t kind;
@@ -609,7 +563,6 @@ typedef void                (*QEMU_INCREMENT_DEBUG_STAT_PROC)   (int val);
 
 //simulation
 typedef bool                (*QEMU_BREAK_SIMULATION_PROC)       (const char* msg);
-typedef int                 (*QEMU_IS_STOPPED_PROC)             (void);
 typedef void                (*QEMU_SET_SIMULATION_TIME_PROC)    (uint64_t time);
 typedef int64_t             (*QEMU_GET_SIMULATION_TIME_PROC)    (void);
 typedef int                 (*QEMU_ADVANCE_PROC)                (void);
@@ -633,8 +586,6 @@ typedef conf_object_t*      (*QEMU_GET_OBJECT_BY_NAME_PROC)     (const char *nam
 typedef uint64_t            (*QEMU_GET_INSTRUCTION_COUNT_PROC)  (int cpu_number, int isUser);
 typedef uint64_t            (*QEMU_GET_INSTRUCTION_COUNT_PROC2) (int cpu_number, int isUser);
 typedef uint64_t            (*QEMU_STEP_COUNT_PROC)             (conf_object_t *cpu);
-typedef int                 (*QEMU_INSERT_CALLBACK_PROC)        ( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
-typedef void                (*QEMU_DELETE_CALLBACK_PROC)        ( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
 // callback function types.
 //
 // naming convention:
@@ -701,7 +652,6 @@ uint64_t QEMU_get_program_counter                           (conf_object_t *cpu)
 void QEMU_increment_debug_stat                              (int val);
 physical_address_t QEMU_logical_to_physical                 (conf_object_t *cpu, data_or_instr_t fetch, logical_address_t va);
 bool QEMU_quit_simulation                                   (const char *msg);
-int QEMU_is_stopped                                         (void);
 int64_t QEMU_getCyclesLeft                                  (void);
 void QEMU_setSimCyclesLength                                (uint64_t);
 void QEMU_flush_all_caches                                  (void);
@@ -718,10 +668,7 @@ void  QEMU_cpu_executeation                                 (int enable);
 void QEMU_flush_tb_cache                                    (void);
 uint64_t QEMU_get_instruction_count                         (int cpu_number, int isUser);
 uint64_t QEMU_get_total_instruction_count                   (void);
-int QEMU_insert_callback                                    ( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
-void QEMU_delete_callback                                   ( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
 void qflex_api_shutdown                                          (void);
-void QEMU_execute_callbacks                                 (int cpu_id, QEMU_callback_event_t event, QEMU_callback_args_t *event_data);
 void QEMU_increment_instruction_count                       (int cpu_number, int isUser);
 void QEMU_dump_state                                        (conf_object_t* cpu, char** buf);
 conf_object_t * QEMU_get_ethernet                           (void);
@@ -802,7 +749,6 @@ extern QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
 extern QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
 extern QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical;
 extern QEMU_BREAK_SIMULATION_PROC QEMU_quit_simulation;
-extern QEMU_IS_STOPPED_PROC QEMU_is_stopped;
 extern QEMU_GET_SIMULATION_TIME_PROC QEMU_getCyclesLeft;
 extern QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data;
 extern QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write;
@@ -818,8 +764,6 @@ extern QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
 extern QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
 extern QEMU_DISASSEMBLE_PROC QEMU_disassemble;
 extern QEMU_DUMP_STATE_PROC QEMU_dump_state;
-extern QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;
-extern QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback;
 //extern QEMU_GET_MMU_STATE_PROC QEMU_get_mmu_state;
 extern QEMU_GET_CURRENT_EL_PROC_PROC QEMU_get_current_el;
 #endif
@@ -867,7 +811,6 @@ typedef struct QFLEX_API_Interface_Hooks
     QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
     QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical;
     QEMU_BREAK_SIMULATION_PROC QEMU_quit_simulation;
-    QEMU_IS_STOPPED_PROC QEMU_is_stopped;
     QEMU_GET_SIMULATION_TIME_PROC QEMU_getCyclesLeft;
     QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data;
     QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write;
@@ -879,8 +822,6 @@ typedef struct QFLEX_API_Interface_Hooks
     QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
     QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
     QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
-    QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;
-    QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback;
     QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
     QEMU_DISASSEMBLE_PROC QEMU_disassemble;
     QEMU_DUMP_STATE_PROC QEMU_dump_state;
@@ -890,5 +831,15 @@ typedef struct QFLEX_API_Interface_Hooks
 
 void QFLEX_API_get_Interface_Hooks                          (QFLEX_API_Interface_Hooks_t* hooks);
 void QFLEX_API_set_Interface_Hooks                          ( const QFLEX_API_Interface_Hooks_t* hooks );
+
+typedef enum {
+  MagicIterationTracker,
+  MagicTransactionTracker,
+  MagicBreakpointTracker,
+  MagicRegressionTracker,
+  MagicSimPrintHandler,
+  MagicConsoleStringTracker,
+  MagicInstsTotalHooks,
+} MagicInst_t;
 
 #endif
