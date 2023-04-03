@@ -351,31 +351,6 @@ typedef struct generic_transaction {
 	unsigned int inverse_endian:1;
 } generic_transaction_t;
 
-typedef struct {
-    void *class_data;
-    conf_object_t *obj;
-} QEMU_noc;
-
-typedef struct {
-    void *class_data;
-    conf_object_t *obj;
-    int64_t bigint;
-} QEMU_nocI;
-
-typedef struct {
-    void *class_data;
-    conf_object_t *obj;
-    char *string;
-    int64_t bigint;
-} QEMU_nocIs;
-
-typedef struct {
-    void *class_data;
-    int integer0;
-    int integer1;
-    int64_t bigint;
-} QEMU_noiiI;
-
 typedef struct set_and_way_data{
   uint32_t set;
   uint32_t way;
@@ -422,12 +397,6 @@ typedef struct memory_transaction {
   };
 } memory_transaction_t;
 
-typedef struct {
-    void *class_data;
-    conf_object_t *obj;
-    char *string;
-} QEMU_nocs;
-
 typedef struct attr_value {
     attr_kind_t kind;
     union {
@@ -438,8 +407,6 @@ typedef struct attr_value {
         conf_object_t *object;
     } u;
 }attr_value_t;
-
-
 
 #ifdef FLEXUS_TARGET_ARM
 typedef enum {
@@ -500,17 +467,15 @@ typedef struct arm_memory_transaction {
 // registers
     //write
 typedef void                (*QEMU_WRITE_REGISTER_PROC)         (conf_object_t *cpu, arm_register_t reg_type, int reg_index, uint64_t value);
-
     //read
 typedef uint64_t            (*QEMU_READ_REGISTER_PROC)          (conf_object_t *cpu, arm_register_t reg_type, int reg_index);
 typedef uint64_t            (*QEMU_READ_UNHASHED_SYSREG_PROC)   (conf_object_t *cpu, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
-
 
 typedef uint32_t            (*QEMU_READ_PSTATE_PROC)             (conf_object_t *cpu);
 typedef uint32_t            (*QEMU_READ_FPCR_PROC)               (conf_object_t *cpu);
 typedef uint32_t            (*QEMU_READ_FPSR_PROC)               (conf_object_t *cpu);
 typedef uint32_t            (*QEMU_READ_FPSR_PROC)               (conf_object_t *cpu);
-typedef uint32_t            (*QEMU_READ_DCZID_EL0_PROC)               (conf_object_t *cpu);
+typedef uint32_t            (*QEMU_READ_DCZID_EL0_PROC)          (conf_object_t *cpu);
 typedef bool                (*QEMU_READ_AARCH64_PROC)            (conf_object_t *cpu);
 typedef uint64_t            (*QEMU_READ_SP_EL_PROC)              (uint8_t Id, conf_object_t *cpu);
 
@@ -523,13 +488,12 @@ typedef uint64_t            (*QEMU_READ_HCR_EL2_PROC)            (conf_object_t*
 //memory
 typedef void*               (*QEMU_CPU_GET_ADDRESS_SPACE_PROC)  (void* cs);
 typedef conf_object_t*      (*QEMU_GET_PHYS_MEMORY_PROC)        (conf_object_t* cpu);
-typedef void            (*QEMU_READ_PHYS_MEMORY_PROC)           (uint8_t* buf, physical_address_t pa, int bytes);
+typedef void                (*QEMU_READ_PHYS_MEMORY_PROC)       (uint8_t* buf, physical_address_t pa, int bytes);
 typedef conf_object_t *     (*QEMU_GET_PHYS_MEM_PROC)           (conf_object_t *cpu);
 typedef physical_address_t  (*QEMU_LOGICAL_TO_PHYSICAL_PROC)    (conf_object_t *cpu, data_or_instr_t fetch, logical_address_t va);
 typedef void                (*QEMU_WRITE_PHYS_MEMORY_PROC)      (conf_object_t *cpu, physical_address_t pa, unsigned long long value, int bytes);
-//typedef physical_address_t  (*MMU_LOGICAL_TO_PHYSICAL_PROC)     (void *cs, logical_address_t va);
 
-//cahe
+//cache
 typedef int                 (*QEMU_MEM_OP_IS_DATA_PROC)         (generic_transaction_t *mop);
 typedef int                 (*QEMU_MEM_OP_IS_WRITE_PROC)        (generic_transaction_t *mop);
 typedef int                 (*QEMU_MEM_OP_IS_READ_PROC)         (generic_transaction_t *mop);
@@ -543,7 +507,6 @@ typedef int                 (*QEMU_GET_NUM_CORES_PROC)          (void);
 typedef int                 (*QEMU_GET_NUM_THREADS_PER_CORE_PROC)(void);
 typedef int                 (*QEMU_CPU_GET_SOCKET_ID_PROC)      (conf_object_t *cpu);
 typedef conf_object_t*      (*QEMU_GET_ALL_CPUS_PROC)           (void);
-//typedef int                 (*CPU_PROC_NUM_PROC)                (void* cs);
 typedef int                 (*QEMU_CPU_EXEC_PROC)               (conf_object_t *cpu, bool count_time);
 
 //qemu settings
@@ -576,7 +539,7 @@ typedef conf_object_t*      (*QEMU_GET_ETHERNET_PROC)           (void);
 typedef int                 (*QEMU_CLEAR_EXCEPTION_PROC)        (void);
 typedef instruction_error_t (*QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC)(conf_object_t *cpu, pseudo_exceptions_t pendingInterrupt);
 typedef int                 (*QEMU_GET_PENDING_EXCEPTION_PROC)  (void);
-typedef uint8_t (*QEMU_GET_CURRENT_EL_PROC_PROC)(conf_object_t* cpu);
+typedef uint8_t             (*QEMU_GET_CURRENT_EL_PROC_PROC)    (conf_object_t* cpu);
 
 //MMU
 typedef conf_object_t* (*QEMU_GET_MMU_STATE_PROC)(int cpu_index);
@@ -586,30 +549,28 @@ typedef conf_object_t*      (*QEMU_GET_OBJECT_BY_NAME_PROC)     (const char *nam
 typedef uint64_t            (*QEMU_GET_INSTRUCTION_COUNT_PROC)  (int cpu_number, int isUser);
 typedef uint64_t            (*QEMU_GET_INSTRUCTION_COUNT_PROC2) (int cpu_number, int isUser);
 typedef uint64_t            (*QEMU_STEP_COUNT_PROC)             (conf_object_t *cpu);
-// callback function types.
-//
-// naming convention:
-// ------------------
-// i - int
-// I - int64_t
-// e - exception_type_t
-// o - class data (void*)
-// s - string
-// m - generic_transaction_t*
-// c - conf_object_t*
-// v - void*
-typedef void (*cb_func_void)(void);
-typedef void (*cb_func_noc_t)(void *, conf_object_t *);
-typedef void (*cb_func_noc_t2)(void*, void *, conf_object_t *);
-typedef void (*cb_func_nocI_t)(void *, conf_object_t *, int64_t);
-typedef void (*cb_func_nocI_t2)(void*, void *, conf_object_t *, int64_t);
-typedef void (*cb_func_nocIs_t)(void *, conf_object_t *, int64_t, char *);
-typedef void (*cb_func_nocIs_t2)(void *, void *, conf_object_t *, int64_t, char *);
-typedef void (*cb_func_noiiI_t)(void *, int, int, int64_t);
-typedef void (*cb_func_noiiI_t2)(void *, void *, int, int, int64_t);
-typedef void (*cb_func_ncm_t)(void *, memory_transaction_t *);
-typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
-typedef void (*cb_func_nocs_t2)(void *, void *, conf_object_t *, char *);
+
+// Callbacks for trace mode, QEMU -> QFlex
+typedef void (*SIMULATOR_START_TIMING)(void);
+typedef void (*SIMULATOR_SIM_QUIT)(void);
+typedef void (*SIMULATOR_QMP)(qmp_flexus_cmd_t, const char *);
+typedef void (*SIMULATOR_TRACE_MEM)(int, memory_transaction_t*);
+typedef void (*SIMULATOR_TRACE_MEM_DMA)(memory_transaction_t*);
+typedef void (*SIMULATOR_PERIODIC_EVENT)(void);
+typedef void (*SIMULATOR_MAGIC_INST)(int, long long);
+typedef void (*SIMULATOR_ETHERNET_FRAME)(int32_t, int32_t, long long);
+typedef void (*SIMULATOR_XTERM_BREAK_STRING)(char *);
+typedef struct FLEXUS_SIM_DYNLIB_CALLBACK_t {
+  SIMULATOR_START_TIMING start_timing;
+  SIMULATOR_SIM_QUIT sim_quit;
+  SIMULATOR_QMP qmp;
+	SIMULATOR_TRACE_MEM trace_mem;
+	SIMULATOR_TRACE_MEM_DMA trace_mem_dma;
+	SIMULATOR_PERIODIC_EVENT periodic;
+	SIMULATOR_MAGIC_INST magic_inst;
+  SIMULATOR_ETHERNET_FRAME ethernet_frame;
+  SIMULATOR_XTERM_BREAK_STRING xterm_break_string;
+} FLEXUS_SIM_DYNLIB_CALLBACK_t;
 
 #ifdef CONFIG_FLEXUS
 // Internal to qemu functions
@@ -711,10 +672,12 @@ void init_qemu_disas_context(uint8_t cpu_idx, void* obj);
 void update_qemu_disas_context(uint8_t cpu_idx, void* obj);
 void* get_qemu_disas_context(uint8_t cpu_idx);
 
+extern FLEXUS_SIM_DYNLIB_CALLBACK_t qflex_sim_callbacks;
+
+#else
 /*---------------------------------------------------------------
  *-------------------------FLEXUS----------------------------
  *---------------------------------------------------------------*/
-#else
 extern QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
 extern QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
 extern QEMU_READ_REGISTER_PROC QEMU_read_register;
@@ -766,16 +729,53 @@ extern QEMU_DISASSEMBLE_PROC QEMU_disassemble;
 extern QEMU_DUMP_STATE_PROC QEMU_dump_state;
 //extern QEMU_GET_MMU_STATE_PROC QEMU_get_mmu_state;
 extern QEMU_GET_CURRENT_EL_PROC_PROC QEMU_get_current_el;
+
+typedef enum {
+  MagicIterationTracker,
+  MagicTransactionTracker,
+  MagicBreakpointTracker,
+  MagicRegressionTracker,
+  MagicSimPrintHandler,
+  MagicConsoleStringTracker,
+  MagicInstsTotalHooks,
+} MagicInst_t;
+
+// QEMU to QFlex callbacks for Trace mode
+typedef struct callback_t {
+  void *obj;
+  void *fn;
+} callback_t;
+
+typedef struct qflex_sim_callbacks_t {
+  callback_t start_timing;
+  callback_t sim_quit;
+  callback_t qmp;
+  callback_t *trace_mem;
+  callback_t trace_mem_dma;
+  callback_t periodic;
+  callback_t ethernet_frame;
+  callback_t xterm_break_string;
+  callback_t magic_inst[MagicInstsTotalHooks];
+} qflex_sim_callbacks_t;
+
+extern qflex_sim_callbacks_t qflex_sim_callbacks;
+
+typedef void (*QFLEX_SIM_CALLBACK_START_TIMING)(void);
+typedef void (*QFLEX_SIM_CALLBACK_SIM_QUIT)(void);
+typedef void (*QFLEX_SIM_CALLBACK_QMP)(qmp_flexus_cmd_t, const char *);
+typedef void (*QFLEX_SIM_CALLBACK_PERIODIC)(void *);
+typedef void (*QFLEX_SIM_CALLBACK_TRACE_MEM)(void *, memory_transaction_t *);
+typedef void (*QFLEX_SIM_CALLBACK_TRACE_MEM_DMA)(void *, memory_transaction_t *);
+typedef void (*QFLEX_SIM_CALLBACK_MAGIC_INST)(void *, int, long long);
+typedef void (*QFLEX_SIM_CALLBACK_ETHERNET_FRAME)(void *, int32_t, int32_t, long long);
+typedef void (*QFLEX_SIM_CALLBACK_XTERM_BREAK_STRING)(void *, char *);
+
 #endif
 
 typedef struct QFLEX_API_Interface_Hooks
 {
-//    CPU_READ_REGISTER_PROC cpu_read_register;
 
-//    CPU_WRITE_REGISTER_PROC cpu_write_register;
-//    MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical;
     CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
-//    CPU_PROC_NUM_PROC cpu_proc_num;
     QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
     QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
     QEMU_READ_REGISTER_PROC QEMU_read_register;
@@ -829,17 +829,11 @@ typedef struct QFLEX_API_Interface_Hooks
     QEMU_GET_CURRENT_EL_PROC_PROC QEMU_get_current_el;
 } QFLEX_API_Interface_Hooks_t;
 
-void QFLEX_API_get_Interface_Hooks                          (QFLEX_API_Interface_Hooks_t* hooks);
-void QFLEX_API_set_Interface_Hooks                          ( const QFLEX_API_Interface_Hooks_t* hooks );
+void QFLEX_API_get_Interface_Hooks(QFLEX_API_Interface_Hooks_t* hooks);
+void QFLEX_API_set_Interface_Hooks(const QFLEX_API_Interface_Hooks_t* hooks);
 
-typedef enum {
-  MagicIterationTracker,
-  MagicTransactionTracker,
-  MagicBreakpointTracker,
-  MagicRegressionTracker,
-  MagicSimPrintHandler,
-  MagicConsoleStringTracker,
-  MagicInstsTotalHooks,
-} MagicInst_t;
+
+void QEMU_API_get_Interface_Hooks(FLEXUS_SIM_DYNLIB_CALLBACK_t *hooks);
+void QEMU_API_set_Interface_Hooks(const FLEXUS_SIM_DYNLIB_CALLBACK_t *hooks);
 
 #endif

@@ -609,3 +609,5 @@ void QEMU_cpu_set_quantum(const int * val)
 #ifdef __cplusplus
 }
 #endif
+
+
