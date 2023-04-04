@@ -49,7 +49,6 @@
 #include <errno.h>
 
 void QFLEX_API_get_Interface_Hooks (QFLEX_TO_QEMU_API_t* hooks) {
-  hooks->QEMU_get_ethernet = QEMU_get_ethernet;
   hooks->QEMU_clear_exception = QEMU_clear_exception;
   hooks->QEMU_read_register = QEMU_read_register;
   hooks->QEMU_read_unhashed_sysreg = QEMU_read_unhashed_sysreg;
@@ -58,16 +57,12 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_TO_QEMU_API_t* hooks) {
 
   hooks->QEMU_read_fpcr = QEMU_read_fpcr;
   hooks->QEMU_read_fpsr = QEMU_read_fpsr;
-  hooks->QEMU_read_exception = QEMU_read_exception;
-  hooks->QEMU_get_pending_interrupt = QEMU_get_pending_interrupt;
+  hooks->QEMU_has_pending_irq = QEMU_has_pending_irq;
   hooks->QEMU_read_sctlr = QEMU_read_sctlr;
-  hooks->QEMU_read_tpidr = QEMU_read_tpidr;
   hooks->QEMU_read_pstate = QEMU_read_pstate;
-  hooks->QEMU_read_hcr_el2 = QEMU_read_hcr_el2;
   hooks->QEMU_cpu_has_work = QEMU_cpu_has_work;
 
   hooks->QEMU_read_phys_memory = QEMU_read_phys_memory;
-  hooks->QEMU_get_phys_mem = QEMU_get_phys_mem;
   hooks->QEMU_get_cpu_by_index = QEMU_get_cpu_by_index;
   hooks->QEMU_get_cpu_index = QEMU_get_cpu_index;
   hooks->QEMU_step_count = QEMU_step_count;
@@ -97,8 +92,6 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_TO_QEMU_API_t* hooks) {
   hooks->QEMU_dump_state = QEMU_dump_state;
 
   hooks->QEMU_flush_tb_cache = QEMU_flush_tb_cache;
-  hooks->QEMU_read_DCZID_EL0 = QEMU_read_DCZID_EL0;
-  hooks->QEMU_read_AARCH64 = QEMU_read_AARCH64;
   hooks->QEMU_cpu_set_quantum = QEMU_cpu_set_quantum;
   hooks->QEMU_increment_debug_stat = QEMU_increment_debug_stat;
 }
