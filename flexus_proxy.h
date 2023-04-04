@@ -49,14 +49,8 @@
 bool flexus_dynlib_load( const char* path );
 bool flexus_dynlib_unload( void );
 
-typedef void (*SIMULATOR_INIT_PROC)(QFLEX_API_Interface_Hooks_t*, FLEXUS_SIM_DYNLIB_CALLBACK_t*,int, const char*);
-typedef void (*SIMULATOR_BIND_QMP_PROC)(qmp_flexus_cmd_t, const char*);
+typedef void (*QFLEX_INIT)(QFLEX_TO_QEMU_API_t*, QEMU_TO_QFLEX_CALLBACKS_t*,int, const char*);
 
-typedef struct FLEXUS_SIM_DYNLIB_t {
-	SIMULATOR_INIT_PROC        qflex_sim_init;
-	FLEXUS_SIM_DYNLIB_CALLBACK_t qflex_sim_callbacks;
-} FLEXUS_SIM_DYNLIB_t;
-
-extern FLEXUS_SIM_DYNLIB_t flexus_dynlib_fns;
+extern QFLEX_INIT qflex_init_fn;
 
 #endif /* __LIBQEMUFLEX_FLEXUS_PROXY_HPP__ */

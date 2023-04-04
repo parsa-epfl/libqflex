@@ -48,12 +48,12 @@
 #include <stdio.h>
 #include <errno.h>
 
-void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
-  hooks->QEMU_get_ethernet= QEMU_get_ethernet;
-  hooks->QEMU_clear_exception= QEMU_clear_exception;
-  hooks->QEMU_read_register= QEMU_read_register;
+void QFLEX_API_get_Interface_Hooks (QFLEX_TO_QEMU_API_t* hooks) {
+  hooks->QEMU_get_ethernet = QEMU_get_ethernet;
+  hooks->QEMU_clear_exception = QEMU_clear_exception;
+  hooks->QEMU_read_register = QEMU_read_register;
   hooks->QEMU_read_unhashed_sysreg = QEMU_read_unhashed_sysreg;
-  hooks->QEMU_write_register= QEMU_write_register;
+  hooks->QEMU_write_register = QEMU_write_register;
   hooks->QEMU_read_sp_el = QEMU_read_sp_el;
 
   hooks->QEMU_read_fpcr = QEMU_read_fpcr;
@@ -66,22 +66,22 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_read_hcr_el2 = QEMU_read_hcr_el2;
   hooks->QEMU_cpu_has_work = QEMU_cpu_has_work;
 
-  hooks->QEMU_read_phys_memory= QEMU_read_phys_memory;
-  hooks->QEMU_get_phys_mem= QEMU_get_phys_mem;
-  hooks->QEMU_get_cpu_by_index= QEMU_get_cpu_by_index;
-  hooks->QEMU_get_cpu_index= QEMU_get_cpu_index;
-  hooks->QEMU_step_count= QEMU_step_count;
-  hooks->QEMU_get_num_sockets= QEMU_get_num_sockets;
-  hooks->QEMU_get_num_cores= QEMU_get_num_cores;
-  hooks->QEMU_get_num_threads_per_core= QEMU_get_num_threads_per_core;
-  hooks->QEMU_get_all_cpus= QEMU_get_all_cpus;
-  hooks->QEMU_cpu_set_quantum= QEMU_cpu_set_quantum;
-  hooks->QEMU_set_tick_frequency= QEMU_set_tick_frequency;
-  hooks->QEMU_get_tick_frequency= QEMU_get_tick_frequency;
-  hooks->QEMU_get_program_counter= QEMU_get_program_counter;
-  hooks->QEMU_increment_debug_stat= QEMU_increment_debug_stat;
-  hooks->QEMU_logical_to_physical= QEMU_logical_to_physical;
-  hooks->QEMU_quit_simulation= QEMU_quit_simulation;
+  hooks->QEMU_read_phys_memory = QEMU_read_phys_memory;
+  hooks->QEMU_get_phys_mem = QEMU_get_phys_mem;
+  hooks->QEMU_get_cpu_by_index = QEMU_get_cpu_by_index;
+  hooks->QEMU_get_cpu_index = QEMU_get_cpu_index;
+  hooks->QEMU_step_count = QEMU_step_count;
+  hooks->QEMU_get_num_sockets = QEMU_get_num_sockets;
+  hooks->QEMU_get_num_cores = QEMU_get_num_cores;
+  hooks->QEMU_get_num_threads_per_core = QEMU_get_num_threads_per_core;
+  hooks->QEMU_get_all_cpus = QEMU_get_all_cpus;
+  hooks->QEMU_cpu_set_quantum = QEMU_cpu_set_quantum;
+  hooks->QEMU_set_tick_frequency = QEMU_set_tick_frequency;
+  hooks->QEMU_get_tick_frequency = QEMU_get_tick_frequency;
+  hooks->QEMU_get_program_counter = QEMU_get_program_counter;
+  hooks->QEMU_increment_debug_stat = QEMU_increment_debug_stat;
+  hooks->QEMU_logical_to_physical = QEMU_logical_to_physical;
+  hooks->QEMU_quit_simulation = QEMU_quit_simulation;
   hooks->QEMU_getCyclesLeft = QEMU_getCyclesLeft;
   hooks->QEMU_mem_op_is_data= QEMU_mem_op_is_data;
   hooks->QEMU_mem_op_is_write= QEMU_mem_op_is_write;
@@ -93,13 +93,18 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_API_Interface_Hooks_t* hooks) {
   hooks->QEMU_toggle_simulation = QEMU_toggle_simulation;
   hooks->QEMU_get_instruction_count = QEMU_get_instruction_count;
   hooks->QEMU_cpu_execute = QEMU_cpu_execute;
-  hooks->QEMU_write_phys_memory= QEMU_write_phys_memory;
   hooks->QEMU_disassemble = QEMU_disassemble;
   hooks->QEMU_dump_state = QEMU_dump_state;
+
+  hooks->QEMU_flush_tb_cache = QEMU_flush_tb_cache;
+  hooks->QEMU_read_DCZID_EL0 = QEMU_read_DCZID_EL0;
+  hooks->QEMU_read_AARCH64 = QEMU_read_AARCH64;
+  hooks->QEMU_cpu_set_quantum = QEMU_cpu_set_quantum;
+  hooks->QEMU_increment_debug_stat = QEMU_increment_debug_stat;
 }
 
-FLEXUS_SIM_DYNLIB_CALLBACK_t qflex_sim_callbacks;
-void QEMU_API_set_Interface_Hooks (const FLEXUS_SIM_DYNLIB_CALLBACK_t *hooks) {
+QEMU_TO_QFLEX_CALLBACKS_t qflex_sim_callbacks;
+void QEMU_API_set_Interface_Hooks (const QEMU_TO_QFLEX_CALLBACKS_t *hooks) {
 //  qflex_sim_callbacks = hooks;
   qflex_sim_callbacks.sim_quit           = hooks->sim_quit;
   qflex_sim_callbacks.start_timing       = hooks->start_timing;
@@ -115,20 +120,7 @@ void QEMU_API_set_Interface_Hooks (const FLEXUS_SIM_DYNLIB_CALLBACK_t *hooks) {
 #include <stdlib.h>
 #include <dlfcn.h>
 
-FLEXUS_SIM_DYNLIB_t flexus_dynlib_fns = {
-    .qflex_sim_init  =  NULL,
-    .qflex_sim_callbacks = {
-      .sim_quit = NULL,
-      .start_timing = NULL,
-      .qmp = NULL,
-      .periodic = NULL,
-      .trace_mem = NULL,
-      .trace_mem_dma = NULL,
-      .magic_inst = NULL,
-      .ethernet_frame = NULL,
-      .xterm_break_string = NULL,
-    },
-};
+QFLEX_INIT qflex_init_fn = NULL;
 
 static void *handle = NULL;
 
@@ -142,9 +134,9 @@ bool flexus_dynlib_load( const char* path ) {
     return false;
   }
 
-  flexus_dynlib_fns.qflex_sim_init  = (SIMULATOR_INIT_PROC) dlsym( handle, "qflex_sim_init" );
+  qflex_init_fn  = (QFLEX_INIT) dlsym( handle, "qflex_sim_init" );
 
-  if (flexus_dynlib_fns.qflex_sim_init  == NULL) {
+  if (qflex_init_fn  == NULL) {
       printf("simulator does not support all of APIs modules! - check you simulator for \"c\" functions wrappers\n");
       printf("error: %s\n", dlerror() );
       return false;

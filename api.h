@@ -560,7 +560,7 @@ typedef void (*SIMULATOR_PERIODIC_EVENT)(void);
 typedef void (*SIMULATOR_MAGIC_INST)(int, long long);
 typedef void (*SIMULATOR_ETHERNET_FRAME)(int32_t, int32_t, long long);
 typedef void (*SIMULATOR_XTERM_BREAK_STRING)(char *);
-typedef struct FLEXUS_SIM_DYNLIB_CALLBACK_t {
+typedef struct QEMU_TO_QFLEX_CALLBACKS_t {
   SIMULATOR_START_TIMING start_timing;
   SIMULATOR_SIM_QUIT sim_quit;
   SIMULATOR_QMP qmp;
@@ -570,7 +570,69 @@ typedef struct FLEXUS_SIM_DYNLIB_CALLBACK_t {
 	SIMULATOR_MAGIC_INST magic_inst;
   SIMULATOR_ETHERNET_FRAME ethernet_frame;
   SIMULATOR_XTERM_BREAK_STRING xterm_break_string;
-} FLEXUS_SIM_DYNLIB_CALLBACK_t;
+} QEMU_TO_QFLEX_CALLBACKS_t;
+
+typedef struct QFLEX_TO_QEMU_API_t
+{
+
+    QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
+    QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
+    QEMU_GET_PENDING_INTERRUPT_PROC QEMU_get_pending_interrupt;
+
+    QEMU_WRITE_REGISTER_PROC QEMU_write_register;
+    QEMU_READ_REGISTER_PROC QEMU_read_register;
+    QEMU_READ_UNHASHED_SYSREG_PROC QEMU_read_unhashed_sysreg;
+    QEMU_READ_PSTATE_PROC QEMU_read_pstate;
+    QEMU_READ_FPCR_PROC QEMU_read_fpcr;
+    QEMU_READ_FPSR_PROC QEMU_read_fpsr;
+    QEMU_READ_EXCEPTION_PROC QEMU_read_exception;
+    QEMU_READ_SCTLR_PROC QEMU_read_sctlr;
+    QEMU_READ_TPIDR_PROC QEMU_read_tpidr;
+    QEMU_READ_HCR_EL2_PROC QEMU_read_hcr_el2;
+    QEMU_CPU_HAS_WORK_PROC QEMU_cpu_has_work;
+    QEMU_READ_SP_EL_PROC QEMU_read_sp_el;
+
+    QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory;
+    QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem;
+    QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index;
+    QEMU_GET_CPU_INDEX_PROC QEMU_get_cpu_index;
+    QEMU_STEP_COUNT_PROC QEMU_step_count;
+    QEMU_GET_NUM_SOCKETS_PROC QEMU_get_num_sockets;
+    QEMU_GET_NUM_CORES_PROC QEMU_get_num_cores;
+    QEMU_GET_NUM_THREADS_PER_CORE_PROC QEMU_get_num_threads_per_core;
+    QEMU_GET_ALL_CPUS_PROC QEMU_get_all_cpus;
+
+    QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency;
+    QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
+    QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
+    QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical;
+    QEMU_BREAK_SIMULATION_PROC QEMU_quit_simulation;
+    QEMU_GET_SIMULATION_TIME_PROC QEMU_getCyclesLeft;
+
+    QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data;
+    QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write;
+    QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read;
+
+    QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
+    QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
+    QEMU_GET_OBJECT_BY_NAME_PROC QEMU_get_object_by_name;
+    QEMU_CPU_EXEC_PROC QEMU_cpu_execute;
+    QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
+    QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
+    QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
+    QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
+    QEMU_DISASSEMBLE_PROC QEMU_disassemble;
+    QEMU_DUMP_STATE_PROC QEMU_dump_state;
+
+    QEMU_READ_DCZID_EL0_PROC QEMU_read_DCZID_EL0;
+    QEMU_READ_AARCH64_PROC QEMU_read_AARCH64;
+    QEMU_CPU_SET_QUANTUM QEMU_cpu_set_quantum;
+    QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
+//    CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
+//    QEMU_GET_MMU_STATE_PROC QEMU_get_mmu_state;
+//    QEMU_WRITE_PHYS_MEMORY_PROC QEMU_write_phys_memory;
+//    QEMU_CPU_GET_SOCKET_ID_PROC QEMU_cpu_get_socket_id;
+} QFLEX_TO_QEMU_API_t;
 
 #ifdef CONFIG_FLEXUS
 // Internal to qemu functions
@@ -587,7 +649,7 @@ uint64_t QEMU_read_sctlr                                    (uint8_t id, conf_ob
 uint64_t QEMU_read_tpidr                                    (uint8_t id, conf_object_t *cpu);
 void QEMU_read_exception                                    (conf_object_t *cpu, exception_t* exp);
 uint64_t QEMU_get_pending_interrupt                         (conf_object_t *cpu);
-
+ 
 uint32_t QEMU_read_pstate                                   (conf_object_t *cpu);
 uint32_t QEMU_read_fpcr                                     (conf_object_t *cpu);
 uint32_t QEMU_read_fpsr                                     (conf_object_t *cpu);
@@ -615,7 +677,6 @@ physical_address_t QEMU_logical_to_physical                 (conf_object_t *cpu,
 bool QEMU_quit_simulation                                   (const char *msg);
 int64_t QEMU_getCyclesLeft                                  (void);
 void QEMU_setSimCyclesLength                                (uint64_t);
-void QEMU_flush_all_caches                                  (void);
 int QEMU_mem_op_is_data                                     (generic_transaction_t *mop);
 int QEMU_mem_op_is_write                                    (generic_transaction_t *mop);
 int QEMU_mem_op_is_read                                     (generic_transaction_t *mop);
@@ -665,70 +726,19 @@ int cpu_proc_num                                            (void *cs);
 int advance_qemu                                            (void* obj);
 
 //conf_object_t* QEMU_get_mmu_state(int cpu_index);
-uint8_t QEMU_get_current_el(conf_object_t* cpu);
 
 
 void init_qemu_disas_context(uint8_t cpu_idx, void* obj);
 void update_qemu_disas_context(uint8_t cpu_idx, void* obj);
 void* get_qemu_disas_context(uint8_t cpu_idx);
 
-extern FLEXUS_SIM_DYNLIB_CALLBACK_t qflex_sim_callbacks;
+extern QEMU_TO_QFLEX_CALLBACKS_t qflex_sim_callbacks;
 
 #else
 /*---------------------------------------------------------------
  *-------------------------FLEXUS----------------------------
  *---------------------------------------------------------------*/
-extern QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
-extern QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
-extern QEMU_READ_REGISTER_PROC QEMU_read_register;
-extern QEMU_READ_UNHASHED_SYSREG_PROC QEMU_read_unhashed_sysreg;
-extern QEMU_READ_PSTATE_PROC QEMU_read_pstate;
-extern QEMU_READ_EXCEPTION_PROC QEMU_read_exception;
-extern QEMU_GET_PENDING_INTERRUPT_PROC QEMU_get_pending_interrupt;
-extern QEMU_READ_SCTLR_PROC QEMU_read_sctlr;
-extern QEMU_READ_TPIDR_PROC QEMU_read_tpidr;
-extern QEMU_READ_FPCR_PROC QEMU_read_fpcr;
-extern QEMU_READ_FPSR_PROC QEMU_read_fpsr;
-extern QEMU_READ_HCR_EL2_PROC QEMU_read_hcr_el2;
-extern QEMU_READ_DCZID_EL0_PROC QEMU_read_DCZID_EL0;
-extern QEMU_READ_AARCH64_PROC QEMU_read_AARCH64;
-extern QEMU_CPU_HAS_WORK_PROC QEMU_cpu_has_work;
-extern QEMU_READ_SP_EL_PROC QEMU_read_sp_el;
-extern QEMU_WRITE_REGISTER_PROC QEMU_write_register;
-extern QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory;
-extern QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem;
-extern QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index;
-extern QEMU_GET_CPU_INDEX_PROC QEMU_get_cpu_index;
-extern QEMU_STEP_COUNT_PROC QEMU_step_count;
-extern QEMU_WRITE_PHYS_MEMORY_PROC QEMU_write_phys_memory;
-extern QEMU_GET_NUM_SOCKETS_PROC QEMU_get_num_sockets;
-extern QEMU_GET_NUM_CORES_PROC QEMU_get_num_cores;
-extern QEMU_GET_NUM_THREADS_PER_CORE_PROC QEMU_get_num_threads_per_core;
-extern QEMU_GET_ALL_CPUS_PROC QEMU_get_all_cpus;
-extern QEMU_CPU_SET_QUANTUM QEMU_cpu_set_quantum;
-extern QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency;
-extern QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
-extern QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
-extern QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
-extern QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical;
-extern QEMU_BREAK_SIMULATION_PROC QEMU_quit_simulation;
-extern QEMU_GET_SIMULATION_TIME_PROC QEMU_getCyclesLeft;
-extern QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data;
-extern QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write;
-extern QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read;
-extern QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
-extern QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
-extern QEMU_ADVANCE_PROC QEMU_advance;
-extern QEMU_GET_OBJECT_BY_NAME_PROC QEMU_get_object_by_name;
-extern QEMU_CPU_EXEC_PROC QEMU_cpu_execute;
-extern QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
-extern QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
-extern QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
-extern QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
-extern QEMU_DISASSEMBLE_PROC QEMU_disassemble;
-extern QEMU_DUMP_STATE_PROC QEMU_dump_state;
-//extern QEMU_GET_MMU_STATE_PROC QEMU_get_mmu_state;
-extern QEMU_GET_CURRENT_EL_PROC_PROC QEMU_get_current_el;
+extern QFLEX_TO_QEMU_API_t qemu_callbacks;
 
 typedef enum {
   MagicIterationTracker,
@@ -772,68 +782,13 @@ typedef void (*QFLEX_SIM_CALLBACK_XTERM_BREAK_STRING)(void *, char *);
 
 #endif
 
-typedef struct QFLEX_API_Interface_Hooks
-{
-
-    CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
-    QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
-    QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
-    QEMU_READ_REGISTER_PROC QEMU_read_register;
-    QEMU_READ_UNHASHED_SYSREG_PROC QEMU_read_unhashed_sysreg;
-    QEMU_READ_DCZID_EL0_PROC QEMU_read_DCZID_EL0;
-    QEMU_READ_AARCH64_PROC QEMU_read_AARCH64;
-    QEMU_CPU_HAS_WORK_PROC QEMU_cpu_has_work;
-    QEMU_READ_SP_EL_PROC QEMU_read_sp_el;
-    QEMU_READ_PSTATE_PROC QEMU_read_pstate;
-    QEMU_READ_FPCR_PROC QEMU_read_fpcr;
-    QEMU_READ_FPSR_PROC QEMU_read_fpsr;
-    QEMU_READ_SCTLR_PROC QEMU_read_sctlr;
-    QEMU_READ_TPIDR_PROC QEMU_read_tpidr;
-    QEMU_READ_EXCEPTION_PROC QEMU_read_exception;
-    QEMU_GET_PENDING_INTERRUPT_PROC QEMU_get_pending_interrupt;
-    QEMU_READ_HCR_EL2_PROC QEMU_read_hcr_el2;
-    QEMU_WRITE_REGISTER_PROC QEMU_write_register;
-    QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory;
-    QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem;
-    QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index;
-    QEMU_GET_CPU_INDEX_PROC QEMU_get_cpu_index;
-    QEMU_STEP_COUNT_PROC QEMU_step_count;
-    QEMU_WRITE_PHYS_MEMORY_PROC QEMU_write_phys_memory;
-    QEMU_GET_NUM_SOCKETS_PROC QEMU_get_num_sockets;
-    QEMU_GET_NUM_CORES_PROC QEMU_get_num_cores;
-    QEMU_GET_NUM_THREADS_PER_CORE_PROC QEMU_get_num_threads_per_core;
-    QEMU_CPU_GET_SOCKET_ID_PROC QEMU_cpu_get_socket_id;
-    QEMU_GET_ALL_CPUS_PROC QEMU_get_all_cpus;
-    QEMU_CPU_SET_QUANTUM QEMU_cpu_set_quantum;
-    QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency;
-    QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
-    QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
-    QEMU_INCREMENT_DEBUG_STAT_PROC QEMU_increment_debug_stat;
-    QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical;
-    QEMU_BREAK_SIMULATION_PROC QEMU_quit_simulation;
-    QEMU_GET_SIMULATION_TIME_PROC QEMU_getCyclesLeft;
-    QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data;
-    QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write;
-    QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read;
-    QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
-    QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
-    QEMU_GET_OBJECT_BY_NAME_PROC QEMU_get_object_by_name;
-    QEMU_CPU_EXEC_PROC QEMU_cpu_execute;
-    QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
-    QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
-    QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
-    QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
-    QEMU_DISASSEMBLE_PROC QEMU_disassemble;
-    QEMU_DUMP_STATE_PROC QEMU_dump_state;
-//    QEMU_GET_MMU_STATE_PROC QEMU_get_mmu_state;
-    QEMU_GET_CURRENT_EL_PROC_PROC QEMU_get_current_el;
-} QFLEX_API_Interface_Hooks_t;
-
-void QFLEX_API_get_Interface_Hooks(QFLEX_API_Interface_Hooks_t* hooks);
-void QFLEX_API_set_Interface_Hooks(const QFLEX_API_Interface_Hooks_t* hooks);
 
 
-void QEMU_API_get_Interface_Hooks(FLEXUS_SIM_DYNLIB_CALLBACK_t *hooks);
-void QEMU_API_set_Interface_Hooks(const FLEXUS_SIM_DYNLIB_CALLBACK_t *hooks);
+void QFLEX_API_get_Interface_Hooks(QFLEX_TO_QEMU_API_t* hooks);
+void QFLEX_API_set_Interface_Hooks(const QFLEX_TO_QEMU_API_t* hooks);
+
+
+void QEMU_API_get_Interface_Hooks(QEMU_TO_QFLEX_CALLBACKS_t *hooks);
+void QEMU_API_set_Interface_Hooks(const QEMU_TO_QFLEX_CALLBACKS_t *hooks);
 
 #endif
