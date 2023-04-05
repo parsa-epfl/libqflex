@@ -43,7 +43,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 #include "flexus_proxy.h"
-#include "api.h"
+#include "qflex-api.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -55,8 +55,6 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_TO_QEMU_API_t* hooks) {
   hooks->QEMU_write_register = QEMU_write_register;
   hooks->QEMU_read_sp_el = QEMU_read_sp_el;
 
-  hooks->QEMU_read_fpcr = QEMU_read_fpcr;
-  hooks->QEMU_read_fpsr = QEMU_read_fpsr;
   hooks->QEMU_has_pending_irq = QEMU_has_pending_irq;
   hooks->QEMU_read_sctlr = QEMU_read_sctlr;
   hooks->QEMU_read_pstate = QEMU_read_pstate;
@@ -82,7 +80,6 @@ void QFLEX_API_get_Interface_Hooks (QFLEX_TO_QEMU_API_t* hooks) {
   hooks->QEMU_mem_op_is_write= QEMU_mem_op_is_write;
   hooks->QEMU_mem_op_is_read= QEMU_mem_op_is_read;
   hooks->QEMU_instruction_handle_interrupt = QEMU_instruction_handle_interrupt;
-  hooks->QEMU_get_pending_exception = QEMU_get_pending_exception;
   hooks->QEMU_get_object_by_name = QEMU_get_object_by_name;
   hooks->QEMU_is_in_simulation = QEMU_is_in_simulation;
   hooks->QEMU_toggle_simulation = QEMU_toggle_simulation;

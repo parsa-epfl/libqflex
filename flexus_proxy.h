@@ -44,7 +44,7 @@
 //  DO-NOT-REMOVE end-copyright-block
 #ifndef __LIBQEMUFLEX_FLEXUS_PROXY_HPP__
 #define __LIBQEMUFLEX_FLEXUS_PROXY_HPP__
-#include "api.h"
+#include "qflex-api.h"
 
 bool flexus_dynlib_load( const char* path );
 bool flexus_dynlib_unload( void );

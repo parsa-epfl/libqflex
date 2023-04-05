@@ -46,16 +46,18 @@
 extern "C" {
 #endif
 
-#include "qemu/osdep.h"            // Added for flexus because in the new version of QEMU qmp-commands.h uses type error that it doesnt call itself . osdep calls it for qmp-commands.h
-#include "cpu.h"
-#include "qom/cpu.h"
+#include "qemu/osdep.h"
 #include "qemu/config-file.h"
+#include "hw/core/cpu.h"
 #include "sysemu/cpus.h"
-#include "qmp-commands.h"
-#include "include/exec/exec-all.h"
-#include "api.h"
+#include "qemu/main-loop.h"
+#include "qapi/error.h"
+#include "qapi/qapi-commands-control.h"
+#include "hw/boards.h"
 
-#include "target/arm/cpu.h"
+#include "qflex-api.h"
+#include "qflex/qflex-arch.h"
+#include "qflex/qflex.h"
 
 static int64_t cyclesLeft = -1;
 static bool timing;
@@ -66,24 +68,22 @@ static bool qemu_objects_initialized;
 #ifdef CONFIG_QUANTUM
 extern uint64_t quantum_value;
 #endif
-extern int smp_cpus;
-extern int smp_sockets;
 
 static int flexus_is_simulating;
 
-uint64_t QEMU_read_unhashed_sysreg(conf_object_t *c, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm) {
-    CPUState *cs = qemu_get_cpu(((CPUState*)c->object)->cpu_index);
-    return QFLEX_GET_ARCH(sysreg)(CPUState *cs, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
+uint64_t QEMU_read_unhashed_sysreg(conf_object_t *cpu, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm) {
+    CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
+    return QFLEX_GET_ARCH(sysreg)(cs, op0, op1, op2, crn, crm);
 }
 
 void QEMU_dump_state(conf_object_t* cpu, char** buf_ptr) {
-    CPUState *cs = qemu_get_cpu(((CPUState*)c->object)->cpu_index);
-    qflex_dump_archstate_log(cs, buf);
+    CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
+    qflex_dump_archstate_log(cs, buf_ptr);
 }
 
-void QEMU_disassemble(conf_object_t* cpu, char **buf_ptr){
-    QFLEX_GET_ARCH(log_inst_buffer)(cs, buf_ptr);
-    CPUState *cs = qemu_get_cpu(((CPUState*)c->object)->cpu_index);
+void QEMU_disassemble(conf_object_t* cpu, uint64_t addr, char **buf_ptr){
+    CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
+    QFLEX_GET_ARCH(log_inst_buffer)(cs, addr, buf_ptr);
 }
 
 int QEMU_clear_exception(void){
@@ -93,45 +93,44 @@ int QEMU_clear_exception(void){
 void QEMU_write_register(conf_object_t *cpu, arm_register_t reg_type, int reg_index, uint64_t value)
 {
   assert(reg_type == kGENERAL);
-  CPUState *cs = qemu_get_cpu(((CPUState*)c->object)->cpu_index);
+  CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
   QFLEX_SET_ARCH(reg)(cs, reg_index, value);
-  assert(QFLEX_GET_ARCH(reg, reg_index) == value);
+  assert(QFLEX_GET_ARCH(reg)(cs, reg_index) == value);
 }
 
 uint64_t QEMU_read_register(conf_object_t *cpu, arm_register_t reg_type, int reg_index) {
-  CPUState *cs = qemu_get_cpu(((CPUState*)c->object)->cpu_index);
-  return QFLEX_GET_ARCH(reg, reg_index);
+  CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
+  return QFLEX_GET_ARCH(reg)(cs, reg_index);
 }
 
 uint32_t QEMU_read_pstate(conf_object_t *cpu) {
-  CPUState *cs = qemu_get_cpu(((CPUState*)c->object)->cpu_index);
-  return QFLEX_GET_ARCH(cs);
+  CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
+  return QFLEX_GET_ARCH(pstate)(cs);
 }
 
 bool QEMU_has_pending_irq(conf_object_t *cpu) {
-  CPUState *cs = qemu_get_cpu(((CPUState*)c->object)->cpu_index);
+  CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
   return QFLEX_GET_ARCH(has_irq)(cs);
 }
 
 uint64_t QEMU_read_sp_el(uint8_t id, conf_object_t *cpu){
-  CPUState *cs = qemu_get_cpu(((CPUState *)c->object)->cpu_index);
+  CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
   return QFLEX_GET_ARCH(sp_el)(cs, id);
 }
 
 bool QEMU_cpu_has_work(conf_object_t *cpu){
-    assert(cpu->type == QEMU_CPUState);
-    return !cpu_is_idle(cpu->object);
+  CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
+  return !cs->halted;
 }
 
 uint64_t QEMU_read_sctlr(uint8_t id, conf_object_t *cpu) {
-    CPUState *cs = qemu_get_cpu(((CPUState *)c->object)->cpu_index);
+    CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
     return QFLEX_GET_ARCH(sctlr)(cs, id);
 }
 
 void QEMU_read_phys_memory(uint8_t *buf, physical_address_t pa, int bytes) {
     assert(0 <= bytes && bytes <= 16);
-    uint64_t phys_addr = gva_to_hva(CPUState * cs, uint64_t addr, DATA_LOAD);
-    buf = (uint8_t *)phys_addr;
+    cpu_physical_memory_read(pa, buf, bytes);
 }
 
 conf_object_t *QEMU_get_cpu_by_index(int index) {
@@ -158,11 +157,11 @@ int QEMU_get_num_sockets(void) {
 }
 
 int QEMU_get_num_cores(void) {
-  return smp_cores;
+  return current_machine->smp.cores;
 }
 
 int QEMU_get_num_threads_per_core(void) {
-  return smp_threads;
+  return current_machine->smp.threads;
 }
 
 // return the id of the socket of the processor
@@ -190,7 +189,7 @@ double QEMU_get_tick_frequency(conf_object_t *cpu){
 }
 
 uint64_t QEMU_get_program_counter(conf_object_t * cpu) {
-    CPUState *cs = qemu_get_cpu(((CPUState *)c->object)->cpu_index);
+    CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
     return QFLEX_GET_ARCH(pc)(cs);
 }
 
@@ -201,8 +200,8 @@ void QEMU_increment_debug_stat(int val) {
 physical_address_t QEMU_logical_to_physical(conf_object_t *cpu, 
 		data_or_instr_t fetch, logical_address_t va) 
 {
-    MMUAccessType access_type = fetch == QEMU_DI_Instruction ? INST_FETCH : DATA_LOAD;
-    CPUState *cs = qemu_get_cpu(((CPUState *)c->object)->cpu_index);
+    int access_type = (fetch == QEMU_DI_Instruction ? INST_FETCH : DATA_LOAD);
+    CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
     return gva_to_hva(cs, va, access_type);
 }
 
@@ -245,17 +244,13 @@ instruction_error_t QEMU_instruction_handle_interrupt(conf_object_t *cpu, pseudo
 	return QEMU_IE_OK;
 }
  
-int QEMU_get_pending_exception(void) {
-    return cpu_state->exception_index;
-} 
-
 conf_object_t * QEMU_get_object_by_name(const char *name) {
 
     if (!qemu_objects_initialized)
         assert(false);
 
     unsigned int i;
-    for(i = 0; i < smp_cpus; i++) {
+    for(i = 0; i < current_machine->smp.cores; i++) {
         if(strcmp(qemu_cpus[i].name, name) == 0){
             return &(qemu_cpus[i]);
         }
@@ -268,8 +263,8 @@ int QEMU_cpu_execute (conf_object_t *cpu, bool count_time) {
   assert(cpu->type == QEMU_CPUState);
 
   int ret = 0;
-  CPUState *cs = qemu_get_cpu(((CPUState *)c->object)->cpu_index);
-  ret = qflex_singletep(cs);
+  CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
+  ret = qflex_singlestep(cs);
   if (count_time) {
       cyclesLeft--;
   }
@@ -299,7 +294,7 @@ uint64_t *QEMU_instruction_counts_OS = NULL;
 
 static void qflex_api_populate_qemu_cpus(void)
 {
-    int ncpus = smp_cpus;
+    int ncpus = current_machine->smp.cores;
     qemu_cpus = malloc(sizeof(conf_object_t)*ncpus);
 
     int i = 0;
@@ -318,7 +313,7 @@ static void qflex_api_populate_qemu_cpus(void)
 }
 
 static void qflex_api_init_counts(void) {
-  int num_cpus = smp_cpus;
+  int num_cpus = current_machine->smp.cores;
   QEMU_instruction_counts= (uint64_t*)malloc(num_cpus*sizeof(uint64_t));
 
   QEMU_instruction_counts_user = (uint64_t*)malloc(num_cpus*sizeof(uint64_t));
