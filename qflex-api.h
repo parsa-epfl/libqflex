@@ -335,9 +335,6 @@ typedef struct exception_t{
 } exception_t;
 
 typedef struct generic_transaction {
-  void *cpu_state;      // (CPUState*) state of the CPU source of the transaction
-  char *real_address;   // largest datatype to smallest to avoid
-  uint64_t bytes;       // unnecessary padding.
   logical_address_t pc; // QEMU pc not updated regularly, need to send pc
   logical_address_t logical_address;
   physical_address_t physical_address;
@@ -667,39 +664,11 @@ void  QEMU_cpu_executeation                                 (int enable);
 void QEMU_flush_tb_cache                                    (void);
 uint64_t QEMU_get_instruction_count                         (int cpu_number, int isUser);
 uint64_t QEMU_get_total_instruction_count                   (void);
-void qflex_api_shutdown                                          (void);
 void QEMU_increment_instruction_count                       (int cpu_number, int isUser);
 void QEMU_dump_state                                        (conf_object_t* cpu, char **buf_ptr);
 bool QEMU_cpu_has_work                                      ( conf_object_t* obj);
 
-int get_info                                                (void *cpu);
-
-uint64_t cpu_read_register                                  ( void *env_ptr, arm_register_t reg_type, int reg_index);
-uint32_t cpu_read_pstate                                    ( void *obj);
-void cpu_read_exception                                     ( void *obj, exception_t* exp);
-uint64_t cpu_get_pending_interrupt                              ( void *obj);
-
-uint64_t cpu_read_hcr_el2                                   ( void* obj);
-
-
-uint64_t cpu_read_sctlr                                    ( uint8_t id, void *obj);
-uint64_t cpu_read_tpidr                                    ( uint8_t id, void *obj);
-uint32_t cpu_read_fpcr                                      ( void *obj);
-uint32_t cpu_read_fpsr                                      ( void *obj);
-uint32_t cpu_read_DCZID_EL0                                 ( void *obj);
-bool cpu_read_AARCH64                                       ( void *obj);
-bool cpu_is_idle                                            ( void *obj);
-uint64_t cpu_read_sp_el                                     ( uint8_t id, void *obj);
-
-void cpu_write_register                                     ( void *env_ptr, arm_register_t reg_type, int reg_index, uint64_t value );
-uint64_t cpu_read_reg                                       (void *cpu, int reg_type, int reg_index);
-physical_address_t mmu_logical_to_physical                  (void *cs, logical_address_t va);
-uint64_t cpu_get_program_counter                            (void *cs);
-//void cpu_set_program_counter                            (void* cs, uint64_t aVal);
-int cpu_proc_num                                            (void *cs);
-int advance_qemu                                            (void* obj);
-
-//conf_object_t* QEMU_get_mmu_state(int cpu_index);
+void qflex_api_shutdown                                          (void);
 
 extern QEMU_TO_QFLEX_CALLBACKS_t qflex_sim_callbacks;
 
