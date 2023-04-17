@@ -98,9 +98,32 @@ void QEMU_write_register(conf_object_t *cpu, arm_register_t reg_type, int reg_in
   assert(QFLEX_GET_ARCH(reg)(cs, reg_index) == value);
 }
 
-uint64_t QEMU_read_register(conf_object_t *cpu, arm_register_t reg_type, int reg_index) {
-  CPUState *cs = qemu_get_cpu(((CPUState*)cpu->object)->cpu_index);
-  return QFLEX_GET_ARCH(reg)(cs, reg_index);
+uint64_t QEMU_read_register(conf_object_t *cpu, arm_register_t reg_type, int reg_index, int el) {
+  CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
+  switch (reg_type) {
+  case kGENERAL:
+    return QFLEX_GET_ARCH(reg)(cs, reg_index);
+  case kFLOATING_POINT:
+    assert(reg_index <= 31 && reg_index >= 0);
+    return QFLEX_GET_ARCH(vfp_reg)(cs, reg_index);
+  case kMMU_TCR: 
+    return QFLEX_GET_ARCH(tcr)(cs, el);
+  case kMMU_SCTLR:
+    return QFLEX_GET_ARCH(sctlr)(cs, el);
+  case kMMU_TTBR0:
+    return QFLEX_GET_ARCH(ttbr0)(cs, el);
+  case kMMU_TTBR1:
+    return QFLEX_GET_ARCH(ttbr1)(cs, el);
+  case kMMU_ID_AA64MMFR0:
+    return QFLEX_GET_ARCH(isa_reg)(cs, ISAR_ID_AA64MMFR1);
+  default:
+    fprintf(stderr,
+            "ERROR case triggered in readReg. reg_idx: %d, reg_type: %d\n, el: %d",
+            reg_index, reg_type, el);
+    assert(false);
+    break;
+  }
+
 }
 
 uint32_t QEMU_read_pstate(conf_object_t *cpu) {

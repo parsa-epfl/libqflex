@@ -123,7 +123,7 @@ typedef enum {
     kMMU_SCTLR,
     kMMU_TTBR0,
     kMMU_TTBR1,
-    kMMU_ID_AA64MMFR0_EL1,
+    kMMU_ID_AA64MMFR0,
 
 } arm_register_t;
 
@@ -472,7 +472,7 @@ typedef struct arm_memory_transaction {
     //write
 typedef void                (*QEMU_WRITE_REGISTER_PROC)         (conf_object_t *cpu, arm_register_t reg_type, int reg_index, uint64_t value);
     //read
-typedef uint64_t            (*QEMU_READ_REGISTER_PROC)          (conf_object_t *cpu, arm_register_t reg_type, int reg_index);
+typedef uint64_t            (*QEMU_READ_REGISTER_PROC)          (conf_object_t *cpu, arm_register_t reg_type, int reg_index, int el);
 typedef uint64_t            (*QEMU_READ_UNHASHED_SYSREG_PROC)   (conf_object_t *cpu, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
 
 typedef uint32_t            (*QEMU_READ_PSTATE_PROC)             (conf_object_t *cpu);
@@ -630,7 +630,7 @@ void qflex_api_init(bool timing_mode, uint64_t sim_cycles);
 void QEMU_disassemble                                       (conf_object_t* cpu, uint64_t addr, char **buf_ptr);
 int QEMU_clear_exception                                    (void);
 void QEMU_write_register                                    (conf_object_t *cpu, arm_register_t reg_type, int reg_index, uint64_t value);
-uint64_t QEMU_read_register                                 (conf_object_t *cpu, arm_register_t reg_type, int reg_index);
+uint64_t QEMU_read_register                                 (conf_object_t *cpu, arm_register_t reg_type, int reg_index, int el);
 uint64_t QEMU_read_unhashed_sysreg                          (conf_object_t *cpu, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crm, uint8_t crn);
 uint64_t QEMU_read_sctlr                                    (uint8_t id, conf_object_t *cpu);
 bool QEMU_has_pending_irq                                   (conf_object_t *cpu);
