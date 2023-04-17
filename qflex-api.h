@@ -201,6 +201,10 @@ typedef enum {
   QEMU_IndirectCall_Branch = 5,
   QEMU_Return_Branch = 6,
   QEMU_Last_Branch_Type = 7,
+  // (ISB) Instruction Synchronization Barrier flushes the pipeline in the processor, so that all
+  // instructions following the ISB are fetched from cache or memory
+  // (SB) Speculation Barrier is a barrier that controls speculation
+  QEMU_Barrier_Branch = 8,
   QEMU_BRANCH_TYPE_COUNT
 } branch_type_t;
 
