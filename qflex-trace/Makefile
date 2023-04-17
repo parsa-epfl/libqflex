@@ -28,13 +28,17 @@ CFLAGS += -I../
 
 all: $(SONAMES)
 
-qflex-trace-decoder.o: qflex-trace-decoder.c 
+qflex-trace-decoder-branch.o: qflex-trace-decoder-branch.c 
+	$(CC) $(CFLAGS) -DCONFIG_QFLEX -DPLUGIN -c -o $@ $< 
+
+
+qflex-trace-decoder-mem.o: qflex-trace-decoder-mem.c 
 	$(CC) $(CFLAGS) -DCONFIG_QFLEX -DPLUGIN -c -o $@ $< 
 
 qflex-trace.o: qflex-trace.c
 	$(CC) $(CFLAGS) -DCONFIG_QFLEX -DPLUGIN -c -o $@ $< 
 
-libqflex-trace.so: qflex-trace.o qflex-trace-decoder.o
+libqflex-trace.so: qflex-trace.o qflex-trace-decoder-mem.o qflex-trace-decoder-branch.o
 	$(CC) -shared -DCONFIG_QFLEX -DPLUGIN -Wl,-soname,$@ -o $@ $^ $(LDLIBS) 
 
 %.o: %.c

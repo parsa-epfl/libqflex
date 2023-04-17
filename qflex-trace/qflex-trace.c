@@ -29,30 +29,68 @@ static QEMU_TO_QFLEX_CALLBACKS_t *qflex_callbacks = NULL;
 typedef struct {
     uint64_t vaddr_pc;
     uint64_t haddr_pc;
+    uint32_t insn;
+    int byte_size;
+    bool is_user;
     bool has_mem;
-    TraceParams params;
+    MemTraceParams meta_mem;
+    bool has_br;
+    BranchTraceParams meta_br;
 } InsnData;
+
+static void mem_callback(InsnData *meta, unsigned int vcpu_index, bool is_store,
+                         bool is_io, uint64_t haddr, uint64_t vaddr) {
+    memory_transaction_t mem_trans;
+    mem_trans.s.pc = meta->vaddr_pc;
+    mem_trans.s.logical_address = vaddr;
+    mem_trans.s.physical_address = haddr;
+    mem_trans.s.type = is_store ? QEMU_Trans_Store : QEMU_Trans_Load;
+    mem_trans.s.size = meta->meta_mem.size;
+    mem_trans.s.atomic = meta->meta_mem.is_atomic;
+    mem_trans.arm_specific.user = meta->is_user;
+    mem_trans.io = is_io;
+    qflex_callbacks->trace_mem(vcpu_index, &mem_trans);
+}
+
+static void insn_callback(InsnData *meta, unsigned int vcpu_index) 
+{
+    memory_transaction_t mem_trans;
+    mem_trans.s.pc = meta->vaddr_pc;
+    mem_trans.s.logical_address = meta->vaddr_pc;
+    mem_trans.s.physical_address = meta->haddr_pc; // TODO: This should be target address, not current pc addr
+    mem_trans.s.type = QEMU_Trans_Instr_Fetch;
+    mem_trans.s.size = meta->byte_size;
+    mem_trans.s.branch_type = meta->has_br ? meta->meta_br.branch_type : QEMU_Non_Branch;
+    mem_trans.s.annul = 0; // Deprecated?
+    mem_trans.arm_specific.user = meta->is_user;
+    qflex_callbacks->trace_mem(vcpu_index, &mem_trans);
+}
 
 static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
                             uint64_t vaddr, void *userdata)
 {
+    InsnData *insn = ((InsnData *) userdata);
     struct qemu_plugin_hwaddr *hwaddr;
-    hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
-    if (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr)) {
-        // We still trace io memory accesses?
-        // return;
+    bool is_io = false;
+    bool is_store = qemu_plugin_mem_is_store(info);
+
+    g_assert(insn->has_mem);
+    if (is_store) {
+        g_assert(insn->meta_mem.is_store);
+    } else {
+        g_assert(insn->meta_mem.is_load);
     }
+
+    hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
+    is_io = hwaddr && qemu_plugin_hwaddr_is_io(hwaddr);
     uint64_t haddr = qemu_plugin_hwaddr_phys_addr(hwaddr);
-    printf("%lx", haddr);
+    mem_callback(insn, vcpu_index, is_store, is_io, haddr, vaddr);
 }
 
 static void vcpu_insn_exec(unsigned int vcpu_index, void *userdata)
 {
     InsnData *insn = ((InsnData *) userdata);
-    uint64_t haddr_pc = insn->haddr_pc;
-    uint64_t vaddr_pc = insn->vaddr_pc;
-    qflex_callbacks.trace_mem(vcpu_index, );
-    printf("%lx%lx", haddr_pc, vaddr_pc);
+    insn_callback(insn, vcpu_index);
 }
 
 static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
@@ -78,8 +116,11 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
             data = g_new0(InsnData, 1);
             data->haddr_pc = haddr_pc;
             data->vaddr_pc = vaddr_pc;
-            data->has_mem =
-                aarch64_insn_get_params(&data->params, *(uint32_t *)haddr_pc);
+            data->insn = *(uint32_t *)haddr_pc;
+            data->is_user = qemu_plugin_is_userland(insn);
+            data->byte_size = qemu_plugin_insn_size(insn);
+            data->has_mem = aarch64_insn_get_params_mem(&data->meta_mem, data->insn);
+            data->has_br = aarch64_insn_get_params_branch(&data->meta_br, data->insn);
             g_hash_table_insert(miss_ht, GUINT_TO_POINTER(haddr_pc),
                                (gpointer) data);
         }
