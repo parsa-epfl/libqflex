@@ -5,49 +5,7 @@
 #include <stdio.h>
 #include "qflex-trace-decoder.h"
 
-/**
- * extract32:
- * @value: the value to extract the bit field from
- * @start: the lowest bit in the bit field (numbered from 0)
- * @length: the length of the bit field
- *
- * Extract from the 32 bit input @value the bit field specified by the
- * @start and @length parameters, and return it. The bit field must
- * lie entirely within the 32 bit word. It is valid to request that
- * all 32 bits are returned (ie @length 32 and @start 0).
- *
- * Returns: the value of the bit field extracted from the input value.
- */
-static inline uint32_t extract32(uint32_t value, int start, int length)
-{
-    assert(start >= 0 && length > 0 && length <= 32 - start);
-    return (value >> start) & (~0U >> (32 - length));
-}
 
-/**
- * sextract64:
- * @value: the value to extract the bit field from
- * @start: the lowest bit in the bit field (numbered from 0)
- * @length: the length of the bit field
- *
- * Extract from the 64 bit input @value the bit field specified by the
- * @start and @length parameters, and return it, sign extended to
- * an int64_t (ie with the most significant bit of the field propagated
- * to all the upper bits of the return value). The bit field must lie
- * entirely within the 64 bit word. It is valid to request that
- * all 64 bits are returned (ie @length 64 and @start 0).
- *
- * Returns: the sign extended value of the bit field extracted from the
- * input value.
- */
-static inline int64_t sextract64(uint64_t value, int start, int length)
-{
-    assert(start >= 0 && length > 0 && length <= 64 - start);
-    /* Note that this implementation relies on right shift of signed
-     * integers being an arithmetic shift.
-     */
-    return ((int64_t)(value << (64 - length - start))) >> (64 - length);
-}
 
 /*
  * LDAPR/STLR (unscaled immediate)
@@ -63,7 +21,7 @@ static inline int64_t sextract64(uint64_t value, int start, int length)
  * opc: 00: STLUR*, 01/10/11: various LDAPUR*
  * size: size of load/store
  */
-static bool disas_ldst_ldapr_stlr(TraceParams *s, uint32_t insn)
+static bool disas_ldst_ldapr_stlr(MemTraceParams *s, uint32_t insn)
 {
     int opc = extract32(insn, 22, 2);
     int size = extract32(insn, 30, 2);
@@ -100,7 +58,7 @@ static bool disas_ldst_ldapr_stlr(TraceParams *s, uint32_t insn)
         //do_gpr_ld(s, cpu_reg(s, rt), clean_addr, mop,
         //          extend, true, rt, iss_sf, true);
     }
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = !is_store,
           .is_store = is_store,
@@ -119,7 +77,7 @@ static bool disas_ldst_ldapr_stlr(TraceParams *s, uint32_t insn)
  * +-----+-------------+-----+---+------+-----+------+------+
 #define LOG2_TAG_GRANULE 4
 #define TAG_GRANULE      (1 << LOG2_TAG_GRANULE)
-static bool disas_ldst_tag(TraceParams *s, uint32_t insn)
+static bool disas_ldst_tag(MemTraceParams *s, uint32_t insn)
 {
     int rt = extract32(insn, 0, 5);
     int rn = extract32(insn, 5, 5);
@@ -290,7 +248,7 @@ static bool disas_ldst_tag(TraceParams *s, uint32_t insn)
  * lane_size = encoded in R, opc
  * transfer width = encoded in opc, S, size
  */
-static bool disas_ldst_single_struct(TraceParams *s, uint32_t insn)
+static bool disas_ldst_single_struct(MemTraceParams *s, uint32_t insn)
 {
     int rm = extract32(insn, 16, 5);
     int size = extract32(insn, 10, 2);
@@ -368,7 +326,7 @@ static bool disas_ldst_single_struct(TraceParams *s, uint32_t insn)
             }
         }
     }
-    *s = (TraceParams) {.size = scale,
+    *s = (MemTraceParams) {.size = scale,
           .is_vector = false,
           .is_load = is_load,
           .is_store = !is_load,
@@ -406,7 +364,7 @@ static bool disas_ldst_single_struct(TraceParams *s, uint32_t insn)
  * Rn = general purpose register containing address
  * imm7 = signed offset (multiple of 4 or 8 depending on size)
  */
-static bool disas_ldst_pair(TraceParams *s, uint32_t insn)
+static bool disas_ldst_pair(MemTraceParams *s, uint32_t insn)
 {
     int index = extract32(insn, 23, 2);
     bool is_vector = extract32(insn, 26, 1);
@@ -465,7 +423,7 @@ static bool disas_ldst_pair(TraceParams *s, uint32_t insn)
         /*
         if (!s->ata) {
             gen_helper_stg_stub(cpu_env, dirty_addr);
-            *s = (TraceParams) {.size = size,
+            *s = (MemTraceParams) {.size = size,
                   .is_vector = false,
                   .is_load = false,
                   .is_store = true,
@@ -479,7 +437,7 @@ static bool disas_ldst_pair(TraceParams *s, uint32_t insn)
         }
         */
     }
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = is_vector,
           .is_load = is_load,
           .is_store = !is_load,
@@ -506,7 +464,7 @@ static bool disas_ldst_pair(TraceParams *s, uint32_t insn)
             //           false, false, 0, false, false);
             // do_gpr_ld(s, tcg_rt2, clean_addr, size + is_signed * MO_SIGN,
             //           false, false, 0, false, false);
-            *s = (TraceParams) {.size = size,
+            *s = (MemTraceParams) {.size = size,
                   .is_vector = is_vector,
                   .is_load = true,
                   .is_store = false,
@@ -537,7 +495,7 @@ static bool disas_ldst_pair(TraceParams *s, uint32_t insn)
  *                   10-> 32 bit signed, 11 -> prefetch
  * opc (vector): 00 -> 32 bit, 01 -> 64 bit, 10 -> 128 bit (11 unallocated)
  */
-static bool disas_ld_lit(TraceParams *s, uint32_t insn)
+static bool disas_ld_lit(MemTraceParams *s, uint32_t insn)
 {
     bool is_vector = extract32(insn, 26, 1);
     int opc = extract32(insn, 30, 2);
@@ -566,7 +524,7 @@ static bool disas_ld_lit(TraceParams *s, uint32_t insn)
         // do_gpr_ld(s, tcg_rt, clean_addr, size + is_signed * MO_SIGN,
         //           false, true, rt, iss_sf, false);
     }
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = is_vector,
           .is_load = true,
           .is_store = false,
@@ -589,7 +547,7 @@ static bool disas_ld_lit(TraceParams *s, uint32_t insn)
  *  o1: 0 -> single register, 1 -> register pair
  *  o0: 1 -> load-acquire/store-release, 0 -> not
  */
-static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
+static bool disas_ldst_excl(MemTraceParams *s, uint32_t insn)
 {
     int rt = extract32(insn, 0, 5);
     int rt2 = extract32(insn, 10, 5);
@@ -602,7 +560,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
     case 0x0: /* STXR */
     case 0x1: /* STLXR */
         // gen_store_exclusive(s, rs, rt, rt2, clean_addr, size, false);
-        *s = (TraceParams) {.size = size,
+        *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = false,
           .is_store = true,
@@ -614,7 +572,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
     case 0x4: /* LDXR */
     case 0x5: /* LDAXR */
         // gen_load_exclusive(s, rt, rt2, clean_addr, size, false);
-        *s = (TraceParams) {.size = size,
+        *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = true,
           .is_store = false,
@@ -631,7 +589,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
         /* TODO: ARMv8.4-LSE SCTLR.nAA */
         // do_gpr_st(s, cpu_reg(s, rt), clean_addr, size | MO_ALIGN, true, rt,
         //           disas_ldst_compute_iss_sf(size, false, 0), is_lasr);
-        *s = (TraceParams) {.size = size,
+        *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = false,
           .is_store = true,
@@ -648,7 +606,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
         /* TODO: ARMv8.4-LSE SCTLR.nAA */
         // do_gpr_ld(s, cpu_reg(s, rt), clean_addr, size | MO_ALIGN, false, true,
         //           rt, disas_ldst_compute_iss_sf(size, false, 0), is_lasr);
-        *s = (TraceParams) {.size = size,
+        *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = true,
           .is_store = false,
@@ -662,7 +620,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
             // gen_store_exclusive(s, rs, rt, rt2, clean_addr, size, true);
             if (size == 2) {
                 // Must access 2x32 bits in single access (64 bits)
-                *s = (TraceParams) {.size = 3,
+                *s = (MemTraceParams) {.size = 3,
                       .is_vector = false,
                       .is_load = true,
                       .is_store = true,
@@ -671,7 +629,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
                       .accesses = 2};
             } else {
                 // Must access 2x64 bits in two access
-                *s = (TraceParams) {.size = size,
+                *s = (MemTraceParams) {.size = size,
                       .is_vector = false,
                       .is_load = true,
                       .is_store = true,
@@ -685,7 +643,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
             && ((rt | rs) & 1) == 0) {
             /* CASP / CASPL */
             // gen_compare_and_swap_pair(s, rs, rt, rn, size | 2);
-            *s = (TraceParams) {.size = size | 2,
+            *s = (MemTraceParams) {.size = size | 2,
                   .is_vector = false,
                   .is_load = true,
                   .is_store = true,
@@ -702,7 +660,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
             // gen_load_exclusive(s, rt, rt2, clean_addr, size, true);
             if (size == 2) {
                 // Must access 2x32 bits in single access (64 bits)
-                *s = (TraceParams) {.size = 3,
+                *s = (MemTraceParams) {.size = 3,
                       .is_vector = false,
                       .is_load = true,
                       .is_store = false,
@@ -711,7 +669,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
                       .accesses = 1};
             } else {
                 // Must access 2x64 bits in two access
-                *s = (TraceParams) {.size = size,
+                *s = (MemTraceParams) {.size = size,
                       .is_vector = false,
                       .is_load = true,
                       .is_store = false,
@@ -725,7 +683,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
             && ((rt | rs) & 1) == 0) {
             /* CASPA / CASPAL */
             // gen_compare_and_swap_pair(s, rs, rt, rn, size | 2);
-            *s = (TraceParams) {.size = size | 2,
+            *s = (MemTraceParams) {.size = size | 2,
                   .is_vector = false,
                   .is_load = true,
                   .is_store = true,
@@ -742,7 +700,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
     case 0xf: /* CASAL */
         if (rt2 == 31) { // Assume dc_isar_feature(aa64_atomics, s) == true
             // gen_compare_and_swap(s, rs, rt, rn, size);
-            *s = (TraceParams) {.size = size,
+            *s = (MemTraceParams) {.size = size,
                   .is_vector = false,
                   .is_load = true,
                   .is_store = true,
@@ -772,7 +730,7 @@ static bool disas_ldst_excl(TraceParams *s, uint32_t insn)
  * W: pre-indexing flag
  * S: sign for imm9.
  */
-static bool disas_ldst_pac(TraceParams *s, uint32_t insn,
+static bool disas_ldst_pac(MemTraceParams *s, uint32_t insn,
                            int size, int rt, bool is_vector)
 {
     if (size != 3 || is_vector) { // Assume `dc_isar_feature(aa64_pauth, s) == true`
@@ -785,7 +743,7 @@ static bool disas_ldst_pac(TraceParams *s, uint32_t insn,
     // do_gpr_ld(s, tcg_rt, clean_addr, size,
     //           /* extend */ false, /* iss_valid */ !is_wback,
     //           /* iss_srt */ rt, /* iss_sf */ true, /* iss_ar */ false);
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = true,
           .is_store = false,
@@ -816,7 +774,7 @@ static bool disas_ldst_pac(TraceParams *s, uint32_t insn,
  * Rn: address register or SP for base
  * Rm: offset register or ZR for offset
  */
-static bool disas_ldst_reg_roffset(TraceParams *s, uint32_t insn,
+static bool disas_ldst_reg_roffset(MemTraceParams *s, uint32_t insn,
                                    int opc,
                                    int size,
                                    int rt,
@@ -866,7 +824,7 @@ static bool disas_ldst_reg_roffset(TraceParams *s, uint32_t insn,
             //           is_extended, true, rt, iss_sf, false);
         }
     }
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = is_vector,
           .is_load = !is_store,
           .is_store = is_store,
@@ -904,7 +862,7 @@ enum {
   ATOMIC_UNKNOWN
 };
 
-static bool disas_ldst_atomic(TraceParams *s, uint32_t insn,
+static bool disas_ldst_atomic(MemTraceParams *s, uint32_t insn,
                               int size, int rt, bool is_vector)
 {
     int rs = extract32(insn, 16, 5);
@@ -962,7 +920,7 @@ static bool disas_ldst_atomic(TraceParams *s, uint32_t insn,
     if (o3_opc == 014) {
         // do_gpr_ld(s, cpu_reg(s, rt), clean_addr, size, false,
         //           true, rt, disas_ldst_compute_iss_sf(size, false, 0), true);
-        *s = (TraceParams) {.size = size,
+        *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = true,
           .is_store = false,
@@ -973,7 +931,7 @@ static bool disas_ldst_atomic(TraceParams *s, uint32_t insn,
     }
 
     // fn(tcg_rt, clean_addr, tcg_rs, get_mem_index(s), mop);
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = false,
           .is_load = true,
           .is_store = true,
@@ -1001,7 +959,7 @@ static bool disas_ldst_atomic(TraceParams *s, uint32_t insn,
  * Rn: base address or SP
  * Rm (post-index only): post-index register (when !31) or size dependent #imm
  */
-static bool disas_ldst_multiple_struct(TraceParams *s, uint32_t insn)
+static bool disas_ldst_multiple_struct(MemTraceParams *s, uint32_t insn)
 {
     int rm = extract32(insn, 16, 5);
     int size = extract32(insn, 10, 2);
@@ -1088,7 +1046,7 @@ static bool disas_ldst_multiple_struct(TraceParams *s, uint32_t insn)
             }
         }
     }
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = true,
           .is_load = !is_store,
           .is_store = is_store,
@@ -1114,7 +1072,7 @@ static bool disas_ldst_multiple_struct(TraceParams *s, uint32_t insn)
  * size: 00 -> 8 bit, 01 -> 16 bit, 10 -> 32 bit, 11 -> 64bit
  * opc: 00 -> store, 01 -> loadu, 10 -> loads 64, 11 -> loads 32
  */
-static bool disas_ldst_reg_imm9(TraceParams *s, uint32_t insn,
+static bool disas_ldst_reg_imm9(MemTraceParams *s, uint32_t insn,
                                 int opc,
                                 int size,
                                 int rt,
@@ -1178,7 +1136,7 @@ static bool disas_ldst_reg_imm9(TraceParams *s, uint32_t insn,
         }
     }
 
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = is_vector,
           .is_load = !is_store,
           .is_store = is_store,
@@ -1205,7 +1163,7 @@ static bool disas_ldst_reg_imm9(TraceParams *s, uint32_t insn,
  * Rn: base address register (inc SP)
  * Rt: target register
  */
-static bool disas_ldst_reg_unsigned_imm(TraceParams *s, uint32_t insn,
+static bool disas_ldst_reg_unsigned_imm(MemTraceParams *s, uint32_t insn,
                                         int opc,
                                         int size,
                                         int rt,
@@ -1250,7 +1208,7 @@ static bool disas_ldst_reg_unsigned_imm(TraceParams *s, uint32_t insn,
         }
     }
 
-    *s = (TraceParams) {.size = size,
+    *s = (MemTraceParams) {.size = size,
           .is_vector = is_vector,
           .is_load = !is_store,
           .is_store = is_store,
@@ -1261,7 +1219,7 @@ static bool disas_ldst_reg_unsigned_imm(TraceParams *s, uint32_t insn,
 }
 
 /* Load/store register (all forms) */
-static bool disas_ldst_reg(TraceParams *s, uint32_t insn)
+static bool disas_ldst_reg(MemTraceParams *s, uint32_t insn)
 {
     int rt = extract32(insn, 0, 5);
     int opc = extract32(insn, 22, 2);
@@ -1293,7 +1251,7 @@ static bool disas_ldst_reg(TraceParams *s, uint32_t insn)
     return false;
 }
 
-static bool disas_ldst(TraceParams *s, uint32_t insn)
+static bool disas_ldst(MemTraceParams *s, uint32_t insn)
 {
     bool has_mem_access = false;
     switch (extract32(insn, 24, 6)) {
@@ -1337,7 +1295,7 @@ static bool disas_ldst(TraceParams *s, uint32_t insn)
     return has_mem_access;
 }
 
-bool aarch64_insn_get_params(TraceParams *s, uint32_t insn)
+bool aarch64_insn_get_params_mem(MemTraceParams *s, uint32_t insn)
 {
 
     switch (extract32(insn, 25, 4)) {
