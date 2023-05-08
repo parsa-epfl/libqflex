@@ -49,7 +49,7 @@
 bool flexus_dynlib_load( const char* path );
 bool flexus_dynlib_unload( void );
 
-typedef void (*QFLEX_INIT)(QFLEX_TO_QEMU_API_t*, QEMU_TO_QFLEX_CALLBACKS_t*,int, const char*);
+typedef void (*QFLEX_INIT)(QFLEX_TO_QEMU_API_t*, QEMU_TO_QFLEX_CALLBACKS_t*,int, const char*, const char*);
 
 extern QFLEX_INIT qflex_init_fn;
 
