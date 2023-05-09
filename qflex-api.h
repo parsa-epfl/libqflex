@@ -62,6 +62,15 @@ typedef int exception_type_t;
  *-------------------------ENUMERATIONS----------------------------
  *---------------------------------------------------------------*/
 
+#ifndef MemoryAccessType
+// See cpu.h to match MMUAccessType
+typedef enum MemoryAccessType {
+    DATA_LOAD  = 0,
+    DATA_STORE = 1,
+    INST_FETCH = 2
+} MemoryAccessType;
+#define MemoryAccessType
+#endif
 
 typedef enum {
      QMP_FLEXUS_PRINTCYCLECOUNT = 0,

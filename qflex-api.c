@@ -220,12 +220,13 @@ void QEMU_increment_debug_stat(int val) {
     debugStats[val]++;
 }
 
+// This is GUEST PA, not HOST PA
 physical_address_t QEMU_logical_to_physical(conf_object_t *cpu, 
 		data_or_instr_t fetch, logical_address_t va) 
 {
     int access_type = (fetch == QEMU_DI_Instruction ? INST_FETCH : DATA_LOAD);
     CPUState *cs = qemu_get_cpu(((CPUState *)cpu->object)->cpu_index);
-    return gva_to_hva(cs, va, access_type);
+    return gva_to_gpa(cs, va, access_type);
 }
 
 //------------------------Should be fairly simple here-------------------------

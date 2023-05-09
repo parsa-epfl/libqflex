@@ -27,8 +27,8 @@ static GMutex hashtable_lock;
 static QEMU_TO_QFLEX_CALLBACKS_t *qflex_callbacks = NULL;
 
 typedef struct {
-    uint64_t vaddr_pc;
-    uint64_t haddr_pc;
+    uint64_t gVA_pc;
+    uint64_t gPA_pc;
     uint32_t insn;
     int byte_size;
     bool is_user;
@@ -41,9 +41,9 @@ typedef struct {
 static void mem_callback(InsnData *meta, unsigned int vcpu_index, bool is_store,
                          bool is_io, uint64_t haddr, uint64_t vaddr) {
     memory_transaction_t mem_trans;
-    mem_trans.s.pc = meta->vaddr_pc;
+    mem_trans.s.pc = meta->gVA_pc;
     mem_trans.s.logical_address = vaddr;
-    mem_trans.s.physical_address = haddr;
+    mem_trans.s.physical_address = qemu_plugin_get_gpaddr(vaddr, is_store ? DATA_STORE : DATA_LOAD);
     mem_trans.s.type = is_store ? QEMU_Trans_Store : QEMU_Trans_Load;
     mem_trans.s.size = meta->meta_mem.size;
     mem_trans.s.atomic = meta->meta_mem.is_atomic;
@@ -55,9 +55,9 @@ static void mem_callback(InsnData *meta, unsigned int vcpu_index, bool is_store,
 static void insn_callback(InsnData *meta, unsigned int vcpu_index) 
 {
     memory_transaction_t mem_trans;
-    mem_trans.s.pc = meta->vaddr_pc;
-    mem_trans.s.logical_address = meta->vaddr_pc;
-    mem_trans.s.physical_address = meta->haddr_pc; // TODO: This should be target address, not current pc addr
+    mem_trans.s.pc = meta->gVA_pc;
+    mem_trans.s.logical_address = meta->gVA_pc;
+    mem_trans.s.physical_address = meta->gPA_pc; // TODO: This should be target address, not current pc addr
     mem_trans.s.type = QEMU_Trans_Instr_Fetch;
     mem_trans.s.size = meta->byte_size;
     mem_trans.s.branch_type = meta->has_br ? meta->meta_br.branch_type : QEMU_Non_Branch;
@@ -102,8 +102,10 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
     n_insns = qemu_plugin_tb_n_insns(tb);
     for (i = 0; i < n_insns; i++) {
         struct qemu_plugin_insn *insn = qemu_plugin_tb_get_insn(tb, i);
-        uint64_t haddr_pc = (uint64_t) qemu_plugin_insn_haddr(insn);
-        uint64_t vaddr_pc = (uint64_t) qemu_plugin_insn_vaddr(insn);
+        uint64_t gVA_pc = (uint64_t) qemu_plugin_insn_vaddr(insn);
+        uint64_t hVA_pc = (uint64_t) qemu_plugin_insn_haddr(insn);
+        uint64_t gPA_pc = qemu_plugin_get_gpaddr(gVA_pc, INST_FETCH);
+        if (gPA_pc )
 
         /*
          * Instructions might get translated multiple times, we do not create
@@ -111,17 +113,17 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
          * entry from the hash table and register it for the callback again.
          */
         g_mutex_lock(&hashtable_lock);
-        data = g_hash_table_lookup(miss_ht, GUINT_TO_POINTER(haddr_pc));
+        data = g_hash_table_lookup(miss_ht, GUINT_TO_POINTER(gPA_pc));
         if (data == NULL) {
             data = g_new0(InsnData, 1);
-            data->haddr_pc = haddr_pc;
-            data->vaddr_pc = vaddr_pc;
-            data->insn = *(uint32_t *)haddr_pc;
+            data->gPA_pc = gPA_pc;
+            data->gVA_pc = gVA_pc;
+            data->insn = *(uint32_t *)hVA_pc;
             data->is_user = qemu_plugin_is_userland(insn);
             data->byte_size = qemu_plugin_insn_size(insn);
             data->has_mem = aarch64_insn_get_params_mem(&data->meta_mem, data->insn);
             data->has_br = aarch64_insn_get_params_branch(&data->meta_br, data->insn);
-            g_hash_table_insert(miss_ht, GUINT_TO_POINTER(haddr_pc),
+            g_hash_table_insert(miss_ht, GUINT_TO_POINTER(hVA_pc),
                                (gpointer) data);
         }
         g_mutex_unlock(&hashtable_lock);
