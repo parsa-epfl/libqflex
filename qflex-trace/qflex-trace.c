@@ -113,7 +113,7 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
          * entry from the hash table and register it for the callback again.
          */
         g_mutex_lock(&hashtable_lock);
-        data = g_hash_table_lookup(miss_ht, GUINT_TO_POINTER(gPA_pc));
+        data = g_hash_table_lookup(miss_ht, GUINT_TO_POINTER(hVA_pc));
         if (data == NULL) {
             data = g_new0(InsnData, 1);
             data->gPA_pc = gPA_pc;
