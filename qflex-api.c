@@ -54,6 +54,7 @@ extern "C" {
 #include "qapi/error.h"
 #include "qapi/qapi-commands-control.h"
 #include "hw/boards.h"
+#include "qemu/option.h"
 
 #include "qflex-api.h"
 #include "qflex/qflex-arch.h"
