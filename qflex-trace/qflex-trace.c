@@ -14,6 +14,7 @@
 #include "qflex-trace-decoder.h"
 
 #define STRTOLL(x) g_ascii_strtoll(x, NULL, 10)
+#define MAX_CPUS 128
 
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
@@ -38,6 +39,8 @@ typedef struct {
     BranchTraceParams meta_br;
 } InsnData;
 
+static memory_transaction_t last_insn_fetch[MAX_CPUS];
+
 static void mem_callback(InsnData *meta, unsigned int vcpu_index, bool is_store,
                          bool is_io, uint64_t haddr, uint64_t vaddr) {
     memory_transaction_t mem_trans;
@@ -56,14 +59,21 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
 {
     memory_transaction_t mem_trans;
     mem_trans.s.pc = meta->gVA_pc;
-    mem_trans.s.logical_address = meta->gVA_pc;
-    mem_trans.s.physical_address = meta->gPA_pc; // TODO: This should be target address, not current pc addr
+    // This is the physical address of the target address, not current pc addr
+    mem_trans.s.logical_address = -1;
+    mem_trans.s.physical_address = -1;
     mem_trans.s.type = QEMU_Trans_Instr_Fetch;
     mem_trans.s.size = meta->byte_size;
     mem_trans.s.branch_type = meta->has_br ? meta->meta_br.branch_type : QEMU_Non_Branch;
     mem_trans.s.annul = 0; // Deprecated?
     mem_trans.arm_specific.user = meta->is_user;
-    qflex_callbacks->trace_mem(vcpu_index, &mem_trans);
+    if (last_insn_fetch[vcpu_index].s.pc != 0) {
+        last_insn_fetch[vcpu_index].s.logical_address = meta->gVA_pc;
+        last_insn_fetch[vcpu_index].s.physical_address = meta->gPA_pc; // curr address is the target of last instruction
+        qflex_callbacks->trace_mem(vcpu_index, &last_insn_fetch[vcpu_index]);
+    }
+
+    last_insn_fetch[vcpu_index] = mem_trans;
 }
 
 static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
@@ -105,7 +115,6 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
         uint64_t gVA_pc = (uint64_t) qemu_plugin_insn_vaddr(insn);
         uint64_t hVA_pc = (uint64_t) qemu_plugin_insn_haddr(insn);
         uint64_t gPA_pc = qemu_plugin_get_gpaddr(gVA_pc, INST_FETCH);
-        if (gPA_pc )
 
         /*
          * Instructions might get translated multiple times, we do not create
@@ -189,6 +198,9 @@ int qemu_plugin_install(qemu_plugin_id_t id, const qemu_info_t *info,
             fprintf(stderr, "option parsing failed: %s\n", opt);
             return -1;
         }
+    }
+    for (int cpu = 0; cpu < MAX_CPUS; cpu++) {
+        last_insn_fetch[cpu].s.pc = 0;
     }
 
     qemu_plugin_qflex_get_callbacks(&qflex_callbacks);
