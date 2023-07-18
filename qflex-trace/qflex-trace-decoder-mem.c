@@ -562,11 +562,11 @@ static bool disas_ldst_excl(MemTraceParams *s, uint32_t insn)
         // gen_store_exclusive(s, rs, rt, rt2, clean_addr, size, false);
         *s = (MemTraceParams) {.size = size,
           .is_vector = false,
-          .is_load = false,
+          .is_load = true,
           .is_store = true,
           .is_signed = false,
           .is_pair = false,
-          .accesses = 1};
+          .accesses = 2};
         return true;
 
     case 0x4: /* LDXR */
@@ -591,11 +591,11 @@ static bool disas_ldst_excl(MemTraceParams *s, uint32_t insn)
         //           disas_ldst_compute_iss_sf(size, false, 0), is_lasr);
         *s = (MemTraceParams) {.size = size,
           .is_vector = false,
-          .is_load = false,
+          .is_load = true,
           .is_store = true,
           .is_signed = false,
           .is_pair = false,
-          .accesses = 1};
+          .accesses = 2};
         return true;
 
     case 0xc: /* LDLAR */
