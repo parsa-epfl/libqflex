@@ -70,7 +70,13 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
     if (last_insn_fetch[vcpu_index].s.pc != 0) {
         last_insn_fetch[vcpu_index].s.logical_address = meta->gVA_pc;
         last_insn_fetch[vcpu_index].s.physical_address = meta->gPA_pc; // curr address is the target of last instruction
-        qflex_callbacks->trace_mem(vcpu_index, &last_insn_fetch[vcpu_index]);
+        if (qemu_plugin_get_gpaddr(meta->gVA_pc, INST_FETCH) != -1) {
+            qflex_callbacks->trace_mem(vcpu_index, &last_insn_fetch[vcpu_index]);
+        } else {
+            g_autoptr(GString) outs = g_string_new("Failed to translate PC addr:");
+            g_string_append_printf(outs, "%016lx", meta->gVA_pc);
+            qemu_plugin_outs(outs->str);
+        }
     }
 
     last_insn_fetch[vcpu_index] = mem_trans;
@@ -115,6 +121,7 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
         uint64_t gVA_pc = (uint64_t) qemu_plugin_insn_vaddr(insn);
         uint64_t hVA_pc = (uint64_t) qemu_plugin_insn_haddr(insn);
         uint64_t gPA_pc = qemu_plugin_get_gpaddr(gVA_pc, INST_FETCH);
+        assert(gPA_pc != -1);
 
         /*
          * Instructions might get translated multiple times, we do not create
