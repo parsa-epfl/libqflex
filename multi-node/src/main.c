@@ -19,8 +19,9 @@ MultiNodeCfg config;
 
 static int init_s2m_receiver(const char* socket_path, int slave_idx) {
     g_autoptr(GString) socket_name = g_string_new("");
-    g_string_append_printf(socket_name, "%s/s2m_%i", socket_path, slave_idx);
+    g_string_append_printf(socket_name, "%s/s2m_%02i", socket_path, slave_idx);
 
+    remove(socket_name->str);
     // Create a socket
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -47,7 +48,7 @@ static int init_s2m_receiver(const char* socket_path, int slave_idx) {
         return 1;
     }
 
-    printf("S[%i]:multinode:Connected to sync server\n", slave_idx);
+    printf("S[%i]:multinode:Spawned socket for sending messages to sync server\n", slave_idx);
 
     config.socket_s2m = sockfd;
     return 0;
@@ -55,7 +56,7 @@ static int init_s2m_receiver(const char* socket_path, int slave_idx) {
 
 static int init_m2s_sender(const char* socket_path, int slave_idx) {
     g_autoptr(GString) socket_name = g_string_new("");
-    g_string_append_printf(socket_name, "%s/m2s_%i", socket_path, slave_idx);
+    g_string_append_printf(socket_name, "%s/m2s_%02i", socket_path, slave_idx);
 
     // Create a socket
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -73,8 +74,8 @@ static int init_m2s_sender(const char* socket_path, int slave_idx) {
     // Connect to the receiver
     int err = 0;
     while ((err = connect(sockfd, (struct sockaddr*)&receiver_addr, sizeof(receiver_addr)))) {
-        switch (err) {
-            case ECONNREFUSED:
+        switch (errno) {
+            case ENOENT:
                 printf("S:[%i]: Connection failed, retrying in 2 seconds", slave_idx);
                 sleep(2);
                 break;
@@ -83,6 +84,8 @@ static int init_m2s_sender(const char* socket_path, int slave_idx) {
                 return 1;
         }
     }
+
+    printf("S[%i]:multinode:Connected to receive sync server messages\n", slave_idx);
 
     config.socket_m2s = sockfd;
     return 0;
@@ -95,6 +98,8 @@ int s2m_send_message(int sockfd, int slave_idx) {
         perror("send");
         return 1;
     }
+
+    printf("S[%i]:multinode:Message sent\n", slave_idx);
 
     return 0;
 }
@@ -146,12 +151,12 @@ int quantum_slave_close(void) {
 }
 
 int main(void) {
-    const char *socket_path = "/tmp/qflex/";
+    const char *socket_path = "/tmp/qflex";
     const int slave_idx = 0;
-    quantum_slave_init(socket_path, slave_idx);
-    m2s_receive_msg(config.socket_s2m, slave_idx);
-    s2m_send_message(config.socket_m2s, slave_idx);
-    quantum_slave_close();
+    if (quantum_slave_init(socket_path, slave_idx)) return 1;
+    if (s2m_send_message(config.socket_m2s, slave_idx)) return 1;
+    if (m2s_receive_msg(config.socket_s2m, slave_idx)) return 1;
+    if (quantum_slave_close()) return 1;
     return 1;
 }
 
