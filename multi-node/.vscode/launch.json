@@ -19,7 +19,7 @@
 					"kind": "bin"
 				}
 			},
-			"args": ["-m", "-f", "/tmp/qflex", "-n", "2", "-b", "10000"],
+			"args": ["-m", "-f", "/tmp/qflex", "-n", "1", "-b", "10000"],
 			"cwd": "${workspaceFolder}"
 		},
 		{
