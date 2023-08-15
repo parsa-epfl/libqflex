@@ -354,6 +354,11 @@ static void qflex_api_init_counts(void) {
   }
 }
 
+static QEMUTimer *exit_timer;
+static void exit_timer_cb(void *opaque) {
+  qmp_quit(NULL);
+}
+
 void qflex_api_init(bool timing_mode, uint64_t sim_cycles) {
   if (qemu_objects_initialized)
       assert(false);
@@ -363,6 +368,11 @@ void qflex_api_init(bool timing_mode, uint64_t sim_cycles) {
 
   qflex_api_init_counts();
   qflex_api_populate_qemu_cpus();
+
+  if (sim_cycles) {
+    exit_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, exit_timer_cb, NULL);
+    timer_mod(exit_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + sim_cycles);
+  }
 
   qemu_objects_initialized = true;
 }
