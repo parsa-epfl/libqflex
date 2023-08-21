@@ -31,6 +31,7 @@ async fn single_slave_listener(socket_path: &String, slave_idx: i32, bitmap: Arc
     
     loop {
         let res = listener.accept().await;
+        println!("M:[{}][{}]:Listener socket accepted", slave_idx, counter);
         if res.is_err() {
             println!("M:[{}]:Listener socket err", slave_idx);
         }
@@ -83,18 +84,20 @@ async fn master_sync_server(socket_path: &String, slaves: i32, budget: usize, bi
     };
     
     loop {
-        {
-            let mut done_slaves = bitmap.lock().unwrap();
-            if *done_slaves == slaves {
-                for slave_idx in 0..slaves {
-                    let s2m_path = format!("{}/s2m_{:0>2}", socket_path, slave_idx);
-                    streams[slave_idx as usize].write(msg).await?;
-                    println!("M:[m]:Iteration {} completed.", counter);
-                    counter += 1;
-                    streams[slave_idx as usize] = UnixStream::connect(&s2m_path).await?;
-                }
-                *done_slaves = 0;
+        let done_slaves = bitmap.lock().unwrap();
+        println!("M:[m]:Checking for slaves in Iteration {}", counter);
+        if *done_slaves == slaves {
+            for slave_idx in 0..slaves {
+                let s2m_path = format!("{}/s2m_{:0>2}", socket_path, slave_idx);
+                streams[slave_idx as usize].write(msg).await?;
+                println!("M:[{}]:Iteration {} completed.", slave_idx, counter);
+                counter += 1;
+                streams[slave_idx as usize] = UnixStream::connect(&s2m_path).await?;
+                println!("M:[m]:Reconnected");
             }
+            println!("M:[m]:Done with Iteration {}", counter);
+            let mut done_slaves2 = bitmap.lock().unwrap();
+            *done_slaves2 = 0;
         }
         task::yield_now().await;
     }
@@ -106,7 +109,7 @@ async fn master_sync_server_spawn(socket_path: &String, slaves: i32, budget: usi
     
     for slave_idx in 0..slaves {
         let path = format!("{}", socket_path);
-        let bitmap = Arc::clone(&bitmap_src);
+        let bitmap = bitmap_src.clone();
         tokio::spawn(async move {
             let ret = single_slave_listener(&path, slave_idx, bitmap).await;
             if ret.is_err() {
@@ -116,7 +119,7 @@ async fn master_sync_server_spawn(socket_path: &String, slaves: i32, budget: usi
     }
     
     let path = format!("{}", socket_path);
-    let bitmap = Arc::clone(&bitmap_src);
+    let bitmap = bitmap_src.clone();
     master_sync_server(&path, slaves, budget, bitmap).await?;
     
     Ok(())

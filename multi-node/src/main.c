@@ -13,6 +13,7 @@ typedef struct MultiNodeCfg {
     int slave_idx;
     int socket_s2m; // Receive messages socket
     int socket_m2s; // Send messages socket
+    char m2s_path[PATH_MAX];
 } MultiNodeCfg;
 
 MultiNodeCfg config;
@@ -88,18 +89,58 @@ static int init_m2s_sender(const char* socket_path, int slave_idx) {
     printf("S[%i]:multinode:Connected to receive sync server messages\n", slave_idx);
 
     config.socket_m2s = sockfd;
+    strcpy(config.m2s_path, socket_name->str);
     return 0;
 }
+
+//*
+static int reconnect_m2s_sender(const char* socket_path_full, int *sockfd, int slave_idx) {
+    // Create a socket
+    *sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (*sockfd == -1) {
+        perror("socket");
+        return 1;
+    }
+
+    // Set up the receiver's address
+    struct sockaddr_un receiver_addr;
+    memset(&receiver_addr, 0, sizeof(receiver_addr));
+    receiver_addr.sun_family = AF_UNIX;
+    strcpy(receiver_addr.sun_path, socket_path_full); // Path to the receiver's socket
+
+    // Connect to the receiver
+    int err = 0;
+    while ((err = connect(*sockfd, (struct sockaddr*)&receiver_addr, sizeof(receiver_addr)))) {
+        switch (errno) {
+            case ENOENT:
+                printf("S:[%i]: Connection failed, retrying in 2 seconds", slave_idx);
+                sleep(1);
+                break;
+            default:
+                perror("S[%i]:multinode:Could not connect to master Sync Server, with errno");
+        }
+    }
+
+    // config.socket_m2s = sockfd;
+    return 0;
+}
+// */
 
 int s2m_send_message(int sockfd, int slave_idx) {
     // Send data
     bool message = true;
-    if (send(sockfd, &message, sizeof(message), 0) == -1) {
+    int bytes = send(sockfd, &message, sizeof(message), 0);
+    if (bytes == -1) {
         perror("send");
+        return 1;
+    } else if (bytes != sizeof(message)) {
+        perror("Couldn't send all the bytes");
         return 1;
     }
 
     printf("S[%i]:multinode:Message sent\n", slave_idx);
+    close(sockfd);
+    reconnect_m2s_sender(config.m2s_path, &config.socket_m2s, slave_idx);
 
     return 0;
 }
@@ -121,8 +162,11 @@ int m2s_receive_msg(int sockfd, int slave_idx) {
     // Receive data
     int bytes_received = recv(sender_sockfd, &budget, sizeof(budget), 0);
     if (bytes_received == -1) {
-        perror("recv");
+        perror("Received no bytess");
         return 1;
+    } else if (bytes_received != sizeof(budget)) {
+        perror("Didn't receive whole budget size");
+        exit(EXIT_FAILURE);
     }
 
     printf("Received: %lu\n", budget);
@@ -153,10 +197,25 @@ int quantum_slave_close(void) {
 int main(void) {
     const char *socket_path = "/tmp/qflex";
     const int slave_idx = 0;
-    if (quantum_slave_init(socket_path, slave_idx)) return 1;
-    if (s2m_send_message(config.socket_m2s, slave_idx)) return 1;
-    if (m2s_receive_msg(config.socket_s2m, slave_idx)) return 1;
-    if (quantum_slave_close()) return 1;
-    return 1;
+    printf("STARTING");
+    if (quantum_slave_init(socket_path, slave_idx)) {
+        printf("INIT");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = 0; i < 30; i++) {
+        if (s2m_send_message(config.socket_m2s, slave_idx)) {
+            printf("Send%i", i);
+            exit(EXIT_FAILURE);
+        }
+        if (m2s_receive_msg(config.socket_s2m, slave_idx)) {
+            printf("Recv%i", i);
+            exit(EXIT_FAILURE);
+        }
+    }
+    if (quantum_slave_close()) {
+        exit(EXIT_FAILURE);
+    }
+    printf("DONE");
+    return 0;
 }
 
