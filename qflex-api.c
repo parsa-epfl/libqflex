@@ -369,7 +369,7 @@ void qflex_api_init(bool timing_mode, uint64_t sim_cycles) {
   qflex_api_init_counts();
   qflex_api_populate_qemu_cpus();
 
-  if (sim_cycles) {
+  if (sim_cycles && qflexState.config.sim_cycles_cpuFirst == -1) {
     exit_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, exit_timer_cb, NULL);
     timer_mod(exit_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + sim_cycles);
   }
