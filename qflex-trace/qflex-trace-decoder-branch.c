@@ -35,7 +35,6 @@ static bool disas_uncond_b_imm(BranchTraceParams *s, uint32_t insn)
  */
 static bool disas_comp_b_imm(BranchTraceParams *s, uint32_t insn)
 {
-
     // reset_btype(s);
 
     // match = gen_disas_label(s);
@@ -44,7 +43,8 @@ static bool disas_comp_b_imm(BranchTraceParams *s, uint32_t insn)
     // gen_goto_tb(s, 0, 4);
     // set_disas_label(s, match);
     // gen_goto_tb(s, 1, diff);
-    s->branch_type = QEMU_Call_Branch;
+    
+    s->branch_type = QEMU_Conditional_Branch;
     return true;
 }
 
@@ -56,6 +56,7 @@ static bool disas_comp_b_imm(BranchTraceParams *s, uint32_t insn)
  */
 static bool disas_test_b_imm(BranchTraceParams *s, uint32_t insn)
 {
+    //printf("disas_test_b_imm\n");
     // reset_btype(s);
 
     // match = gen_disas_label(s);
@@ -76,6 +77,7 @@ static bool disas_test_b_imm(BranchTraceParams *s, uint32_t insn)
  */
 static bool disas_cond_b_imm(BranchTraceParams *s, uint32_t insn)
 {
+    //printf("disas_cond_b_imm\n");
     unsigned int cond;
 
     if ((insn & (1 << 4)) || (insn & (1 << 24))) {
@@ -105,6 +107,7 @@ static bool disas_cond_b_imm(BranchTraceParams *s, uint32_t insn)
 static bool handle_sync(BranchTraceParams *s, uint32_t insn,
                         unsigned int op1, unsigned int op2, unsigned int crm)
 {
+    //printf("handle_sync\n");
     if (op1 != 3) {
         // unallocated_encoding(s);
         return false;
@@ -154,6 +157,7 @@ static bool handle_sync(BranchTraceParams *s, uint32_t insn,
  */
 static bool disas_system(BranchTraceParams *s, uint32_t insn)
 {
+    //printf("disas_system\n");
     unsigned int l, op0, op1, crn, crm, op2, rt;
     l = extract32(insn, 21, 1);
     op0 = extract32(insn, 19, 2);
@@ -196,6 +200,7 @@ static bool disas_system(BranchTraceParams *s, uint32_t insn)
  */
 static bool disas_uncond_b_reg(BranchTraceParams *s, uint32_t insn)
 {
+    //printf("disas_uncond_b_reg\n");
     unsigned int opc, op2, op3, op4;
 
     opc = extract32(insn, 21, 4);
@@ -253,7 +258,7 @@ static bool disas_uncond_b_reg(BranchTraceParams *s, uint32_t insn)
         s->branch_type = QEMU_Return_Branch;
         return true;
 
-    case 5: /* DRPS */
+    case 5: /* DRPS */>
         goto do_unallocated;
         break;
 
@@ -267,6 +272,7 @@ static bool disas_uncond_b_reg(BranchTraceParams *s, uint32_t insn)
 /* Branches, exception generating and system instructions */
 static bool disas_b_exc_sys(BranchTraceParams *s, uint32_t insn)
 {
+    //printf("disas_b_exc_sys\n");
     switch (extract32(insn, 25, 7)) {
     case 0x0a: case 0x0b:
     case 0x4a: case 0x4b: /* Unconditional branch (immediate) */
@@ -306,6 +312,7 @@ static bool disas_b_exc_sys(BranchTraceParams *s, uint32_t insn)
 
 bool aarch64_insn_get_params_branch(BranchTraceParams *s, uint32_t insn)
 {
+    //printf("aarch64_insn_get_params_branch\n");
 switch (extract32(insn, 25, 4)) {
     case 0x0:
         if (!extract32(insn, 31, 1)) {
