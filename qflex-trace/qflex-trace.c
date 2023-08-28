@@ -27,6 +27,10 @@ static GMutex hashtable_lock;
 
 static QEMU_TO_QFLEX_CALLBACKS_t *qflex_callbacks = NULL;
 
+static int userInsnCount[MAX_CPUS];
+static int kernelInsnCount[MAX_CPUS];
+static uint64_t tot_insts = 0;
+
 typedef struct {
     uint64_t gVA_pc;
     uint64_t gPA_pc;
@@ -67,6 +71,21 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
     mem_trans.s.branch_type = meta->has_br ? meta->meta_br.branch_type : QEMU_Non_Branch;
     mem_trans.s.annul = 0; // Deprecated?
     mem_trans.arm_specific.user = meta->is_user;
+    switch (meta->is_user){
+        case true:
+            userInsnCount[vcpu_index]++;
+            break;
+        default:
+            kernelInsnCount[vcpu_index]++;
+            break;
+    }
+    if (tot_insts % 10000000 == 0) {
+        for (int index = 0; index < 16; index++){
+            printf("User/Kernel Ratio[CPU:%d]:\t%16u:\t%f\n", index, 
+            userInsnCount[index] + kernelInsnCount[index], (float) userInsnCount[index]/(userInsnCount[index] + kernelInsnCount[index]) );
+        }
+    }
+
     if (last_insn_fetch[vcpu_index].s.pc != 0) {
         last_insn_fetch[vcpu_index].s.logical_address = meta->gVA_pc;
         last_insn_fetch[vcpu_index].s.physical_address = meta->gPA_pc; // curr address is the target of last instruction
@@ -80,11 +99,17 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
     }
 
     last_insn_fetch[vcpu_index] = mem_trans;
+    tot_insts++;
 }
 
 static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
                             uint64_t vaddr, void *userdata)
 {
+    //Rafael added this. Look into it to understand what it does.
+    /*if !(vcpu_index <= rangeStart && rangeStop) {
+        return;
+    }
+    */
     InsnData *insn = ((InsnData *) userdata);
     struct qemu_plugin_hwaddr *hwaddr;
     bool is_io = false;
