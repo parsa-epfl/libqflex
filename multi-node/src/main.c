@@ -5,10 +5,13 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <glib.h>
+#include <time.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 
+
+#define printf(text...) 
 typedef struct MultiNodeCfg {
     int slave_idx;
     int socket_s2m; // Receive messages socket
@@ -159,6 +162,8 @@ int m2s_receive_msg(int sockfd, int slave_idx) {
         return 1;
     }
 
+    printf("S[%i]:multinode:Accepted connection...\n", slave_idx);
+
     // Receive data
     int bytes_received = recv(sender_sockfd, &budget, sizeof(budget), 0);
     if (bytes_received == -1) {
@@ -195,6 +200,11 @@ int quantum_slave_close(void) {
 }
 
 int main(void) {
+    clock_t start_time, end_time;
+    double time_diff;
+
+    // Record the start time
+
     const char *socket_path = "/tmp/qflex";
     const int slave_idx = 0;
     printf("STARTING");
@@ -202,7 +212,10 @@ int main(void) {
         printf("INIT");
         exit(EXIT_FAILURE);
     }
-    for (int i = 0; i < 30; i++) {
+
+    start_time = clock();
+    const int ITERATIONS = 1000000;
+    for (int i = 0; i < ITERATIONS; i++) {
         if (s2m_send_message(config.socket_m2s, slave_idx)) {
             printf("Send%i", i);
             exit(EXIT_FAILURE);
@@ -212,6 +225,11 @@ int main(void) {
             exit(EXIT_FAILURE);
         }
     }
+    end_time = clock();
+    time_diff = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+
+    double avrg_time = time_diff/ITERATIONS;
+    fprintf(stdout, "avrg_time:%i:%f:%f\n", ITERATIONS, time_diff, avrg_time);
     if (quantum_slave_close()) {
         exit(EXIT_FAILURE);
     }
