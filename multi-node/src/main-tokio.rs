@@ -74,11 +74,10 @@ async fn master_sync_server(socket_path: &String, slaves: i32, budget: usize, bi
         
         streams.push(res.unwrap());
     }
-    
+    let msg_sync: SyncMessageContinue = SyncMessageContinue {
+        budget : budget,
+    };   
     let msg = unsafe {
-        let msg_sync: SyncMessageContinue = SyncMessageContinue {
-            budget : budget,
-        };
         std::slice::from_raw_parts( &msg_sync as *const SyncMessageContinue as *const u8, mem::size_of::<SyncMessageContinue>())
     };
     

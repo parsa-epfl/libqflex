@@ -79,10 +79,10 @@ fn master_sync_server(socket_path: &String, slaves: i32, budget: usize, bitmap: 
         streams.push(res.unwrap());
     }
     
+    let msg_sync: SyncMessageContinue = SyncMessageContinue {
+        budget : budget,
+    };
     let msg = unsafe {
-        let msg_sync: SyncMessageContinue = SyncMessageContinue {
-            budget : budget,
-        };
         std::slice::from_raw_parts( &msg_sync as *const SyncMessageContinue as *const u8, mem::size_of::<SyncMessageContinue>())
     };
     
@@ -159,10 +159,10 @@ fn slave_program(socket_path: &String, slave_idx: i32) -> Result<()> {
     }
     println!("S:[{}]:Connected to master", slave_idx);
     
+    let sync_msg: SyncMessageDone = SyncMessageDone {
+        is_done : true,
+    };
     let msg_done = unsafe {
-        let sync_msg: SyncMessageDone = SyncMessageDone {
-            is_done : true,
-        };
         std::slice::from_raw_parts( &sync_msg as *const SyncMessageDone as *const u8, mem::size_of::<SyncMessageDone>())
     };
    

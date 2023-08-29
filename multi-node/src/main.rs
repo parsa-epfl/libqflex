@@ -74,11 +74,10 @@ async fn master_sync_server(socket_path: &String, slaves: i32, budget: usize, bi
         
         streams.push(res.unwrap());
     }
-    
+    let msg_sync: SyncMessageContinue = SyncMessageContinue {
+        budget : budget,
+    };   
     let msg = unsafe {
-        let msg_sync: SyncMessageContinue = SyncMessageContinue {
-            budget : budget,
-        };
         std::slice::from_raw_parts( &msg_sync as *const SyncMessageContinue as *const u8, mem::size_of::<SyncMessageContinue>())
     };
     
@@ -146,10 +145,10 @@ async fn slave_program(socket_path: &String, slave_idx: i32) -> Result<()> {
     }
     //println!("S:[{}]:Connected to master", slave_idx);
     
+    let sync_msg: SyncMessageDone = SyncMessageDone {
+        is_done : true,
+    };
     let msg_done = unsafe {
-        let sync_msg: SyncMessageDone = SyncMessageDone {
-            is_done : true,
-        };
         std::slice::from_raw_parts( &sync_msg as *const SyncMessageDone as *const u8, mem::size_of::<SyncMessageDone>())
     };
    
@@ -222,6 +221,7 @@ async fn main() -> Result<()> {
     if is_master {
         let total_slaves = arguments.opt_str("n").unwrap().parse().unwrap();
         let budget: usize = arguments.opt_str("b").unwrap().parse().unwrap();
+        println!("Starting Master server with {} budget.", budget);
         master_sync_server_spawn(&socket_path.unwrap(), total_slaves, budget).await?;
     } else {
         let slave_idx =  arguments.opt_str("i").unwrap().parse().unwrap();
