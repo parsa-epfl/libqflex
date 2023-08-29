@@ -10,7 +10,6 @@
 #include <glib.h>
 
 #include <qemu-plugin.h>
-#include "qflex-api.h"
 #include "qflex-trace-decoder.h"
 
 #define STRTOLL(x) g_ascii_strtoll(x, NULL, 10)
@@ -27,8 +26,6 @@ static GHashTable *miss_ht;
 static GMutex hashtable_lock;
 //static GRand *rng;
 
-static QEMU_TO_QFLEX_CALLBACKS_t *qflex_callbacks = NULL;
-
 typedef struct {
     uint64_t gVA_pc;
     uint64_t gPA_pc;
@@ -40,58 +37,6 @@ typedef struct {
     bool has_br;
     BranchTraceParams meta_br;
 } InsnData;
-
-static memory_transaction_t last_insn_fetch[MAX_CPUS];
-
-static void mem_callback(InsnData *meta, unsigned int vcpu_index, bool is_store,
-                         bool is_io, uint64_t haddr, uint64_t vaddr) {
-    memory_transaction_t mem_trans;
-    mem_trans.s.pc = meta->gVA_pc;
-    mem_trans.s.logical_address = vaddr;
-    mem_trans.s.physical_address = qemu_plugin_get_gpaddr(vaddr, is_store ? DATA_STORE : DATA_LOAD);
-    mem_trans.s.type = is_store ? QEMU_Trans_Store : QEMU_Trans_Load;
-    mem_trans.s.size = meta->meta_mem.size;
-    mem_trans.s.atomic = meta->meta_mem.is_atomic;
-    mem_trans.arm_specific.user = meta->is_user;
-    mem_trans.io = is_io;
-    qflex_callbacks->trace_mem(vcpu_index, &mem_trans);
-}
-
-static void insn_callback(InsnData *meta, unsigned int vcpu_index) 
-{
-    memory_transaction_t mem_trans;
-    mem_trans.s.pc = meta->gVA_pc;
-    // This is the physical address of the target address, not current pc addr
-    mem_trans.s.logical_address = -1;
-    mem_trans.s.physical_address = -1;
-    mem_trans.s.type = QEMU_Trans_Instr_Fetch;
-    mem_trans.s.size = meta->byte_size;
-    mem_trans.s.branch_type = meta->has_br ? meta->meta_br.branch_type : QEMU_Non_Branch;
-    mem_trans.s.annul = 0; // Deprecated?
-    mem_trans.s.opcode = meta->insn;
-    mem_trans.io = false;
-    mem_trans.arm_specific.user = meta->is_user;
-    if (last_insn_fetch[vcpu_index].s.pc != 0) {
-        last_insn_fetch[vcpu_index].s.logical_address = meta->gVA_pc;
-        last_insn_fetch[vcpu_index].s.physical_address = meta->gPA_pc; // curr address is the target of last instruction
-        if (qemu_plugin_get_gpaddr(meta->gVA_pc, INST_FETCH) != -1) {
-            // printf("PC: %016lx, type:%i, opcode: %x\n", last_insn_fetch[vcpu_index].s.pc, last_insn_fetch[vcpu_index].s.branch_type, last_insn_fetch[vcpu_index].s.opcode);
-            qflex_callbacks->trace_mem(vcpu_index, &last_insn_fetch[vcpu_index]);
-        } else {
-            g_autoptr(GString) outs = g_string_new("Failed to translate PC addr:");
-            g_string_append_printf(outs, "%016lx", meta->gVA_pc);
-            qemu_plugin_outs(outs->str);
-        }
-    } else {
-        qemu_plugin_outs("Not sending instruction, detected PC 0\n");
-    }
-
-    last_insn_fetch[vcpu_index] = mem_trans;
-    instruction_count++;
-    if (instruction_count%1000000 == 0){
-        printf("[Instruction Count] : %d Million Instructions\n", instruction_count/1000000);
-    }
-}
 
 static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
                             uint64_t vaddr, void *userdata)
@@ -111,13 +56,11 @@ static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
     hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
     is_io = hwaddr && qemu_plugin_hwaddr_is_io(hwaddr);
     uint64_t haddr = qemu_plugin_hwaddr_phys_addr(hwaddr);
-    mem_callback(insn, vcpu_index, is_store, is_io, haddr, vaddr);
 }
 
 static void vcpu_insn_exec(unsigned int vcpu_index, void *userdata)
 {
     InsnData *insn = ((InsnData *) userdata);
-    insn_callback(insn, vcpu_index);
 }
 
 static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
@@ -131,7 +74,7 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
         struct qemu_plugin_insn *insn = qemu_plugin_tb_get_insn(tb, i);
         uint64_t gVA_pc = (uint64_t) qemu_plugin_insn_vaddr(insn);
         uint64_t hVA_pc = (uint64_t) qemu_plugin_insn_haddr(insn);
-        uint64_t gPA_pc = qemu_plugin_get_gpaddr(gVA_pc, INST_FETCH);
+        uint64_t gPA_pc = qemu_plugin_get_gpaddr(gVA_pc, 2);
         assert(gPA_pc != -1);
 
         /*
@@ -218,11 +161,7 @@ int qemu_plugin_install(qemu_plugin_id_t id, const qemu_info_t *info,
             return -1;
         }
     }
-    for (int cpu = 0; cpu < MAX_CPUS; cpu++) {
-        last_insn_fetch[cpu].s.pc = 0;
-    }
 
-    qemu_plugin_qflex_get_callbacks(&qflex_callbacks);
     // Insert callback on translation block generation
     qemu_plugin_register_vcpu_tb_trans_cb(id, vcpu_tb_trans);
     // Insert callback on program exit

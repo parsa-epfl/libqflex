@@ -321,13 +321,14 @@ typedef enum {
  *---------------------------------------------------------------*/
 
 typedef struct conf_object {
-    char *name;
+  char *name;
 	void *object; // pointer to the struct in question
 	enum { // what kind of QEMU struct does it represent
 		QEMU_CPUState, // add new types as necessary
 		QEMU_NetworkDevice,
-        QEMU_MMUObject,
-        QEMU_DisasContext,
+    QEMU_MMUObject,
+    QEMU_DisasContext,
+    QEMU_DummyCPUState
 	} type;
 }conf_object_t;
 typedef conf_object_t processor_t;
@@ -347,6 +348,7 @@ typedef struct generic_transaction {
   logical_address_t pc; // QEMU pc not updated regularly, need to send pc
   logical_address_t logical_address;
   physical_address_t physical_address;
+  uint32_t opcode;
   unsigned size;
   mem_op_type_t type;
   ini_type_t ini_type;

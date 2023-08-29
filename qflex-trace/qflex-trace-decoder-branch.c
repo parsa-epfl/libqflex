@@ -258,7 +258,7 @@ static bool disas_uncond_b_reg(BranchTraceParams *s, uint32_t insn)
         s->branch_type = QEMU_Return_Branch;
         return true;
 
-    case 5: /* DRPS */>
+    case 5: /* DRPS */
         goto do_unallocated;
         break;
 

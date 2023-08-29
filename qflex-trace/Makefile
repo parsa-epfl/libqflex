@@ -12,7 +12,7 @@ include $(BUILD_DIR)/config-host.mak
 
 VPATH += $(SRC_PATH)/contrib/plugins
 
-NAMES += qflex-trace
+NAMES += qflex-trace qflex-trace-nosim
 
 SONAMES := $(addsuffix .so,$(addprefix lib,$(NAMES)))
 
@@ -39,6 +39,12 @@ qflex-trace.o: qflex-trace.c
 	$(CC) $(CFLAGS) -DCONFIG_QFLEX -DPLUGIN -c -o $@ $< 
 
 libqflex-trace.so: qflex-trace.o qflex-trace-decoder-mem.o qflex-trace-decoder-branch.o
+	$(CC) -shared -DCONFIG_QFLEX -DPLUGIN -Wl,-soname,$@ -o $@ $^ $(LDLIBS) 
+
+qflex-trace-nosim.o: qflex-trace-nosim.c
+	$(CC) $(CFLAGS) -DCONFIG_QFLEX -DPLUGIN -c -o $@ $< 
+
+libqflex-trace-nosim.so: qflex-trace-nosim.o qflex-trace-decoder-mem.o qflex-trace-decoder-branch.o
 	$(CC) -shared -DCONFIG_QFLEX -DPLUGIN -Wl,-soname,$@ -o $@ $^ $(LDLIBS) 
 
 %.o: %.c
