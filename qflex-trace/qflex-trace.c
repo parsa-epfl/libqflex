@@ -29,6 +29,9 @@ static GMutex hashtable_lock;
 
 static QEMU_TO_QFLEX_CALLBACKS_t *qflex_callbacks = NULL;
 
+static int cpuFirst = 0;
+static int cpuLast = MAX_CPUS;
+
 typedef struct {
     uint64_t gVA_pc;
     uint64_t gPA_pc;
@@ -96,6 +99,8 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
 static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
                             uint64_t vaddr, void *userdata)
 {
+    if (!(cpuFirst <= vcpu_index && vcpu_index <= cpuLast)) return;
+ 
     InsnData *insn = ((InsnData *) userdata);
     struct qemu_plugin_hwaddr *hwaddr;
     bool is_io = false;
@@ -116,6 +121,8 @@ static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
 
 static void vcpu_insn_exec(unsigned int vcpu_index, void *userdata)
 {
+    if (!(cpuFirst <= vcpu_index && vcpu_index <= cpuLast)) return;
+ 
     InsnData *insn = ((InsnData *) userdata);
     insn_callback(insn, vcpu_index);
 }
@@ -202,6 +209,10 @@ int qemu_plugin_install(qemu_plugin_id_t id, const qemu_info_t *info,
                 fprintf(stderr, "boolean argument parsing failed: %s\n", opt);
                 return -1;
             }
+        } else if (g_strcmp0(tokens[0], "cpuFirst") == 0) {
+            cpuFirst = STRTOLL(tokens[1]);
+        } else if (g_strcmp0(tokens[0], "cpuLast") == 0) {
+            cpuLast = STRTOLL(tokens[1]);
         } else if (g_strcmp0(tokens[0], "op_type") == 0) {
             if (g_strcmp0(tokens[1], "op1") == 0) {
                 op = OP_1;
