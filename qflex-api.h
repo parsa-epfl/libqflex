@@ -331,8 +331,6 @@ typedef struct conf_object {
     QEMU_DummyCPUState
 	} type;
 }conf_object_t;
-typedef conf_object_t processor_t;
-typedef conf_object_t mmu_api_obj_t;
 
 typedef struct exception_t{
     uint32_t syndrome; /* AArch64 format syndrome register */
