@@ -25,6 +25,8 @@ CFLAGS += $(if $(CONFIG_DEBUG_TCG), -ggdb -O0)
 CFLAGS += -I$(SRC_PATH)/include/qemu
 CFLAGS += -I$(SRC_PATH)/include
 CFLAGS += -I../
+CFLAGS += $(shell pkg-config --cflags glib-2.0)
+LDLIBS += $(shell pkg-config --libs glib-2.0)
 
 all: $(SONAMES)
 
