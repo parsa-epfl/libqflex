@@ -17,8 +17,6 @@
 
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
-static int instruction_count = 0;
-
 static enum qemu_plugin_mem_rw rw = QEMU_PLUGIN_MEM_RW;
 
 static GHashTable *miss_ht;
@@ -45,8 +43,8 @@ static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
                             uint64_t vaddr, void *userdata)
 {
     InsnData *insn = ((InsnData *) userdata);
-    struct qemu_plugin_hwaddr *hwaddr;
-    bool is_io = false;
+    // struct qemu_plugin_hwaddr *hwaddr;
+    // bool is_io = false;
     bool is_store = qemu_plugin_mem_is_store(info);
 
     g_assert(insn->has_mem);
@@ -56,9 +54,9 @@ static void vcpu_mem_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info,
         g_assert(insn->meta_mem.is_load);
     }
 
-    hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
-    is_io = hwaddr && qemu_plugin_hwaddr_is_io(hwaddr);
-    uint64_t haddr = qemu_plugin_hwaddr_phys_addr(hwaddr);
+    // hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
+    // is_io = hwaddr && qemu_plugin_hwaddr_is_io(hwaddr);
+    // uint64_t haddr = qemu_plugin_hwaddr_phys_addr(hwaddr);
 }
 
 static void vcpu_insn_exec(unsigned int vcpu_index, void *userdata)

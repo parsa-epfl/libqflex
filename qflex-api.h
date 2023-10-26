@@ -343,8 +343,9 @@ typedef struct exception_t{
 } exception_t;
 
 typedef struct generic_transaction {
-  logical_address_t pc; // QEMU pc not updated regularly, need to send pc
+  logical_address_t pc;
   logical_address_t logical_address;
+  logical_address_t target_address;
   physical_address_t physical_address;
   uint32_t opcode;
   unsigned size;

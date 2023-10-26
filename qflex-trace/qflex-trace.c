@@ -64,9 +64,8 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
 {
     memory_transaction_t mem_trans;
     mem_trans.s.pc = meta->gVA_pc;
-    // This is the physical address of the target address, not current pc addr
-    mem_trans.s.logical_address = -1;
-    mem_trans.s.physical_address = -1;
+    mem_trans.s.physical_address = meta->gPA_pc;
+    mem_trans.s.target_address = -1;
     mem_trans.s.type = QEMU_Trans_Instr_Fetch;
     mem_trans.s.size = meta->byte_size;
     mem_trans.s.branch_type = meta->has_br ? meta->meta_br.branch_type : QEMU_Non_Branch;
@@ -75,8 +74,7 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
     mem_trans.io = false;
     mem_trans.arm_specific.user = meta->is_user;
     if (last_insn_fetch[vcpu_index].s.pc != 0) {
-        last_insn_fetch[vcpu_index].s.logical_address = meta->gVA_pc;
-        last_insn_fetch[vcpu_index].s.physical_address = meta->gPA_pc; // curr address is the target of last instruction
+        last_insn_fetch[vcpu_index].s.target_address = meta->gVA_pc;
         if (qemu_plugin_get_gpaddr(meta->gVA_pc, INST_FETCH) != -1) {
             // printf("PC: %016lx, type:%i, opcode: %x\n", last_insn_fetch[vcpu_index].s.pc, last_insn_fetch[vcpu_index].s.branch_type, last_insn_fetch[vcpu_index].s.opcode);
             qflex_callbacks->trace_mem(vcpu_index, &last_insn_fetch[vcpu_index]);
@@ -152,7 +150,7 @@ static void vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
             data = g_new0(InsnData, 1);
             data->gPA_pc = gPA_pc;
             data->gVA_pc = gVA_pc;
-            data->insn = *(uint32_t *)hVA_pc;
+            data->insn = *(uint32_t *) hVA_pc;
             data->is_user = qemu_plugin_is_userland(insn);
             data->byte_size = qemu_plugin_insn_size(insn);
             data->has_mem = aarch64_insn_get_params_mem(&data->meta_mem, data->insn);
