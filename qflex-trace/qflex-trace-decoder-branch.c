@@ -312,6 +312,7 @@ static bool disas_b_exc_sys(BranchTraceParams *s, uint32_t insn)
 
 bool aarch64_insn_get_params_branch(BranchTraceParams *s, uint32_t insn)
 {
+    s->branch_type = QEMU_Non_Branch;
     //printf("aarch64_insn_get_params_branch\n");
 switch (extract32(insn, 25, 4)) {
     case 0x0:

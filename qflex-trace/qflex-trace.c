@@ -75,8 +75,8 @@ static void insn_callback(InsnData *meta, unsigned int vcpu_index)
     mem_trans.arm_specific.user = meta->is_user;
     if (last_insn_fetch[vcpu_index].s.pc != 0) {
         last_insn_fetch[vcpu_index].s.target_address = meta->gVA_pc;
-        if (qemu_plugin_get_gpaddr(meta->gVA_pc, INST_FETCH) != -1) {
-            // printf("PC: %016lx, type:%i, opcode: %x\n", last_insn_fetch[vcpu_index].s.pc, last_insn_fetch[vcpu_index].s.branch_type, last_insn_fetch[vcpu_index].s.opcode);
+        if (qemu_plugin_get_gpaddr(last_insn_fetch[vcpu_index].s.pc, INST_FETCH) != -1) {
+            // printf("PC: %016lx, PADDR: %016lx, type:%i, opcode: %x\n", last_insn_fetch[vcpu_index].s.pc, paddr, last_insn_fetch[vcpu_index].s.branch_type, last_insn_fetch[vcpu_index].s.opcode);
             qflex_callbacks->trace_mem(vcpu_index, &last_insn_fetch[vcpu_index]);
         } else {
             g_autoptr(GString) outs = g_string_new("Failed to translate PC addr:");
