@@ -55,6 +55,7 @@ extern "C" {
 #include "qapi/qapi-commands-control.h"
 #include "hw/boards.h"
 #include "qemu/option.h"
+#include "migration/snapshot.h"
 
 #include "qflex-api.h"
 #include "qflex/qflex-arch.h"
@@ -354,11 +355,21 @@ static void qflex_api_init_counts(void) {
   }
 }
 
-static QEMUTimer *exit_timer;
-static void exit_timer_cb(void *opaque) {
+static QEMUTimer *exit_trigger;
+static QEMUTimer *exit_func;
+static void exit_trigger_cb(void *opaque) {
+  if (qflexState.config.exit_snap_name) {
+    timer_mod(exit_func, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL_RT));
+  } else {
+    qmp_quit(NULL);
+  }
+}
+static void exit_func_cb(void *opaque) {
+  Error *err = NULL;
+  save_snapshot_external(qflexState.config.exit_snap_name, NULL, false, NULL, -1, &err);
   qmp_quit(NULL);
 }
-
+ 
 void qflex_api_init(bool timing_mode, uint64_t sim_cycles) {
   if (qemu_objects_initialized)
       assert(false);
@@ -370,8 +381,9 @@ void qflex_api_init(bool timing_mode, uint64_t sim_cycles) {
   qflex_api_populate_qemu_cpus();
 
   if (sim_cycles && qflexState.config.sim_cycles_cpuFirst == -1) {
-    exit_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, exit_timer_cb, NULL);
-    timer_mod(exit_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + sim_cycles);
+    exit_trigger = timer_new_ns(QEMU_CLOCK_VIRTUAL, exit_trigger_cb, NULL);
+    timer_mod(exit_trigger, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + sim_cycles);
+    exit_func = timer_new_ns(QEMU_CLOCK_VIRTUAL_RT, exit_func_cb, NULL);
   }
 
   qemu_objects_initialized = true;
