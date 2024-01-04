@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <qemu-plugin.h>
 
 
@@ -5,6 +6,14 @@
 // it was compiled for
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
+
+static qemu_plugin_vcpu_mem_cb_t
+dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void* userdata)
+{}
+
+static qemu_plugin_vcpu_udata_cb_t
+dispatch_instruction(unsigned int vcpu_index, void* userdata)
+{}
 
 /**
  * Get called on every instruction translation
@@ -19,8 +28,18 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
     {
         struct qemu_plugin_insn* instruction = qemu_plugin_tb_get_insn(tb, i);
 
-        qemu_plugin_register_vcpu_mem_cb(instruction, _, QEMU_PLUGIN_CB_NO_REGS, QEMU_PLUGIN_MEM_RW, NULL);
-        qemu_plugin_register_vcpu_insn_exec_cb(instruction, _, QEMU_PLUGIN_CB_NO_REGS ,NULL);
+        qemu_plugin_register_vcpu_mem_cb(
+            instruction, 
+            dispatch_memory_access, 
+            QEMU_PLUGIN_CB_NO_REGS,
+            QEMU_PLUGIN_MEM_RW, 
+            NULL);
+
+        qemu_plugin_register_vcpu_insn_exec_cb(
+            instruction,
+            dispatch_instruction, 
+            QEMU_PLUGIN_CB_NO_REGS ,
+            NULL);
     } 
 }
 
@@ -38,7 +57,7 @@ exit_plugin(qemu_plugin_id_t id, void* p)
 // function to access main memory
 
 QEMU_PLUGIN_EXPORT int 
-qemu_plugin_install(qemu_plugin_id_t id , const qemu_info_t* info, int argc, char **argv)
+qemu_plugin_install(qemu_plugin_id_t id , const qemu_info_t* info, int argc, char** argv)
 {
     // Step 1: Parse arguments
     // Step 2: Register callback
