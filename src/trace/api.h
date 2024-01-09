@@ -1,22 +1,22 @@
+#include <glib.h>
 #include <stdint.h>
 #include <stddef.h>
 
-typedef enum {} branch_type_t;
-typedef enum {} translation_type_t;
+typedef enum { BRANCH } branch_type_t;
+typedef enum { TRANS_L } translation_type_t;
 
 typedef struct 
 {
+    bool is_userland; // Require qemu_plugin_is_userland addition to the qemu-plugin.h api, really needed ??
     size_t target_va_pc;
     size_t target_pa_pc; // Require qemu_plugin_get_gpaddr addition to the qemu-plugin.h api, really needed ??
+    size_t host_pa_pc;
+    GString* disas_str;
 
     uint32_t opcode;
     size_t instruction_bytes_size;
 
-    bool is_userland; // Require qemu_plugin_is_userland addition to the qemu-plugin.h api, really needed ??
-
     translation_type_t type;
-
-
 
 } transaction_state_t;
 
