@@ -9,8 +9,8 @@
 // it was compiled for
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
-static GHashTable* transaction_ptr;
 static GMutex lock;
+static GHashTable* transaction_ptr;
 
 static void
 trans_free(gpointer data)
@@ -83,6 +83,8 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
 
         g_mutex_lock(&lock);
         transaction = g_hash_table_lookup(transaction_ptr, GSIZE_TO_POINTER(host_pa_pc));
+        g_mutex_unlock(&lock);
+
         if (transaction == NULL)
         {
             transaction                         = g_new0(transaction_state_t, 1); 
@@ -92,10 +94,10 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
             transaction->instruction_bytes_size = qemu_plugin_insn_size(instruction);
             transaction->disas_str              = g_string_new(qemu_plugin_insn_disas(instruction));
 
+            g_mutex_lock(&lock);
             g_hash_table_insert(transaction_ptr, GSIZE_TO_POINTER(host_pa_pc), transaction);
+            g_mutex_unlock(&lock);
         }
-
-        g_mutex_unlock(&lock);
 
         qemu_plugin_register_vcpu_mem_cb(
             instruction, 
@@ -117,6 +119,23 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
 static void
 exit_plugin(qemu_plugin_id_t id, void* p)
 {
+    // ─── Logging Hashmap Translation Cache Size ──────────────────────────
+
+    guint hashmap_size = g_hash_table_size(transaction_ptr);
+    gfloat hashmap_M_space = hashmap_size * sizeof(transaction_state_t) / 1e6;
+
+    char* size_logger   = g_strdup_printf("> HASH_MAP_SIZE: %i\n", hashmap_size);
+    char* space_logger  = g_strdup_printf("> HASH_MAP_MBYTES: %f\n", hashmap_M_space);
+    char* struct_size   = g_strdup_printf("> TRANSLATION_BYTES: %li\n", sizeof(transaction_state_t));
+
+    qemu_plugin_outs(struct_size);
+    qemu_plugin_outs(size_logger);
+    qemu_plugin_outs(space_logger);
+    
+    g_free(struct_size);
+    g_free(size_logger);
+    g_free(space_logger);
+
     g_hash_table_destroy(transaction_ptr);
     qemu_plugin_outs("==> TRACE END");
 }
