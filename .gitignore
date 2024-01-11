@@ -1,3 +1,9 @@
+###
+# CUSTOM
+###
+
+build/
+
 # Created by https://www.toptal.com/developers/gitignore/api/c,rust,rust-analyzer,linux,windows,macos,visualstudiocode,intellij,assembler
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,rust,rust-analyzer,linux,windows,macos,visualstudiocode,intellij,assembler
 
