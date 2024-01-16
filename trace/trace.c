@@ -2,7 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <qemu-plugin.h>
-#include "api.h"
+
+#include "trace.h"
 
 
 // Ensure that the plugin run only against the version
@@ -12,6 +13,10 @@ QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 static GMutex lock;
 static GHashTable* transaction_ptr;
 
+/**
+ * Free a translation cache entry from the GHashMap
+ * This is mainly called on plugin destruction
+ */
 static void
 trans_free(gpointer data)
 {
@@ -20,6 +25,16 @@ trans_free(gpointer data)
     g_free(trans);
 }
 
+/**
+ * @brief Dispatches memory access.
+ * @details Called on every translation of memory's accessing instruction.
+ *          This will add the generic translation information to a new structure
+ * 
+ * @param vcpu_index Index of the virtual CPU.
+ * @param info Memory information.
+ * @param vaddr OPage virtual address.
+ * @param userdata Generic translation info.
+ */
 static void
 dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void* userdata)
 {
@@ -43,14 +58,22 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
     mem.is_store = qemu_plugin_mem_is_store(info);
     mem.is_io = (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr)); //? Works only for full system emulation
 
-
+    //TODO call libqflex or FLEXUS
 
 }
 
+/**
+ * @brief Dispatches instruction.
+ * @details Called on every translation of instruction.
+ *          This will add the generic translation information to a new structure
+ *          specifically for instruction that do NOT access memory
+ * 
+ * @param vcpu_index Index of the virtual CPU.
+ * @param userdata Generic translation info.
+ */
 static void
 dispatch_instruction(unsigned int vcpu_index, void* userdata)
 {
-
 
     transaction_state_t* state = (transaction_state_t*) userdata;
     struct instr_transaction_state __attribute__((unused)) instr = {0};
@@ -60,6 +83,8 @@ dispatch_instruction(unsigned int vcpu_index, void* userdata)
     instr.transaction.opcode = state->opcode;
 
     //TODO, maybe ?? instr.branch_type = 
+
+    //TODO call libqflex or FLEXUS
 }
 
 /**
@@ -68,17 +93,17 @@ dispatch_instruction(unsigned int vcpu_index, void* userdata)
 static void 
 dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
 {
-    
+    //? Still not sure what to do about it
     // uint64_t block_start = qemu_plugin_tb_vaddr(tb);
 
     transaction_state_t* transaction;
     size_t nb_instruction = qemu_plugin_tb_n_insns(tb);
 
+    // For each instruction in the translation block (TB)
     for (size_t i = 0; i < nb_instruction; i++)
     {
         struct qemu_plugin_insn* instruction = qemu_plugin_tb_get_insn(tb, i);
         
-
         size_t host_pa_pc = (size_t) qemu_plugin_insn_haddr(instruction);
 
         g_mutex_lock(&lock);
@@ -157,7 +182,7 @@ qemu_plugin_install(qemu_plugin_id_t id , const qemu_info_t* info, int argc, cha
 
     // Register translation callback
     qemu_plugin_register_vcpu_tb_trans_cb(id, dispatch_vcpu_tb_trans);
-    // Regsiter plugin exit mechanism
+    // Register plugin's exit mechanism
     qemu_plugin_register_atexit_cb(id, exit_plugin, NULL);
 
     return 0;
