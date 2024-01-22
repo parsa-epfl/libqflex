@@ -5,7 +5,7 @@
 #
 # Bryan Perdrizat: 
 #		This file is included from the main QEMU (contrib/plugin) Makefile
-#		and is aimed toward building the libqflex static library in
+#		and is aimed toward building the libqflex-PLUGIN static library in
 #		a separated tree. The variable not defined here are therefore defined
 #		from this parent's Makefile
 

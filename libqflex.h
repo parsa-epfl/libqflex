@@ -1,11 +1,13 @@
 #ifndef LIBQFLEX_H
 #define LIBQFLEX_H
 
+// #include "hw/core/cpu.h"
+// #include "qemu/typedefs.h"
 #include "target/arm/cpu.h"
 
 
 enum arm_register_type
-{ 
+{
     GENERAL, // Regs for A64 mode.
     FLOATING_POINT,
 
@@ -28,25 +30,39 @@ enum arm_register_type
  * This is a vCPU wrapper.
  * This wrap the famous CPUARMState from QEMU
  * @link https://gitlab.com/qemu-project/qemu/-/blob/master/target/arm/cpu.h
- * */
-struct vCPU 
+ **/
+typedef struct
 {
     size_t index;
-    CPUARMState* cpu;
-    // Whatever this need at some point
-};
+    CPUState* state;
+    /**
+     * Bryan Perdrizat
+     *      The architectural state of a CPU is only available when
+     *      compiling against a specific target. This is why meson.build add
+     *      libqflex to `arm_ss`. The tradeoff is to access CPU arch. without
+     *      requiring any additional invasive function.
+     **/
+    CPUArchState* arch;
 
-typedef enum isa_regs_t {
+    // -*- Whatever is needed -*-
+} vCPU_t;
+
+typedef enum {
     /**
      * Only type of instruction supported by Flexus to this date
      */
-    ISAR_ID_AA64MMFR1
-} 
+    ID_AA64MMFR1,
+} isa_regs_t;
 
-typedef struct register_kwargs_t
+/**
+ * Structure holding misc informations for accessing register.
+ *
+ */
+typedef struct
 {
-    union 
+    union
     {
+        // Register index to access, ex. r01, r15, x19
         size_t index;
 
         // struct {
@@ -69,30 +85,57 @@ typedef struct register_kwargs_t
         //  * cp==0x13 when the ARMCPRegInfo is registered, for convenience.
         //  */
         //     uint8_t cp;
-        //     uint8_t crn; 
+        //     uint8_t crn;
         //     uint8_t crm;
         //     uint8_t op0;
         //     uint8_t op1;
         //     uint8_t op2;
         // } cp15_regs;
-        
+
+        /**
+         * ISA specific register type if needed.
+         */
         isa_regs_t isa_regs;
     };
-    
-};
+
+} register_kwargs_t;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Handle to access all vCPU structure and informations
+ */
+vCPU_t* libqflex_vcpus;
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 // TRACE Spec'
 // Reading register
-void libqflex_read_register(struct vCPU, enum arm_register, register_kwargs_t*);
-void libqflex_poll_irq();
+
+/**
+ * Read CPU Arch register.
+ * ? Only implemented register can be accessed.
+ *
+ * @param vCPU_t Wrapper of a virtual CPU.
+ * @param arm_register_type An ARM specific register
+ * @param register_kwargs_t A structure holding misc
+ *                          informatio to retrieve a register
+ */
+void libqflex_read_register(
+    vCPU_t*,
+    enum arm_register_type,
+    register_kwargs_t*);
+
+void libqflex_poll_irq(void);
 
 // Reading memory
-void libqflex_resolving_vaddr();
+void libqflex_resolving_vaddr(void);
+
 
 
 /**
  * USED IN FLEXUS
- * 
+ *
  * QEMU_read_unhashed_sysreg
  * QEMU_read_pstate
  * QEMU_has_pending_irq
@@ -112,7 +155,7 @@ void libqflex_resolving_vaddr();
  * QEMU_getCyclesLeft
  * QEMU_quit_simulation
  * QEMU_get_instruction_count
- * 
+ *
  * ! certainely usless
  * QEMU_dump_state
  * QEMU_disassemble
