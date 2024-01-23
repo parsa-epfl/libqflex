@@ -34,6 +34,8 @@ QemuOptsList qemu_libqflex_opts = {
     },
 };
 
+vCPU_t* libqflex_vcpus;
+
 // ─── Local Variable ──────────────────────────────────────────────────────────
 
 static struct {
@@ -70,8 +72,11 @@ libqflex_populate_vcpus(size_t n_vcpu)
         libqflex_vcpus[i].state = qemu_get_cpu(i);
         g_assert(libqflex_vcpus[i].state != NULL);
 
-        libqflex_vcpus[i].arch = cpu_env(libqflex_vcpus[i].state);
-        g_assert(libqflex_vcpus[i].arch != NULL);
+        libqflex_vcpus[i].env = cpu_env(libqflex_vcpus[i].state);
+        g_assert(libqflex_vcpus[i].env != NULL);
+
+        libqflex_vcpus[i].cpu = ARM_CPU(libqflex_vcpus[i].state);
+        g_assert(libqflex_vcpus[i].cpu != NULL);
     }
 
     qemu_log("> [Libqflex] Populated %zu cpu(s)\n", n_vcpu);
@@ -96,7 +101,7 @@ libqflex_init(void)
 
     // ─────────────────────────────────────────────────────────────────────
 
-    qemu_log("> [Libqflex] PC=%llu \n", libqflex_vcpus[0].arch->pc);
+    qemu_log("> [Libqflex] PC=%llu \n", libqflex_vcpus[0].env->pc);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

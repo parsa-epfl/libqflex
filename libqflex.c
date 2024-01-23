@@ -30,7 +30,7 @@ dispatch_isa_register(vCPU_t* cpu_wrapper, isa_regs_t isa)
     switch (isa)
     {
     case ID_AA64MMFR1:
-        return cpu_wrapper->arch->isar.id;
+        return cpu_wrapper->cpu->isar.id_aa64mmfr1;
         break;
 
     default:
@@ -41,10 +41,7 @@ dispatch_isa_register(vCPU_t* cpu_wrapper, isa_regs_t isa)
 // ─────────────────────────────────────────────────────────────────────────────
 
 uint64_t
-libqflex_read_register(
-    vCPU_t* cpu_wrapper,
-    enum arm_register_type reg_type,
-    register_kwargs_t* read_args)
+libqflex_read_register(vCPU_t* cpu_wrapper, enum arm_register_type reg_type, register_kwargs_t* read_args)
 {
 
     size_t idx      = read_args->index;
@@ -55,7 +52,7 @@ libqflex_read_register(
 
     case GENERAL:
         assert_index_in_range(idx, 0, 32);
-        return cpu_wrapper->arch->regs[idx];
+        return cpu_wrapper->env->regs[idx];
 
     /**
      * aa32_vfp_dreg:
@@ -88,25 +85,25 @@ libqflex_read_register(
         * Align the data for use with TCG host vector operations.
         */
         assert_index_in_range(idx, 0, 64);
-        return cpu_wrapper->arch->vfp.zregs[idx].d[0];
+        return cpu_wrapper->env->vfp.zregs[idx].d[0];
 
     case TTBR0:
         assert_index_in_range(idx, 0, 4);
-        return cpu_wrapper->arch->cp15.ttbr0_el[idx];
+        return cpu_wrapper->env->cp15.ttbr0_el[idx];
 
     case TTBR1:
         assert_index_in_range(idx, 0, 4);
-        return cpu_wrapper->arch->cp15.ttbr1_el[idx];
+        return cpu_wrapper->env->cp15.ttbr1_el[idx];
 
     case TCR:
         assert_index_in_range(idx, 0, 4);
-        return cpu_wrapper->arch->cp15.tcr_el[idx];
+        return cpu_wrapper->env->cp15.tcr_el[idx];
 
     case ISA:
         return dispatch_isa_register(cpu_wrapper, isa);
 
     default:
         g_assert_not_reached();
-    }
+    };
 
 }
