@@ -101,7 +101,7 @@ libqflex_init(void)
 
     // ─────────────────────────────────────────────────────────────────────
 
-    qemu_log("> [Libqflex] PC=%llu \n", libqflex_vcpus[0].env->pc);
+    qemu_log("> [Libqflex] PC=%lx \n", libqflex_vcpus[0].env->pc);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
