@@ -1,6 +1,9 @@
 
+arm_ss.add(when: middleware_dep['libqflex'], if_true: files(
+    'libqflex/libqflex-module.c',
+    'libqflex/libqflex.c'
+))
 
-arm_ss.add(when: libqflex, if_true: files(
-        'libqflex-module.c',
-        'libqflex.c'
-    ))
+system_ss.add(when: middleware_dep['savevm-external'], if_true: files(
+    'savevm-external/savevm-external.c',
+))

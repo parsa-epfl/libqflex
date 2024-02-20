@@ -1,11 +1,11 @@
-#include <glib.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <glib.h>
 
 typedef enum { BRANCH } branch_type_t;
 typedef enum { TRANS_L } translation_type_t;
 
-typedef struct 
+typedef struct
 {
     bool is_userland; // Require qemu_plugin_is_userland addition to the qemu-plugin.h api, really needed ??
     size_t target_va_pc;
