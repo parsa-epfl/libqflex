@@ -18,6 +18,7 @@
 #include "hw/boards.h"
 #include "libqflex-module.h"
 #include "libqflex.h"
+#include "plugins/trace/trace.h"
 
 // ─── Required For Options ────────────────────────────────────────────────────
 
@@ -94,6 +95,9 @@ libqflex_init(void)
     qemu_libqflex_state.n_vcpus = current_machine->smp.cpus;
 
     libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
+
+    qemu_plugin_trace_init();
+
 
     // REGISTER HOOKS'n'Stuff
     qemu_libqflex_state.is_initialised = true;

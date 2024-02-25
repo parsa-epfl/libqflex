@@ -1,6 +1,4 @@
-#include <stdint.h>
-#include <stddef.h>
-#include <glib.h>
+#include "qemu/osdep.h"
 
 typedef enum { BRANCH } branch_type_t;
 typedef enum { TRANS_L } translation_type_t;
@@ -40,3 +38,5 @@ struct instr_transaction_state
 // Define a trace callback
 //! Should not use void* but a defined type
 // typedef void (*qflex_trace_cb_t) (void* userdata, void* cb);
+
+void qemu_plugin_trace_init(void);

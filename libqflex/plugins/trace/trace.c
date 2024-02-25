@@ -7,10 +7,9 @@
  *   See the COPYING file in the top-level directory.
  */
 
-#include <stdint.h>
-#include <stdio.h>
+#include "qemu/osdep.h"
+#include "qemu/qemu-plugin.h"
 
-#include <qemu-plugin.h>
 #include "trace.h"
 
 
@@ -178,9 +177,11 @@ exit_plugin(qemu_plugin_id_t id, void* p)
  * Plugin entry. Parse the arguments. Register the call back for each transaction,
  * as well as plugin exit.
  */
-QEMU_PLUGIN_EXPORT int
-qemu_plugin_install(qemu_plugin_id_t id , const qemu_info_t* info, int argc, char** argv)
+void
+qemu_plugin_trace_init(void)
 {
+
+    qemu_plugin_id_t qflex_trace_id = qemu_plugin_register_builtin();
 
     transaction_ptr = g_hash_table_new_full(
         NULL,
@@ -189,9 +190,7 @@ qemu_plugin_install(qemu_plugin_id_t id , const qemu_info_t* info, int argc, cha
         trans_free);
 
     // Register translation callback
-    qemu_plugin_register_vcpu_tb_trans_cb(id, dispatch_vcpu_tb_trans);
+    qemu_plugin_register_vcpu_tb_trans_cb(qflex_trace_id, dispatch_vcpu_tb_trans);
     // Register plugin's exit mechanism
-    qemu_plugin_register_atexit_cb(id, exit_plugin, NULL);
-
-    return 0;
+    qemu_plugin_register_atexit_cb(qflex_trace_id, exit_plugin, NULL);
 }
