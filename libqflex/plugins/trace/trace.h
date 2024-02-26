@@ -1,6 +1,7 @@
 #include "qemu/osdep.h"
+#include "middleware/libqflex/legacy-qflex-api.h"
 
-typedef enum { BRANCH } branch_type_t;
+// typedef enum { BRANCH } branch_type_t;
 typedef enum { TRANS_L } translation_type_t;
 
 typedef struct

@@ -3,15 +3,17 @@
 
 bool
 save_snapshot_external(
-    const char *name,       // Snapshot output name
-    bool overwrite,         // Delete existing snapshot
-    const char *vmstate,
+    const char* snap_name,    // Snapshot output name
+    const char* vm_state,
     bool has_devices,
-    strList *devices,
-    Error **errp);
+    strList* devices,
+    int checkpoint_num,
+    Error** errp);
 
-void save_snapshot_external_mem(void);
-void save_snapshot_external_bdrv(void);
+extern struct libqflex_state_t qemu_libqflex_state;
+
+// void save_snapshot_external_mem(void);
+// void save_snapshot_external_bdrv(void);
 
 void load_snapshot_external(void);
 void load_snapshot_external_mem(void);

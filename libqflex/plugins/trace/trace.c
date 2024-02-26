@@ -10,6 +10,7 @@
 #include "qemu/osdep.h"
 #include "qemu/qemu-plugin.h"
 
+#include "middleware/libqflex/legacy-qflex-api.h"
 #include "trace.h"
 
 

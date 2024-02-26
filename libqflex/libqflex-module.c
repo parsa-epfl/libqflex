@@ -16,13 +16,22 @@
 #include <glib/gmacros.h>
 
 #include "hw/boards.h"
-#include "libqflex-module.h"
 #include "libqflex.h"
+#include "libqflex-module.h"
 #include "plugins/trace/trace.h"
+#include "legacy-qflex-api.h"
 
 // ─── Required For Options ────────────────────────────────────────────────────
 
 #include "qemu/option.h"
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+FLEXUS_API_t flexus_api;
+vCPU_t* libqflex_vcpus;
+typedef void (*FLEXUS_INIT_t)(QEMU_API_t *, FLEXUS_API_t *, int, const char *, const char *, const char *, const char *);
+
 
 // ─── Global Variable ─────────────────────────────────────────────────────────
 
@@ -35,17 +44,15 @@ QemuOptsList qemu_libqflex_opts = {
     },
 };
 
-vCPU_t* libqflex_vcpus;
+
+struct libqflex_state_t qemu_libqflex_state = {
+    .n_vcpus = 0,
+    .is_initialised = false,
+    .is_configured = false,
+};
 
 // ─── Local Variable ──────────────────────────────────────────────────────────
 
-static struct {
-    size_t n_vcpus;
-
-    bool is_initialised;
-    bool is_configured;
-
-} qemu_libqflex_state;
 
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -4,6 +4,14 @@
 
 extern QemuOptsList qemu_libqflex_opts;
 
+struct libqflex_state_t {
+    size_t n_vcpus;
+
+    bool is_initialised;
+    bool is_configured;
+
+};
+
 /**
  * Entry point of libqflex. This is called directly in qemu_init().
  * The function is not self-aware of QEMU' state and -libqflex flags,
