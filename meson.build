@@ -14,5 +14,7 @@ specific_ss.add(when: middleware_dep['libqflex'], if_true: files(
 # Add snapshot related file to the system target to access other snapshot
 # library and block file function/structure
 system_ss.add(when: middleware_dep['savevm-external'], if_true: files(
+    'savevm-external/snapvm-external-module.c',
     'savevm-external/savevm-external.c',
+    'savevm-external/loadvm-external.c',
 ))
