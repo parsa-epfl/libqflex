@@ -1,12 +1,18 @@
 #ifndef SNAPVM_EXT_H
 #define SNAPVM_EXT_H
 
+#include "block/block_int-io.h"
+
+
+
 // ─── Module ──────────────────────────────────────────────────────────────────
 
 
 struct snapvm_external_state {
+    // True if the VM has been started with either -savevm|loadvm-external
     bool is_enabled;
-
+    // True if the VM has loaded an image through -loadvm-external
+    bool has_been_loaded;
 };
 
 extern QemuOptsList qemu_savevm_external_opts;
@@ -14,6 +20,38 @@ extern struct libqflex_state_t qemu_libqflex_state;
 
 extern struct snapvm_external_state qemu_snapvm_ext_state;
 
+typedef struct SnapTransaction
+{
+
+    //Type of save
+    enum {
+        INCREMENT,
+        NEW_ROOT,
+    } mode;
+
+    // Datetime for increment snap
+    char* datetime;
+
+    char const * new_name;
+    // Path for often used directroy and filename
+    struct {
+        // Pointer to the drive block
+        BlockDriverState* bs;
+        char* fullpath;
+        char* dirname;
+        char* basename;
+    } root_bdrv;
+
+    struct {
+        // Pointer to the drive block
+        BlockDriverState* bs;
+        char* fullpath;
+        char* dirname;
+        char* basename;
+    } new_bdrv;
+
+
+} SnapTransaction;
 
 // ─── Common ──────────────────────────────────────────────────────────────────
 
@@ -26,28 +64,23 @@ snapvm_init(
 
 void
 join_datetime(
-    GString* export_path,
-    char const * const filename);
+    char* export_string,
+    char const * const base_string,
+    char* datetime);
 
-void
-create_snapshot_directory(
-    GString* export_path,
-    char const * const base_bdrv_filename,
-    char const * const snap_name,
-    int checkpoint_num);
+// void
+// create_snapshot_directory(
+//     GString* export_path,
+//     char const * const base_bdrv_filename,
+//     char const * const snap_name,
+//     int checkpoint_num);
 
 
 // ─── Save ────────────────────────────────────────────────────────────────────
 
-
-
 bool
 save_snapshot_external(
-    const char* snap_name,    // Snapshot output name
-    const char* vm_state,
-    bool has_devices,
-    strList* devices,
-    int checkpoint_num,
+    SnapTransaction* trans,
     Error** errp);
 
 

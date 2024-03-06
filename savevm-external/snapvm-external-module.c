@@ -1,24 +1,9 @@
-
-
-
-// ─── Required Anyway ─────────────────────────────────────────────────────────
-
 #include "qemu/osdep.h"
 
-// ─── Required For Logging ────────────────────────────────────────────────────
-
-#include <glib/gstdio.h>
 #include "qapi/error.h"
-#include "qemu/log.h"
-
-// ─── Required For CPUs Abstraction ───────────────────────────────────────────
-
-#include "snapvm-external.h"
-
-// ─── Required For Options ────────────────────────────────────────────────────
-
 #include "qemu/option.h"
 
+#include "snapvm-external.h"
 
 
 // ─── Global Variable ─────────────────────────────────────────────────────────
@@ -34,7 +19,8 @@ QemuOptsList qemu_savevm_external_opts = {
 
 
 struct snapvm_external_state qemu_snapvm_ext_state = {
-    .is_enabled = false,
+    .is_enabled         = false,
+    .has_been_loaded    = false,
 };
 
 
@@ -76,16 +62,27 @@ void snapvm_init(QemuOpts* opts,  char const * const loadvm, Error** errp)
 
 /**
  * Append the datetime to a filename (string)
- * Return like -> filename.ext-2024_03_06-1717_34
+ * Return like -> 2024_03_06-1717_34
+ *
+ * RETURN must be freed by the caller
  */
 void
 join_datetime(
-    GString* export_string,
-    char const * const filename)
+    char* export_string,
+    char const * const base_string,
+    char* datetime)
 {
-    g_autoptr(GDateTime) now = g_date_time_new_now_local();
-    g_autofree char* datetime = g_date_time_format(now, "%Y_%m_%d-%H%M_%S");
-    g_string_append_printf(export_string, "%s-%s", filename, datetime);
+    g_autoptr(GString)      new_filename_buf = g_string_new("");
+    g_autoptr(GDateTime)    now              = g_date_time_new_now_local();
+
+    //! Weird but okay
+    datetime = g_date_time_format(now, "%Y_%m_%d-%H%M_%S");
+
+    g_string_append_printf(new_filename_buf, "%s-%s", base_string, datetime);
+    export_string = g_string_free(new_filename_buf, false);
+
+
+
 }
 
 // void
@@ -103,28 +100,28 @@ join_datetime(
 
 // }
 
-void
-create_snapshot_directory(
-    GString* export_path,
-    char const * const base_bdrv_filename,
-    char const * const snap_name,
-    int checkpoint_num)
-{
-    g_autofree char* dir_path   = g_path_get_dirname(base_bdrv_filename);
-    g_autofree char* filename   = g_path_get_basename(base_bdrv_filename);
+// void
+// create_snapshot_directory(
+//     GString* export_path,
+//     char const * const base_bdrv_filename,
+//     char const * const snap_name,
+//     int checkpoint_num)
+// {
+//     g_autofree char* dir_path   = g_path_get_dirname(base_bdrv_filename);
+//     g_autofree char* filename   = g_path_get_basename(base_bdrv_filename);
 
-    g_assert(dir_path && filename);
+//     g_assert(dir_path && filename);
 
-    /**
-     * Create a new const string to get the snap name if needed,
-     * to avoid modifying trying to modify the NULL constant
-     */
-    char const * const folder_name = (snap_name == NULL) ? "tmp" : snap_name;
-    const char* format = checkpoint_num >= 0 ? "%s/%s/checkpoint_%i/" : "%s/%s/";
+//     /**
+//      * Create a new const string to get the snap name if needed,
+//      * to avoid modifying trying to modify the NULL constant
+//      */
+//     char const * const folder_name = (snap_name == NULL) ? "tmp" : snap_name;
+//     const char* format = checkpoint_num >= 0 ? "%s/%s/checkpoint_%i/" : "%s/%s/";
 
-    //! Need to check if this really work the way i think it does
-    g_string_append_printf(export_path, format, dir_path, folder_name, checkpoint_num);
-    // Always append the filename whatever append
-    g_string_append_printf(export_path, "%s", filename);
-    g_mkdir_with_parents(g_path_get_dirname(export_path->str), 0700);
-}
+//     //! Need to check if this really work the way i think it does
+//     g_string_append_printf(export_path, format, dir_path, folder_name, checkpoint_num);
+//     // Always append the filename whatever append
+//     g_string_append_printf(export_path, "%s", filename);
+//     g_mkdir_with_parents(g_path_get_dirname(export_path->str), 0700);
+// }

@@ -17,4 +17,6 @@ system_ss.add(when: middleware_dep['savevm-external'], if_true: files(
     'savevm-external/snapvm-external-module.c',
     'savevm-external/savevm-external.c',
     'savevm-external/loadvm-external.c',
+    'savevm-external/snapvm-qmp-cmds.c',
+    'savevm-external/snapvm-hmp-cmds.c',
 ))

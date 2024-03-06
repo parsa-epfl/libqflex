@@ -1,25 +1,44 @@
 #include "qemu/osdep.h"
 
-#include "migration/migration.h"
-#include "migration/global_state.h"
-#include "block/block-io.h"
+#include <gio/gio.h>
+
+#include <archive.h>
+#include <archive_entry.h>
+
 #include "block/block_int-io.h"
+#include "block/block-io.h"
 #include "block/snapshot.h"
-#include "qapi/util.h"
-#include "qapi/qapi-builtin-visit.h"
+#include "io/channel-buffer.h"
+#include "io/channel-file.h"
+#include "migration/global_state.h"
+#include "migration/migration.h"
+#include "migration/qemu-file.h"
+#include "migration/savevm.h"
+#include "monitor/hmp.h"
+#include "monitor/monitor.h"
 #include "qapi/error.h"
+#include "qapi/qapi-builtin-visit.h"
+#include "qapi/qapi-commands-block.h"
+#include "qapi/qmp/qdict.h"
+#include "qapi/qmp/qerror.h"
+#include "qapi/util.h"
 #include "qemu/cutils.h"
 #include "qemu/main-loop.h"
 #include "qemu/typedefs.h"
+#include "qemu/log.h"
 #include "sysemu/replay.h"
 #include "sysemu/runstate.h"
+
+
+
+
 
 #ifdef CONFIG_LIBQFLEX
 #include "middleware/libqflex/legacy-qflex-api.h"
 #include "middleware/libqflex/libqflex-module.h"
 #endif
 
-#include "savevm-external.h"
+#include "snapvm-external.h"
 
 
 /**
@@ -44,39 +63,11 @@ get_base_bdrv(BlockDriverState* bs_root) {
     return bs;
 }
 
-static bool
-get_snapshot_directory(
-    GString* export_path,
-    char const * const base_bdrv_filename,
-    char const * const snap_name,
-    int checkpoint_num)
-{
-    g_autofree char* dir_path   = g_path_get_dirname(base_bdrv_filename);
-    g_autofree char* filename   = g_path_get_basename(base_bdrv_filename);
-
-    g_assert(dir_path && filename);
-
-    /**
-     * Create a new const string to get the snap name if needed,
-     * to avoid modifying trying to modify the NULL constant
-     */
-    char const * const folder_name = (snap_name == NULL) ? "tmp" : snap_name;
-    const char* format = checkpoint_num >= 0 ? "%s/%s/checkpoint_%i/" : "%s/%s/";
-
-    //! Need to check if this really work the way i think it does
-    g_string_append_printf(export_path, format, dir_path, folder_name, checkpoint_num);
-    // Always append the filename whatever append
-    g_string_append_printf(export_path, "%s", filename);
-    g_mkdir_with_parents(g_path_get_dirname(export_path->str), 0700);
-
-    return true;
-}
-
 /**
  *? Make all block drive filepath *point* to the same location
  */
 static void
-bdrv_update_filename(BlockDriverState* bs, const char* path) {
+bdrv_update_filename(BlockDriverState* bs, char const * const path) {
     pstrcpy(bs->filename, sizeof(bs->filename), path);
     pstrcpy(bs->exact_filename, sizeof(bs->exact_filename), path);
     pstrcpy(bs->file->bs->filename, sizeof(bs->filename), path);
@@ -84,54 +75,164 @@ bdrv_update_filename(BlockDriverState* bs, const char* path) {
     bdrv_refresh_filename(bs);
 }
 
+//TODO refactoring needed here
+// static void
+// get_snap_mem_file_dir(
+//     char const * const base_filename,
+//     char const * const snap_name,
+//     GString* snap_file_dir,
+//     int const checkpoint_num)
+// {
+//     char* dirpath = base_filename ? g_path_get_dirname(base_filename) : (char *)(".");
+
+//     if (checkpoint_num >= 0) {
+//         g_string_append_printf(snap_file_dir, "%s/%s/checkpoint_%i/mem",
+//                                 dirpath, snap_name, checkpoint_num);
+//     } else {
+//         g_string_append_printf(snap_file_dir, "%s/%s/mem", dirpath, snap_name);
+//     }
+//     g_mkdir_with_parents(g_path_get_dirname(snap_file_dir->str), 0700);
+
+// }
+
+
 /**
+ * There is no name, therefor it's an increment
+ * of the previous disk image.
  *
+ * If it has been loaded before, put it asside of the root,
+ * otherwise put it in a tmp folder
  */
-static bool
-save_snapshot_external_bdrv(
-    BlockDriverState* bs,
-    const char* snap_name,
-    int checkpoint_num,
-    Error** errp)
+static void
+save_bdrv_new_increment(
+    SnapTransaction* trans,
+    Error** errp
+)
 {
-    // ─── Format Snapshot Name ────────────────────────────────────────────
 
-    char tmp_filename[PATH_MAX] = {0};
-    char const * const base_dir = get_base_bdrv(bs)->filename;
-
+    /**
+     * Take the filename of the root image, and append the datetime to it
+     */
     g_autoptr(GString) snap_path_dst = g_string_new("");
-    g_autoptr(GString) snap_path_tmp = g_string_new("");
 
-    g_autoptr(GDateTime) now = g_date_time_new_now_local();
-    g_autofree char* autoname = g_date_time_format(now, "%m-%d-%H%M_%S_%f");
+    join_datetime(
+        trans->new_bdrv.basename,
+        trans->root_bdrv.basename,
+        trans->datetime);
 
-    get_snapshot_directory(snap_path_tmp, base_dir, NULL, checkpoint_num);
-    g_string_append_printf(snap_path_tmp, "-%s", autoname);
+    char const * const format = qemu_snapvm_ext_state.has_been_loaded ? "%s/%s" : "%s/tmp/%s";
 
-    if (snap_name)
-    {
-        pstrcpy(tmp_filename, sizeof(bs->filename), bs->filename);
-        get_snapshot_directory(snap_path_dst, base_dir, snap_name, checkpoint_num);
+    g_string_append_printf(
+        snap_path_dst,
+        format,
+        trans->root_bdrv.fullpath,
+        trans->new_bdrv.basename);
 
-        // Move temporary block device to snapshot save location
-        if(link(tmp_filename, snap_path_dst->str) < 0 || unlink(tmp_filename) < 0)
-        {
-            error_setg(
-                errp,
-                "Could not move external snapshot bdrv (block device) %s to %s",
-                tmp_filename,
-                snap_path_dst->str);
-        }
-
-        bdrv_update_filename(bs, snap_path_dst->str);
-    }
-
+    trans->new_bdrv.fullpath =  g_string_free(snap_path_dst, false);
 
     // ─── Create Or Update Previous Snapshot ──────────────────────────────
 
+    char const * const device_name = bdrv_get_device_name(trans->root_bdrv.bs);
 
-    //TODO Create new tmp BDRV
-    //TODO snapshot sync
+    qmp_blockdev_snapshot_sync(
+        device_name,
+        NULL,
+        trans->new_bdrv.fullpath,
+        NULL,
+        "qcow2",
+        true,
+        NEW_IMAGE_MODE_ABSOLUTE_PATHS,
+        errp);
+
+
+    trans->new_bdrv.bs = bdrv_lookup_bs(device_name, NULL, errp);
+
+    //? Relative backing file... maybe
+    // g_autoptr(GFile) bs_gfile           =  g_file_new_for_path(root_bdrv_dirname);
+    // g_autoptr(GFile) bs_backing_gfile   =  g_file_new_for_path(snap_path_dst->str);
+    // g_autofree char* backing_rel_path = g_file_get_relative_path(bs_gfile, bs_backing_gfile);
+    // qemu_log("%s",backing_rel_path);
+    // pstrcpy(bs_new->backing_file, sizeof(bs_new->backing_file), backing_rel_path);
+
+    bdrv_update_filename(trans->new_bdrv.bs, trans->new_bdrv.fullpath);
+}
+
+/**
+ * Create a new root external snapshot.
+ * A name is passed by and a copy of the disk
+ * should be made to avoid altering the original disk
+ */
+static void
+save_bdrv_new_root(
+    SnapTransaction* trans,
+    Error** errp
+    )
+{
+
+    g_assert(trans->root_bdrv.dirname);
+    g_assert(trans->root_bdrv.basename);
+
+    trans->new_bdrv.basename = trans->root_bdrv.basename;
+    trans->new_bdrv.dirname  = g_build_path(G_DIR_SEPARATOR_S, trans->root_bdrv.dirname, trans->new_name, NULL);
+    trans->new_bdrv.fullpath = g_build_path(G_DIR_SEPARATOR_S, trans->new_bdrv.dirname, trans->root_bdrv.basename, NULL);
+
+    g_mkdir_with_parents(trans->new_bdrv.dirname , 0700);
+
+    if (link(trans->root_bdrv.fullpath, trans->new_bdrv.fullpath) < 0)
+    {
+        error_setg(
+            errp,
+            "Could not move external snapshot bdrv (block device) %s to %s",
+            trans->root_bdrv.fullpath,
+            trans->new_bdrv.fullpath);
+    }
+
+
+    trans->new_bdrv.bs = trans->root_bdrv.bs;
+    bdrv_update_filename(trans->new_bdrv.bs, trans->new_bdrv.fullpath);
+
+    // Consider that know we have loaded a snapshot and all next
+    // logic should behave accordingly.
+    qemu_snapvm_ext_state.has_been_loaded = true;
+}
+
+/**
+ * Save device/block drive state into a full snapshot
+ * or an incremental snapshot.
+ *
+ * Case 1: A name is passed by and a copy of the disk should be
+ * made.
+ *
+ * Case 2: There is no name, therefor it's an increment
+ * of the previous disk image.
+ *      Sub Case 1: The root image is still the very base image
+ *          -> add increment in 'tmp' dir
+ *      Sub Case 2: The root image is a previously full snapshot save (Case 1)
+ *                  and the check point have to be incremented in the dir
+ * TODO: handle relative backing file path
+ */
+static bool
+save_snapshot_external_bdrv(
+    SnapTransaction* trans,
+    Error** errp)
+{
+
+    switch (trans->mode)
+    {
+    case INCREMENT:
+        save_bdrv_new_increment(trans, errp);
+        g_assert(trans->datetime != NULL);
+        break;
+
+    case NEW_ROOT:
+        g_assert(trans->new_name != NULL);
+        save_bdrv_new_root(trans, errp);
+        break;
+
+    default:
+        g_assert_not_reached();
+    }
+
 
     if (*errp)
     {
@@ -143,22 +244,90 @@ save_snapshot_external_bdrv(
 
 }
 
-static bool
-save_snapshot_external_mem(
-    const char *base_bdrv_filename,
-    const char *snap_name,
-    int checkpoint_num,
-    Error **errp)
-{
-    return true;
-}
+// static bool
+// save_snapshot_external_mem(
+//     char const * const snap_name,
+//     char const * const brdv_path,
+//     char * const datetime,
+//     Error **errp)
+// {
+
+//     // g_autoptr(GString) new_mem_path     = g_string_new("");
+//     g_autoptr(GString) new_mem_filename = g_string_new("");
+
+
+//     //! THIS IS SKETCHY the SNAP NAME vs NO NAME should be splitted when
+//     //! the hmp/qmp function is called
+//     if (snap_name)
+//     {
+//         g_assert(snap_name != NULL && (datetime == NULL));
+//         // save no time stamp
+//         g_string_append_printf(new_mem_filename, "mem");
+//     }
+//     else
+//     {
+//         // save w/ timestamp
+//         g_assert(datetime && (snap_name == NULL));
+//         g_string_append_printf(new_mem_filename, "mem-%s", datetime);
+//         g_free(datetime); //! VERY Sketchy
+//     }
+
+
+//     g_autofree char const * bdrv_basename = g_path_get_dirname(brdv_path);
+//     g_autofree char const * new_mem_path = g_build_path(
+//                                                 G_DIR_SEPARATOR_S,
+//                                                 bdrv_basename,
+//                                                 new_mem_filename,
+//                                                 NULL);
+
+//     // get_snap_mem_file_dir(brdv_path, snap_name, new_mem_filename);
+
+//     QIOChannelFile* ioc = qio_channel_file_new_path(
+//         new_mem_path,
+//         O_WRONLY | O_CREAT | O_TRUNC,
+//         0660,
+//         errp);
+
+//     qio_channel_set_name(QIO_CHANNEL(ioc), "snapvm-external-memory-outgoing");
+
+//     if (!ioc)
+//     {
+//         error_setg(errp, "Could not open channel");
+//         goto end;
+//     }
+
+//     QEMUFile* f = qemu_file_new_output(QIO_CHANNEL(ioc));
+
+//     if (!f)
+//     {
+//         error_setg(errp, "Could not open VM state file");
+//         goto end;
+//     }
+
+//     object_unref(OBJECT(ioc));
+
+//     int ret = qemu_savevm_state(f, errp);
+//     // Perfrom noflush and return total number of bytes transferred
+//     qemu_file_transferred(f);
+
+//     if (ret < 0 || qemu_fclose(f) < 0)
+//         error_setg(errp, QERR_IO_ERROR);
+
+// end:
+
+//     if (*errp)
+//     {
+//         error_report_err(*errp);
+//         return false;
+//     }
+
+//     return true;
+
+
+// }
 
 bool save_snapshot_external(
-    const char* snap_name,    // Snapshot output name
-    const char* vm_state,
-    bool has_devices,
-    strList* devices,
-    int checkpoint_num,
+    SnapTransaction* trans,
     Error** errp)
 {
 
@@ -185,69 +354,86 @@ bool save_snapshot_external(
         error_setg(errp, "Record/replay does not allow making snapshot "
                    "right now. Try once more later.");
 
-        ret =  false;
+        ret = false;
         goto end;
     }
 
     //? Test if all drive are snapshot-able
-    if (!bdrv_all_can_snapshot(has_devices, devices, errp)) { return false; }
+    if (!bdrv_all_can_snapshot(false, NULL, errp)) { return false; }
 
-    BlockDriverState* bs = bdrv_all_find_vmstate_bs(vm_state, has_devices, devices, errp);
-    if (bs == NULL)
+    trans->root_bdrv.bs = bdrv_all_find_vmstate_bs(NULL, false, NULL, errp);
+    if (trans->root_bdrv.bs == NULL)
     {
         ret =  false;
         goto end;
     }
 
-
-    vm_stop(RUN_STATE_SAVE_VM);
-
-
-    // ─── Saving Drive Block ──────────────────────────────────────────────
-
     // Retrieve all snaspshot able drive
     g_autoptr(GList) bdrvs = NULL;
-    if (bdrv_all_get_snapshot_devices(false, NULL, &bdrvs, errp)) {
+
+    if (bdrv_all_get_snapshot_devices( false, NULL, &bdrvs, errp))
+    {
         ret =  false;
         goto end;
     }
 
+    // No stupid behaviour
+    g_assert(bdrvs != NULL);
+
+    vm_stop(RUN_STATE_SAVE_VM);
     // Trigger the global state to be saved within the snapshot
     global_state_store();
 
+
+    // ─── Start Snapshotting Procedure ────────────────────────────────────
+
+
+    /* If needed */
+    trans->root_bdrv.fullpath   = get_base_bdrv(trans->root_bdrv.bs)->filename;
+    trans->root_bdrv.dirname    = g_path_get_dirname(trans->root_bdrv.fullpath);
+    trans->root_bdrv.basename   = g_path_get_basename(trans->root_bdrv.fullpath);
+
+    // ─── Iterate And Save BDRV ───────────────────────────────────────────
+
     GList* iterbdrvs = bdrvs;
-    const char* base_bdrv_filename = NULL; //TODO transform this into g_string
+
     while (iterbdrvs) {
-        bs = iterbdrvs->data;
-        if (!bdrv_is_read_only(bs)) {
-            ret = save_snapshot_external_bdrv(bs, snap_name, checkpoint_num, errp);
+        trans->root_bdrv.bs = iterbdrvs->data;
+        if (!bdrv_is_read_only(trans->root_bdrv.bs)) {
+            ret = save_snapshot_external_bdrv(trans, errp);
 
             if (!ret) goto end;
-            base_bdrv_filename = get_base_bdrv(bs)->filename;
+            trans->new_bdrv.fullpath = trans->root_bdrv.bs->filename;
         }
         iterbdrvs = iterbdrvs->next;
     }
 
-    // ─── Saving Main Memory ──────────────────────────────────────────────
+//     // ─── Saving Main Memory ──────────────────────────────────────────────
 
-    ret = save_snapshot_external_mem(base_bdrv_filename, snap_name,
-                                     checkpoint_num, errp);
-    if (!ret) goto end;
+//     ret = save_snapshot_external_mem(
+//         snap_name,
+//         new_bdrv_path,
+//         datetime,
+//         errp);
 
-#ifdef CONFIG_LIBQFLEX
-    if (qemu_libqflex_state.is_initialised) {
-        g_autoptr(GString) dst_path = g_string_new("");
+//     if (!ret) goto end;
 
-        g_autofree char* base_bdrv_dirname = g_path_get_dirname(base_bdrv_filename);
-        g_string_append_printf(dst_path, "%s/%s", base_bdrv_dirname, snap_name);
+// #ifdef CONFIG_LIBQFLEX
+//     if (qemu_libqflex_state.is_initialised) {
+//         g_autoptr(GString) dst_path = g_string_new("");
 
-        if (checkpoint_num != -1)
-            g_string_append_printf(dst_path, "/checkpoint_%i", checkpoint_num);
+//         g_autofree char* base_bdrv_dirname = g_path_get_dirname(new_bdrv_path);
+//         g_string_append_printf(dst_path, "%s/%s", base_bdrv_dirname, snap_name);
 
-        // call flexus API to trigger the cache memory dump
-        flexus_api.qmp(QMP_FLEXUS_DOSAVE, dst_path->str);
-    }
-#endif
+//         if (checkpoint_num != -1)
+//             g_string_append_printf(dst_path, "/checkpoint_%i", checkpoint_num);
+
+//         // call flexus API to trigger the cache memory dump
+//         flexus_api.qmp(QMP_FLEXUS_DOSAVE, dst_path->str);
+//     }
+// #endif
+
+    // ─── Return Gracefully Or... Not ─────────────────────────────────────
 
 end:
 
@@ -259,3 +445,5 @@ end:
 
     return ret;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────

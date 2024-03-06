@@ -31,7 +31,7 @@ loadvm_external_create_overlay(
 {
     // g_autoptr(GString) snap_path_dst = g_string_new("");
     g_autoptr(GString) snap_fullpath_tmp = g_string_new("");
-    g_autoptr(GString) snap_filename_tmp = g_string_new("");
+    // g_autoptr(GString) snap_filename_tmp = g_string_new("");
 
     /**
      * Handle case 1: No snap_name, create a tmp directory, and copy the root image
@@ -41,13 +41,14 @@ loadvm_external_create_overlay(
     //? Construct full path
     g_autofree char* dir_path      = g_path_get_dirname(file);
     g_autofree char* bdrv_filename = g_path_get_basename(file);
-    join_datetime(snap_filename_tmp, bdrv_filename);
+
+    join_datetime(snap_filename_tmp, bdrv_filename, datetime);
     //? Construct a path like [previous_disk_path]/tmp/[disk_name.format]
     g_string_append_printf(
         snap_fullpath_tmp,
         "%s/tmp/%s",
         dir_path,
-        snap_filename_tmp->str);
+        snap_filename_tmp);
 
     // Get the dirname of the full path and create remaining folder
     g_mkdir_with_parents(g_path_get_dirname(snap_fullpath_tmp->str), 0700);

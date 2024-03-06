@@ -1,0 +1,9 @@
+# See docs/devel/tracing.rst for syntax documentation.
+
+# qemu/middleware/savevm-external/snapvm-hmp-cmds.c
+hmp_savevm_external(void *mon, const char *cmdline) "mon %p cmdline: %s"
+hmp_loadvm_external(void *mon, const char *cmdline) "mon %p cmdline: %s"
+
+# qemu/middleware/savevm-external/snapvm-qmp-cmds.c
+qmp_snapvm_external(void* job) "job %p"
+qmp_loadvm_external(void* job) "job %p"
