@@ -33,7 +33,7 @@ typedef struct SnapTransaction
     char* datetime;
 
     char const * new_name;
-    // Path for often used directroy and filename
+
     struct {
         // Pointer to the drive block
         BlockDriverState* bs;
@@ -62,18 +62,7 @@ snapvm_init(
     char const * const loadvm,
     Error** errp);
 
-void
-join_datetime(
-    char* export_string,
-    char const * const base_string,
-    char* datetime);
-
-// void
-// create_snapshot_directory(
-//     GString* export_path,
-//     char const * const base_bdrv_filename,
-//     char const * const snap_name,
-//     int checkpoint_num);
+char* get_datetime(void);
 
 
 // ─── Save ────────────────────────────────────────────────────────────────────

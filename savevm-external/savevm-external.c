@@ -2,8 +2,8 @@
 
 #include <gio/gio.h>
 
-#include <archive.h>
-#include <archive_entry.h>
+// #include <archive.h>
+// #include <archive_entry.h>
 
 #include "block/block_int-io.h"
 #include "block/block-io.h"
@@ -113,12 +113,17 @@ save_bdrv_new_increment(
     /**
      * Take the filename of the root image, and append the datetime to it
      */
+    trans->datetime = get_datetime();
     g_autoptr(GString) snap_path_dst = g_string_new("");
+    g_autoptr(GString) new_filename_buf = g_string_new("");
 
-    join_datetime(
-        trans->new_bdrv.basename,
+    g_string_append_printf(
+        new_filename_buf,
+        "%s-%s",
         trans->root_bdrv.basename,
         trans->datetime);
+
+    trans->new_bdrv.basename = new_filename_buf->str;
 
     char const * const format = qemu_snapvm_ext_state.has_been_loaded ? "%s/%s" : "%s/tmp/%s";
 
@@ -244,13 +249,25 @@ save_snapshot_external_bdrv(
 
 }
 
-// static bool
-// save_snapshot_external_mem(
-//     char const * const snap_name,
-//     char const * const brdv_path,
-//     char * const datetime,
-//     Error **errp)
-// {
+static bool
+save_snapshot_external_mem(
+    SnapTransaction const * trans,
+    Error **errp)
+{
+    switch(trans->mode)
+    {
+        case NEW_ROOT:
+        break;
+
+        case INCREMENT:
+
+        break;
+
+        default:
+        g_assert_not_reached();
+    }
+    return true;
+}
 
 //     // g_autoptr(GString) new_mem_path     = g_string_new("");
 //     g_autoptr(GString) new_mem_filename = g_string_new("");
@@ -332,6 +349,7 @@ bool save_snapshot_external(
 {
 
     bool ret = true;
+    g_autoptr(GList) bdrvs = NULL;
     RunState saved_state = runstate_get();
 
     // Make sure that we are in the main thread, and not
@@ -369,8 +387,6 @@ bool save_snapshot_external(
     }
 
     // Retrieve all snaspshot able drive
-    g_autoptr(GList) bdrvs = NULL;
-
     if (bdrv_all_get_snapshot_devices( false, NULL, &bdrvs, errp))
     {
         ret =  false;
@@ -392,6 +408,7 @@ bool save_snapshot_external(
     trans->root_bdrv.fullpath   = get_base_bdrv(trans->root_bdrv.bs)->filename;
     trans->root_bdrv.dirname    = g_path_get_dirname(trans->root_bdrv.fullpath);
     trans->root_bdrv.basename   = g_path_get_basename(trans->root_bdrv.fullpath);
+    trans->datetime             = get_datetime();
 
     // ─── Iterate And Save BDRV ───────────────────────────────────────────
 
@@ -410,11 +427,7 @@ bool save_snapshot_external(
 
 //     // ─── Saving Main Memory ──────────────────────────────────────────────
 
-//     ret = save_snapshot_external_mem(
-//         snap_name,
-//         new_bdrv_path,
-//         datetime,
-//         errp);
+    ret = save_snapshot_external_mem(trans, errp);
 
 //     if (!ret) goto end;
 

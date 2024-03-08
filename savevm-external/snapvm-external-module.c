@@ -66,23 +66,13 @@ void snapvm_init(QemuOpts* opts,  char const * const loadvm, Error** errp)
  *
  * RETURN must be freed by the caller
  */
-void
-join_datetime(
-    char* export_string,
-    char const * const base_string,
-    char* datetime)
+char*
+get_datetime()
 {
     g_autoptr(GString)      new_filename_buf = g_string_new("");
     g_autoptr(GDateTime)    now              = g_date_time_new_now_local();
 
-    //! Weird but okay
-    datetime = g_date_time_format(now, "%Y_%m_%d-%H%M_%S");
-
-    g_string_append_printf(new_filename_buf, "%s-%s", base_string, datetime);
-    export_string = g_string_free(new_filename_buf, false);
-
-
-
+    return g_date_time_format(now, "%Y_%m_%d-%H%M_%S");
 }
 
 // void
