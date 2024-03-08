@@ -1,7 +1,7 @@
 #include "qemu/osdep.h"
 
 #include "qemu/error-report.h"
-// #include "qapi/qapi-commands-middleware.h"
+#include "qapi/qapi-commands-middleware.h"
 #include "trace.h"
 
 

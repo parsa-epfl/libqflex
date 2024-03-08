@@ -22,8 +22,8 @@ hmp_loadvm_external(Monitor *mon, const QDict *qdict)
     }
 
     Error    *err           = NULL;
-    RunState saved_state    = runstate_get();
-    __attribute((maybe_unused))  const char* name = qdict_get_str(qdict, "name");
+    // RunState saved_state    = runstate_get();
+    // __attribute_maybe_unused__  const char* name = qdict_get_str(qdict, "name");
 
     vm_stop(RUN_STATE_SAVE_VM);
 

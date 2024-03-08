@@ -67,7 +67,7 @@ void snapvm_init(QemuOpts* opts,  char const * const loadvm, Error** errp)
  * RETURN must be freed by the caller
  */
 char*
-get_datetime()
+get_datetime(void)
 {
     g_autoptr(GString)      new_filename_buf = g_string_new("");
     g_autoptr(GDateTime)    now              = g_date_time_new_now_local();

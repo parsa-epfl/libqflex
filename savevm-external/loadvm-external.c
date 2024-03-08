@@ -29,27 +29,24 @@ loadvm_external_create_overlay(
     GString* overlay_path,
     Error** errp)
 {
-    // g_autoptr(GString) snap_path_dst = g_string_new("");
-    g_autoptr(GString) snap_fullpath_tmp = g_string_new("");
-    g_autoptr(GString) snap_filename_tmp = g_string_new("");
-
     /**
      * Handle case 1: No snap_name, create a tmp directory, and copy the root image
      * TODO: handle case when a snap name is present
      */
-
     //? Construct full path
-    g_autofree char* datetime = get_datetime();
+    g_autofree char* datetime       = get_datetime();
     g_autofree char* bdrv_dirname   = g_path_get_dirname(file);
     g_autofree char* bdrv_filename  = g_path_get_basename(file);
 
-    g_string_append_printf(snap_filename_tmp, "%s-%s", bdrv_dirname, datetime);
+    g_autoptr(GString) snap_fullpath_tmp = g_string_new(bdrv_dirname);
+    g_autoptr(GString) snap_filename_tmp = g_string_new(bdrv_filename);
+
+    g_string_append_printf(snap_filename_tmp, "-%s", datetime);
 
     //? Construct a path like [previous_disk_path]/tmp/[new disk_name.format]
     g_string_append_printf(
         snap_fullpath_tmp,
-        "%s/tmp/%s",
-        bdrv_dirname,
+        "/tmp/%s",
         snap_filename_tmp->str);
 
     // Get the dirname of the full path and create remaining folder

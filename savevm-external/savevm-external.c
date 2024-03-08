@@ -109,32 +109,6 @@ save_bdrv_new_increment(
     Error** errp
 )
 {
-
-    /**
-     * Take the filename of the root image, and append the datetime to it
-     */
-    trans->datetime = get_datetime();
-    g_autoptr(GString) snap_path_dst = g_string_new("");
-    g_autoptr(GString) new_filename_buf = g_string_new("");
-
-    g_string_append_printf(
-        new_filename_buf,
-        "%s-%s",
-        trans->root_bdrv.basename,
-        trans->datetime);
-
-    trans->new_bdrv.basename = new_filename_buf->str;
-
-    char const * const format = qemu_snapvm_ext_state.has_been_loaded ? "%s/%s" : "%s/tmp/%s";
-
-    g_string_append_printf(
-        snap_path_dst,
-        format,
-        trans->root_bdrv.fullpath,
-        trans->new_bdrv.basename);
-
-    trans->new_bdrv.fullpath =  g_string_free(snap_path_dst, false);
-
     // ─── Create Or Update Previous Snapshot ──────────────────────────────
 
     char const * const device_name = bdrv_get_device_name(trans->root_bdrv.bs);
@@ -152,12 +126,6 @@ save_bdrv_new_increment(
 
     trans->new_bdrv.bs = bdrv_lookup_bs(device_name, NULL, errp);
 
-    //? Relative backing file... maybe
-    // g_autoptr(GFile) bs_gfile           =  g_file_new_for_path(root_bdrv_dirname);
-    // g_autoptr(GFile) bs_backing_gfile   =  g_file_new_for_path(snap_path_dst->str);
-    // g_autofree char* backing_rel_path = g_file_get_relative_path(bs_gfile, bs_backing_gfile);
-    // qemu_log("%s",backing_rel_path);
-    // pstrcpy(bs_new->backing_file, sizeof(bs_new->backing_file), backing_rel_path);
 
     bdrv_update_filename(trans->new_bdrv.bs, trans->new_bdrv.fullpath);
 }
@@ -173,13 +141,6 @@ save_bdrv_new_root(
     Error** errp
     )
 {
-
-    g_assert(trans->root_bdrv.dirname);
-    g_assert(trans->root_bdrv.basename);
-
-    trans->new_bdrv.basename = trans->root_bdrv.basename;
-    trans->new_bdrv.dirname  = g_build_path(G_DIR_SEPARATOR_S, trans->root_bdrv.dirname, trans->new_name, NULL);
-    trans->new_bdrv.fullpath = g_build_path(G_DIR_SEPARATOR_S, trans->new_bdrv.dirname, trans->root_bdrv.basename, NULL);
 
     g_mkdir_with_parents(trans->new_bdrv.dirname , 0700);
 
@@ -226,7 +187,6 @@ save_snapshot_external_bdrv(
     {
     case INCREMENT:
         save_bdrv_new_increment(trans, errp);
-        g_assert(trans->datetime != NULL);
         break;
 
     case NEW_ROOT:
@@ -252,25 +212,70 @@ save_snapshot_external_bdrv(
 static bool
 save_snapshot_external_mem(
     SnapTransaction const * trans,
-    Error **errp)
+    Error** errp)
 {
+
+    g_autoptr(GString) new_mem_filename = g_string_new("mem");
+
     switch(trans->mode)
     {
         case NEW_ROOT:
         break;
 
         case INCREMENT:
-
+        g_string_append_printf(new_mem_filename, "-%s", trans->datetime);
         break;
 
         default:
         g_assert_not_reached();
     }
+
+    g_autofree char* new_mem_path = g_build_path(G_DIR_SEPARATOR_S, trans->new_bdrv.dirname, new_mem_filename->str, NULL);
+
+    QIOChannelFile* ioc = qio_channel_file_new_path(
+        new_mem_path,
+        O_WRONLY | O_CREAT | O_TRUNC,
+        0660,
+        errp);
+
+    qio_channel_set_name(QIO_CHANNEL(ioc), "snapvm-external-memory-outgoing");
+
+    if (!ioc)
+    {
+        error_setg(errp, "Could not open channel");
+        goto end;
+    }
+
+    QEMUFile* f = qemu_file_new_output(QIO_CHANNEL(ioc));
+
+    if (!f)
+    {
+        error_setg(errp, "Could not open VM state file");
+        goto end;
+    }
+
+    object_unref(OBJECT(ioc));
+
+    int16_t ret = qemu_savevm_state(f, errp);
+    // Perfrom noflush and return total number of bytes transferred
+    qemu_file_transferred(f);
+
+    if (ret < 0 || qemu_fclose(f) < 0)
+        error_setg(errp, QERR_IO_ERROR);
+
+end:
+
+    if (*errp)
+    {
+        error_report_err(*errp);
+        return false;
+    }
+
     return true;
 }
 
 //     // g_autoptr(GString) new_mem_path     = g_string_new("");
-//     g_autoptr(GString) new_mem_filename = g_string_new("");
+
 
 
 //     //! THIS IS SKETCHY the SNAP NAME vs NO NAME should be splitted when
@@ -299,46 +304,7 @@ save_snapshot_external_mem(
 
 //     // get_snap_mem_file_dir(brdv_path, snap_name, new_mem_filename);
 
-//     QIOChannelFile* ioc = qio_channel_file_new_path(
-//         new_mem_path,
-//         O_WRONLY | O_CREAT | O_TRUNC,
-//         0660,
-//         errp);
 
-//     qio_channel_set_name(QIO_CHANNEL(ioc), "snapvm-external-memory-outgoing");
-
-//     if (!ioc)
-//     {
-//         error_setg(errp, "Could not open channel");
-//         goto end;
-//     }
-
-//     QEMUFile* f = qemu_file_new_output(QIO_CHANNEL(ioc));
-
-//     if (!f)
-//     {
-//         error_setg(errp, "Could not open VM state file");
-//         goto end;
-//     }
-
-//     object_unref(OBJECT(ioc));
-
-//     int ret = qemu_savevm_state(f, errp);
-//     // Perfrom noflush and return total number of bytes transferred
-//     qemu_file_transferred(f);
-
-//     if (ret < 0 || qemu_fclose(f) < 0)
-//         error_setg(errp, QERR_IO_ERROR);
-
-// end:
-
-//     if (*errp)
-//     {
-//         error_report_err(*errp);
-//         return false;
-//     }
-
-//     return true;
 
 
 // }
@@ -401,14 +367,56 @@ bool save_snapshot_external(
     global_state_store();
 
 
-    // ─── Start Snapshotting Procedure ────────────────────────────────────
-
+    // ─── Generate Path ───────────────────────────────────────────────────
 
     /* If needed */
     trans->root_bdrv.fullpath   = get_base_bdrv(trans->root_bdrv.bs)->filename;
     trans->root_bdrv.dirname    = g_path_get_dirname(trans->root_bdrv.fullpath);
     trans->root_bdrv.basename   = g_path_get_basename(trans->root_bdrv.fullpath);
     trans->datetime             = get_datetime();
+
+    switch (trans->mode)
+    {
+    case INCREMENT:
+        /**
+         * Take the filename of the root image, and append the datetime to it
+         */
+        GString* new_filename_buf = g_string_new("");
+
+        g_string_append_printf(new_filename_buf, "%s-%s", trans->root_bdrv.basename, trans->datetime);
+        trans->new_bdrv.basename = g_string_free(new_filename_buf, false);
+
+        char const * const tmp_dir = qemu_snapvm_ext_state.has_been_loaded ? NULL : "tmp";
+        trans->new_bdrv.fullpath = g_build_path(
+                                        G_DIR_SEPARATOR_S,
+                                        trans->root_bdrv.dirname,
+                                        tmp_dir, // is skipped if null
+                                        trans->new_bdrv.basename,
+                                        NULL);
+
+        trans->new_bdrv.dirname    = g_path_get_dirname(trans->new_bdrv.fullpath);
+        break;
+
+    case NEW_ROOT:
+        trans->new_bdrv.basename = trans->root_bdrv.basename;
+        trans->new_bdrv.dirname  = g_build_path(G_DIR_SEPARATOR_S, trans->root_bdrv.dirname, trans->new_name, NULL);
+        trans->new_bdrv.fullpath = g_build_path(G_DIR_SEPARATOR_S, trans->new_bdrv.dirname, trans->root_bdrv.basename, NULL);
+
+        break;
+
+    default:
+        g_assert_not_reached();
+    }
+
+    // Failsafe
+    g_assert(g_str_is_ascii(trans->datetime));
+    g_assert(g_str_is_ascii(trans->root_bdrv.basename));
+    g_assert(g_str_is_ascii(trans->root_bdrv.dirname));
+    g_assert(g_str_is_ascii(trans->root_bdrv.fullpath));
+    g_assert(g_str_is_ascii(trans->new_bdrv.basename));
+    g_assert(g_str_is_ascii(trans->new_bdrv.dirname));
+    g_assert(g_str_is_ascii(trans->new_bdrv.fullpath));
+
 
     // ─── Iterate And Save BDRV ───────────────────────────────────────────
 
@@ -425,7 +433,7 @@ bool save_snapshot_external(
         iterbdrvs = iterbdrvs->next;
     }
 
-//     // ─── Saving Main Memory ──────────────────────────────────────────────
+    // ─── Saving Main Memory ──────────────────────────────────────────────
 
     ret = save_snapshot_external_mem(trans, errp);
 
