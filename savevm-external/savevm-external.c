@@ -274,35 +274,6 @@ end:
     return true;
 }
 
-//     // g_autoptr(GString) new_mem_path     = g_string_new("");
-
-
-
-//     //! THIS IS SKETCHY the SNAP NAME vs NO NAME should be splitted when
-//     //! the hmp/qmp function is called
-//     if (snap_name)
-//     {
-//         g_assert(snap_name != NULL && (datetime == NULL));
-//         // save no time stamp
-//         g_string_append_printf(new_mem_filename, "mem");
-//     }
-//     else
-//     {
-//         // save w/ timestamp
-//         g_assert(datetime && (snap_name == NULL));
-//         g_string_append_printf(new_mem_filename, "mem-%s", datetime);
-//         g_free(datetime); //! VERY Sketchy
-//     }
-
-
-//     g_autofree char const * bdrv_basename = g_path_get_dirname(brdv_path);
-//     g_autofree char const * new_mem_path = g_build_path(
-//                                                 G_DIR_SEPARATOR_S,
-//                                                 bdrv_basename,
-//                                                 new_mem_filename,
-//                                                 NULL);
-
-//     // get_snap_mem_file_dir(brdv_path, snap_name, new_mem_filename);
 
 
 
@@ -316,7 +287,7 @@ bool save_snapshot_external(
 
     bool ret = true;
     g_autoptr(GList) bdrvs = NULL;
-    RunState saved_state = runstate_get();
+    int saved_vm_running = runstate_is_running();
 
     // Make sure that we are in the main thread, and not
     // concurrently accessing the ressources
@@ -461,8 +432,10 @@ end:
     //? Allow to start the vm again only if no error was detected
     if (!ret)
         error_report_err(*errp);
-    else
-        vm_resume(saved_state);
+
+
+    if (saved_vm_running && ret)
+        vm_start();
 
     return ret;
 }
