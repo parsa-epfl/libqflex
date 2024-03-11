@@ -1,57 +1,63 @@
-
-// ─── Required Anyway ─────────────────────────────────────────────────────────
+ #include <dlfcn.h>
 
 #include "qemu/osdep.h"
 
-// ─── Required For Logging ────────────────────────────────────────────────────
-
-#include <glib/gstdio.h>
-#include "qapi/error.h"
-#include "qemu/log.h"
-
-// ─── Required For CPUs Abstraction ───────────────────────────────────────────
-
-#include <glib/gmem.h>
-#include <glib/gtestutils.h>
-#include <glib/gmacros.h>
-
 #include "hw/boards.h"
-#include "libqflex.h"
-#include "libqflex-module.h"
-#include "plugins/trace/trace.h"
-#include "legacy-qflex-api.h"
-
-// ─── Required For Options ────────────────────────────────────────────────────
-
+#include "qapi/error.h"
+#include "qemu/config-file.h"
+#include "qemu/error-report.h"
+#include "qemu/log.h"
 #include "qemu/option.h"
+#include "sysemu/tcg.h"
+
+#include "libqflex-legacy-api.h"
+#include "libqflex-module.h"
+#include "libqflex.h"
+#include "plugins/trace/trace.h"
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-FLEXUS_API_t flexus_api;
 vCPU_t* libqflex_vcpus;
-typedef void (*FLEXUS_INIT_t)(QEMU_API_t *, FLEXUS_API_t *, int, const char *, const char *, const char *, const char *);
-
+FLEXUS_API_t flexus_api;
 
 // ─── Global Variable ─────────────────────────────────────────────────────────
 
 QemuOptsList qemu_libqflex_opts = {
     .name = "libqflex",
-    .merge_lists = false,
+    .merge_lists = true,
     .head = QTAILQ_HEAD_INITIALIZER(qemu_libqflex_opts.head),
     .desc = {
+        {
+            .name = "lib-path",
+            .type = QEMU_OPT_STRING,
+        },
+        {
+            .name = "cfg-path",
+            .type = QEMU_OPT_STRING,
+
+        },
         { /* end of list */ }
     },
 };
 
 
 struct libqflex_state_t qemu_libqflex_state = {
-    .n_vcpus = 0,
+    .n_vcpus        = 0,
+    .is_configured  = false,
     .is_initialised = false,
-    .is_configured = false,
+    .lib_path       = "",
+    .cfg_path       = "",
 };
 
 // ─── Local Variable ──────────────────────────────────────────────────────────
+
+
+// ─── Static Function ─────────────────────────────────────────────────────────
+
+
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,45 +96,96 @@ libqflex_populate_vcpus(size_t n_vcpu)
     qemu_log("> [Libqflex] Populated %zu cpu(s)\n", n_vcpu);
 }
 
+static bool
+libqflex_flexus_init(void)
+{
+    if (!qemu_libqflex_state.lib_path)
+    {
+        error_report("ERROR: missing lib-path");
+        return false;
+    }
+
+    if (!qemu_libqflex_state.cfg_path)
+    {
+        error_report("ERROR: missing cfg-path");
+        return false;
+    }
+
+    void* handle = NULL;
+    if ((handle = dlopen(qemu_libqflex_state.lib_path, RTLD_LAZY)) == NULL)
+    {
+        error_report("ERROR: while opening %s => %s", qemu_libqflex_state.lib_path, dlerror());
+        return false;
+    }
+
+    FLEXUS_INIT_t flexus = NULL;
+    if ((flexus = (FLEXUS_INIT_t)(dlsym(handle, "flexus_init"))) == NULL)
+    {
+        error_report("ERROR: cannot find 'flexus_init' in %s: %s", qemu_libqflex_state.lib_path, dlerror());
+        return false;
+    }
+
+
+    return true;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 void
 libqflex_init(void)
 {
+    // Make sure that we have parsed the cli options
     if (! qemu_libqflex_state.is_configured)
         return;
 
-    //! `current_machine` accessible only after options parsing
-    qemu_libqflex_state.n_vcpus = current_machine->smp.cpus;
-
-    libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
-
-    qemu_plugin_trace_init();
-
-
-    // REGISTER HOOKS'n'Stuff
-    qemu_libqflex_state.is_initialised = true;
+    bool ret = true;
     qemu_log("> [Libqflex] Init\n");
 
-    // ─────────────────────────────────────────────────────────────────────
+    if (! tcg_enabled()) {
+        error_report("ERROR: TCG must be enabled");
+        exit(EXIT_FAILURE);
+    }
 
+    //? `current_machine` accessible only after options parsing
+    qemu_libqflex_state.n_vcpus = current_machine->smp.cpus;
+    // libqflex_api_init();
+    libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
+
+    ret = libqflex_flexus_init();
+    if (!ret) exit(EXIT_FAILURE);
+
+
+    // libqflex_trace_init();
+
+
+
+    qemu_libqflex_state.is_initialised = true;
     qemu_log("> [Libqflex] PC=%lx \n", libqflex_vcpus[0].env->pc);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 void
-libqflex_configure(void)
+libqflex_parse_opts(char const * optarg)
 {
-    // Ensure sane memory allocation
-    qemu_libqflex_state.n_vcpus         = 0;
-    qemu_libqflex_state.is_initialised  = false;
-    qemu_libqflex_state.is_configured   = false;
+    QemuOpts* opts = qemu_opts_parse_noisily(
+        qemu_find_opts("libqflex"),
+        optarg,
+        false);
 
-    // PARSING here
-    // ENVIRONEMENT CHECKING HERE (maybe)
+    if (opts == NULL)
+        exit(EXIT_FAILURE);
 
-    //? libqflex_init relies on the fact that -libqflex is part of the args.
+    char const * const lib_path = qemu_opt_get(opts, "lib-path");
+    char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
+
+    if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
+    if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
+
+    qemu_opts_del(opts);
+
     qemu_libqflex_state.is_configured = true;
-    qemu_log("> [Libqflex] Config\n");
+    qemu_log("> [Libqflex] Configuration\n");
+    qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
+    qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
 }
