@@ -1,8 +1,8 @@
 #include "qemu/osdep.h"
 
+#include "middleware/trace.h"
 #include "qemu/error-report.h"
 #include "qapi/qapi-commands-middleware.h"
-#include "trace.h"
 
 
 void qmp_savevm_external(Error **errp)

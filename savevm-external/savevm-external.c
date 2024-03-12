@@ -30,9 +30,6 @@
 #include "sysemu/runstate.h"
 
 
-
-
-
 #ifdef CONFIG_LIBQFLEX
 #include "middleware/libqflex/legacy-qflex-api.h"
 #include "middleware/libqflex/libqflex-module.h"
@@ -349,10 +346,12 @@ bool save_snapshot_external(
     switch (trans->mode)
     {
     case INCREMENT:
+    {
+
+        GString* new_filename_buf = g_string_new("");
         /**
          * Take the filename of the root image, and append the datetime to it
          */
-        GString* new_filename_buf = g_string_new("");
 
         g_string_append_printf(new_filename_buf, "%s-%s", trans->root_bdrv.basename, trans->datetime);
         trans->new_bdrv.basename = g_string_free(new_filename_buf, false);
@@ -367,14 +366,17 @@ bool save_snapshot_external(
 
         trans->new_bdrv.dirname    = g_path_get_dirname(trans->new_bdrv.fullpath);
         break;
-
+    }
     case NEW_ROOT:
+    {
+
         trans->new_bdrv.basename = trans->root_bdrv.basename;
         trans->new_bdrv.dirname  = g_build_path(G_DIR_SEPARATOR_S, trans->root_bdrv.dirname, trans->new_name, NULL);
         trans->new_bdrv.fullpath = g_build_path(G_DIR_SEPARATOR_S, trans->new_bdrv.dirname, trans->root_bdrv.basename, NULL);
 
         break;
 
+    }
     default:
         g_assert_not_reached();
     }

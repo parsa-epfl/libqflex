@@ -10,7 +10,7 @@
 #include "qapi/qmp/qdict.h"
 
 #include "snapvm-external.h"
-#include "trace.h"
+#include "middleware/trace.h"
 
 void
 hmp_loadvm_external(Monitor *mon, const QDict *qdict)

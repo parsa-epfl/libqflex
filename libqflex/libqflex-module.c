@@ -160,7 +160,7 @@ libqflex_init(void)
 
 
     qemu_libqflex_state.is_initialised = true;
-    qemu_log("> [Libqflex] PC=%lx \n", libqflex_vcpus[0].env->pc);
+    qemu_log("> [Libqflex] PC=%llx \n", libqflex_vcpus[0].env->pc);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
