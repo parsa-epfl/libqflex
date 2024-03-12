@@ -69,8 +69,7 @@ void snapvm_init(QemuOpts* opts,  char const * const loadvm, Error** errp)
 char*
 get_datetime(void)
 {
-    g_autoptr(GString)      new_filename_buf = g_string_new("");
-    g_autoptr(GDateTime)    now              = g_date_time_new_now_local();
+    g_autoptr(GDateTime)    now = g_date_time_new_now_local();
 
     return g_date_time_format(now, "%Y_%m_%d-%H%M_%S");
 }

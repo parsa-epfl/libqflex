@@ -284,6 +284,7 @@ bool save_snapshot_external(
 
     bool ret = true;
     g_autoptr(GList) bdrvs = NULL;
+    AioContext* aio_context = NULL;
     int saved_vm_running = runstate_is_running();
 
     // Make sure that we are in the main thread, and not
@@ -330,10 +331,13 @@ bool save_snapshot_external(
     // No stupid behaviour
     g_assert(bdrvs != NULL);
 
-    vm_stop(RUN_STATE_SAVE_VM);
-    // Trigger the global state to be saved within the snapshot
+        // Trigger the global state to be saved within the snapshot
     global_state_store();
+    vm_stop(RUN_STATE_SAVE_VM);
 
+    // Acquire lock before doing anything
+    aio_context = bdrv_get_aio_context(trans->root_bdrv.bs);
+    aio_context_acquire(aio_context);
 
     // ─── Generate Path ───────────────────────────────────────────────────
 
@@ -429,14 +433,19 @@ bool save_snapshot_external(
 
     // ─── Return Gracefully Or... Not ─────────────────────────────────────
 
+    // Release context lock
+    aio_context_release(aio_context);
+    aio_context = NULL;
+
 end:
 
-    //? Allow to start the vm again only if no error was detected
+    if (aio_context)
+        aio_context_release(aio_context);
+
     if (!ret)
         error_report_err(*errp);
 
-
-    if (saved_vm_running && ret)
+    if (saved_vm_running)
         vm_start();
 
     return ret;
