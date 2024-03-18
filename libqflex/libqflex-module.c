@@ -38,6 +38,11 @@ QemuOptsList qemu_libqflex_opts = {
             .type = QEMU_OPT_STRING,
 
         },
+        {
+            .name = "cylces",
+            .type = QEMU_OPT_NUMBER,
+
+        },
         { /* end of list */ }
     },
 };
@@ -49,6 +54,7 @@ struct libqflex_state_t qemu_libqflex_state = {
     .is_initialised = false,
     .lib_path       = "",
     .cfg_path       = "",
+    .cycles         = 0,
 };
 
 // ─── Local Variable ──────────────────────────────────────────────────────────
@@ -125,6 +131,42 @@ libqflex_flexus_init(void)
         return false;
     }
 
+    QEMU_API_t qemu_api =
+    {
+        .cpu_busy        = QEMU_cpu_busy,
+        .cpu_exec        = QEMU_cpu_exec,
+        .disass          = QEMU_disass,
+        .get_all_cpus    = QEMU_get_all_cpus,
+        .get_cpu_by_idx  = QEMU_get_cpu_by_idx,
+        .get_cpu_idx     = QEMU_get_cpu_idx,
+        .get_csr         = QEMU_get_csr,
+        .get_en          = QEMU_get_en,
+        .get_fpr         = QEMU_get_fpr,
+        .get_gpr         = QEMU_get_gpr,
+        .get_irq         = QEMU_get_irq,
+        .get_mem         = QEMU_get_mem,
+        .get_num_cores   = QEMU_get_num_cores,
+        .get_obj_by_name = QEMU_get_obj_by_name,
+        .get_pa          = QEMU_get_pa,
+        .get_pc          = QEMU_get_pc,
+        .get_pl          = QEMU_get_pl,
+        .get_snap        = QEMU_get_snap,
+        .mem_op_is_data  = QEMU_mem_op_is_data,
+        .mem_op_is_write = QEMU_mem_op_is_write,
+        .stop            = QEMU_stop
+    };
+
+    g_autoptr(GString) nb_cycles = g_string_new("");
+    g_string_printf(nb_cycles, "%d", qemu_libqflex_state.cycles);
+
+    flexus(
+        &qemu_api, &flexus_api,
+        qemu_libqflex_state.n_vcpus,
+        qemu_libqflex_state.cfg_path,
+        "./flexus.log",
+        nb_cycles->str,
+        "."
+    );
 
     return true;
 }
@@ -139,7 +181,7 @@ libqflex_init(void)
         return;
 
     bool ret = true;
-    qemu_log("> [Libqflex] Init\n");
+
 
     if (! tcg_enabled()) {
         error_report("ERROR: TCG must be enabled");
@@ -151,15 +193,17 @@ libqflex_init(void)
     // libqflex_api_init();
     libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
 
+
     ret = libqflex_flexus_init();
     if (!ret) exit(EXIT_FAILURE);
 
-
     // libqflex_trace_init();
 
-
-
     qemu_libqflex_state.is_initialised = true;
+    qemu_log("> [Libqflex] Init\n");
+    qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
+    qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
+    qemu_log("> [Libqflex] CYCLES       =%d\n", qemu_libqflex_state.cycles);
     qemu_log("> [Libqflex] PC=%lx \n", libqflex_vcpus[0].env->pc);
 }
 
@@ -178,14 +222,13 @@ libqflex_parse_opts(char const * optarg)
 
     char const * const lib_path = qemu_opt_get(opts, "lib-path");
     char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
+    uint32_t const cycles       = qemu_opt_get_number(opts, "cycles", 0);
 
+    qemu_libqflex_state.cycles = cycles;
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
 
     qemu_opts_del(opts);
 
     qemu_libqflex_state.is_configured = true;
-    qemu_log("> [Libqflex] Configuration\n");
-    qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
-    qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
 }

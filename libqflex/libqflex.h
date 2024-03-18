@@ -101,15 +101,15 @@ extern vCPU_t* libqflex_vcpus;
  *
  * @return A 64bits register content
  */
-uint64_t libqflex_read_register(
-    vCPU_t*,
-    enum arm_register_type,
-    register_kwargs_t*);
+// uint64_t libqflex_read_register(
+//     vCPU_t*,
+//     enum arm_register_type,
+//     register_kwargs_t*);
 
-void libqflex_poll_irq(void);
+// void libqflex_poll_irq(void);
 
 // Reading memory
-void libqflex_resolving_vaddr(void);
+// void libqflex_resolving_vaddr(void);
 
 
 

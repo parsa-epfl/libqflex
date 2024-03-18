@@ -31,7 +31,7 @@
 
 
 #ifdef CONFIG_LIBQFLEX
-#include "middleware/libqflex/legacy-qflex-api.h"
+#include "middleware/libqflex/libqflex-legacy-api.h"
 #include "middleware/libqflex/libqflex-module.h"
 #endif
 

@@ -24,6 +24,8 @@ struct libqflex_state_t {
     char const *   lib_path;
     char const *   cfg_path;
 
+    u_int32_t   cycles;
+
 };
 
 /**

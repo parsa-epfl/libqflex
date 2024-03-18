@@ -1,7 +1,8 @@
 #include "qemu/osdep.h"
-#include <glib/gtestutils.h>
 
 #include "libqflex.h"
+#include "libqflex-module.h"
+#include "libqflex-legacy-api.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -14,7 +15,7 @@
  */
 static void
 assert_index_in_range(size_t idx, size_t min, size_t max) {
-    g_assert(min >= idx && idx < max);
+    g_assert(min <= idx && idx < max);
 }
 
 /**
@@ -40,7 +41,7 @@ dispatch_isa_register(vCPU_t* cpu_wrapper, isa_regs_t isa)
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-uint64_t
+static uint64_t
 libqflex_read_register(vCPU_t* cpu_wrapper, enum arm_register_type reg_type, register_kwargs_t* read_args)
 {
 
@@ -105,5 +106,27 @@ libqflex_read_register(vCPU_t* cpu_wrapper, enum arm_register_type reg_type, reg
     default:
         g_assert_not_reached();
     };
+
+}
+
+
+// ─── Legacy Api Bindings ─────────────────────────────────────────────────────
+
+
+bool QEMU_cpu_busy(size_t idx) {
+    assert_index_in_range(idx, 0, qemu_libqflex_state.n_vcpus)
+    return ! (libqflex_vcpus[idx]->state->halted);
+}
+
+// int QEMU_cpu_exec(conf_object_t *cpu, bool count) {}
+
+char *QEMU_disass(size_t idx, uint64_t addr)
+{
+    assert_index_in_range(idx, 0, qemu_libqflex_state.n_vcpus);
+    // libqflex_vcpus[idx]->env
+}
+
+uint64_t QEMU_get_csr(size_t idx)
+{
 
 }

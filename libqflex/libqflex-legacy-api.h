@@ -315,7 +315,7 @@ extern FLEXUS_API_t flexus_api;
 void qflex_init_api(void);
 #else
 void FLEXUS_start    (void);
-void FLEXUS_stop     (void);
+void FLEXUS_stop     (void);Simics
 void FLEXUS_qmp      (qmp_flexus_cmd_t, const char *);
 void FLEXUS_trace_mem(int, memory_transaction_t *);
 void FLEXUS_build_mmu(int, uint64_t);
