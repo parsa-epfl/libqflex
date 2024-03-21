@@ -19,7 +19,6 @@
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-vCPU_t* libqflex_vcpus;
 FLEXUS_API_t flexus_api;
 
 // ─── Global Variable ─────────────────────────────────────────────────────────
@@ -64,44 +63,6 @@ struct libqflex_state_t qemu_libqflex_state = {
 
 
 
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Retrieve pointer to CPU State and CPU Arch State from the global memory.
- * This avoid to retrieve and loop over cpu for every register access.
- *
- * Bryan Perdrizat
- *      Here we prefer accessing vCPU though their index for simplicity,
- *      despite that there exists other access method, like CPU_FOREACH(),
- *      and that it rely on the -smp parsing which may set thread/socket instead
- *      of cpus.
- *
- * @param n_vcpu Number of vCPU to retrieve.
- */
-static void
-libqflex_populate_vcpus(size_t n_vcpu)
-{
-    libqflex_vcpus = g_new0(vCPU_t, n_vcpu);
-
-    for(size_t i = 0; i < n_vcpu; i++)
-    {
-        libqflex_vcpus[i].index = i;
-
-        libqflex_vcpus[i].state = qemu_get_cpu(i);
-        g_assert(libqflex_vcpus[i].state != NULL);
-
-        libqflex_vcpus[i].env = cpu_env(libqflex_vcpus[i].state);
-        g_assert(libqflex_vcpus[i].env != NULL);
-
-        libqflex_vcpus[i].cpu = ARM_CPU(libqflex_vcpus[i].state);
-        g_assert(libqflex_vcpus[i].cpu != NULL);
-    }
-
-    qemu_log("> [Libqflex] Populated %zu cpu(s)\n", n_vcpu);
-}
-
 static bool
 libqflex_flexus_init(void)
 {
@@ -133,27 +94,7 @@ libqflex_flexus_init(void)
 
     QEMU_API_t qemu_api =
     {
-        .cpu_busy        = QEMU_cpu_busy,
-        .cpu_exec        = QEMU_cpu_exec,
-        .disass          = QEMU_disass,
-        .get_all_cpus    = QEMU_get_all_cpus,
-        .get_cpu_by_idx  = QEMU_get_cpu_by_idx,
-        .get_cpu_idx     = QEMU_get_cpu_idx,
-        .get_csr         = QEMU_get_csr,
-        .get_en          = QEMU_get_en,
-        .get_fpr         = QEMU_get_fpr,
-        .get_gpr         = QEMU_get_gpr,
-        .get_irq         = QEMU_get_irq,
-        .get_mem         = QEMU_get_mem,
-        .get_num_cores   = QEMU_get_num_cores,
-        .get_obj_by_name = QEMU_get_obj_by_name,
-        .get_pa          = QEMU_get_pa,
-        .get_pc          = QEMU_get_pc,
-        .get_pl          = QEMU_get_pl,
-        .get_snap        = QEMU_get_snap,
-        .mem_op_is_data  = QEMU_mem_op_is_data,
-        .mem_op_is_write = QEMU_mem_op_is_write,
-        .stop            = QEMU_stop
+        .read_register      = libqflex_read_register,
     };
 
     g_autoptr(GString) nb_cycles = g_string_new("");
@@ -204,7 +145,7 @@ libqflex_init(void)
     qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
     qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
     qemu_log("> [Libqflex] CYCLES       =%d\n", qemu_libqflex_state.cycles);
-    qemu_log("> [Libqflex] PC=%lx \n", libqflex_vcpus[0].env->pc);
+    // qemu_log("> [Libqflex] PC=%lx \n", libqflex_vcpus[0].env->pc);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

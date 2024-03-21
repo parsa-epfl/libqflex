@@ -2,26 +2,11 @@
 #define LIBQFLEX_H
 
 #include "target/arm/cpu.h"
+#include "libqflex-legacy-api.h"
 
-enum arm_register_type
-{
-    GENERAL, // Regs for A64 mode.
-    FLOATING_POINT,
+extern struct libqflex_state_t qemu_libqflex_state;
 
-    // PC,     // Program counter
-    // PSTATE, // PSTATE isn't an architectural register for ARMv8
-    // SYSREG, //maybe
-    TTBR0,  // MMU translation table base 0
-    TTBR1,  // MMU translation table base 1
 
-    // SCTLR,  //system control register
-    // SP,     // AArch64 banked stack pointers
-    TCR,
-    ISA,
-    // TPID,   // User RW Thread register
-    // VECTOR  // VFP coprocessor register
-
-};
 
 /**
  * This is a vCPU wrapper.
@@ -55,63 +40,29 @@ typedef struct
     // -*- Whatever is needed -*-
 } vCPU_t;
 
-typedef enum {
-    /**
-     * Only type of instruction supported by Flexus to this date
-     */
-    ID_AA64MMFR1,
-} isa_regs_t;
-
-/**
- * Structure holding misc informations for accessing register.
- */
-typedef struct
-{
-    union
-    {
-        // Register index to access, ex. r01, r15, x19
-        size_t index;
-
-        // ISA specific register type if needed.
-        isa_regs_t isa_regs;
-    };
-
-} register_kwargs_t;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Handle to access all vCPU structure and informations
- */
-extern vCPU_t* libqflex_vcpus;
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-// TRACE Spec'
-// Reading register
+void
+libqflex_populate_vcpus(size_t n_vcpu);
 
 /**
  * Read CPU Arch register.
  * ? Only implemented register can be accessed.
  *
- * @param vCPU_t Wrapper of a virtual CPU.
+ * @param size_t Virtual CPU index
  * @param arm_register_type An ARM specific register
  * @param register_kwargs_t A structure holding misc
- *                          informatio to retrieve a register
+ *                          information to retrieve a register
  *
  * @return A 64bits register content
  */
-// uint64_t libqflex_read_register(
-//     vCPU_t*,
-//     enum arm_register_type,
-//     register_kwargs_t*);
 
-// void libqflex_poll_irq(void);
-
-// Reading memory
-// void libqflex_resolving_vaddr(void);
-
-
+uint64_t
+libqflex_read_register(
+    size_t,
+    register_type_t,
+    register_kwargs_t);
 
 /**
  * USED IN FLEXUS
@@ -155,5 +106,6 @@ extern vCPU_t* libqflex_vcpus;
  * QEMU_get_total_instruction_count
  * QEMU_cpu_set_quantum
  */
+
 
 #endif
