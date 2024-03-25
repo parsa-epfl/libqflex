@@ -95,6 +95,7 @@ libqflex_flexus_init(void)
     QEMU_API_t qemu_api =
     {
         .read_register      = libqflex_read_register,
+        .get_num_cores      = libqflex_get_nb_cores,
     };
 
     g_autoptr(GString) nb_cycles = g_string_new("");
@@ -104,7 +105,7 @@ libqflex_flexus_init(void)
         &qemu_api, &flexus_api,
         qemu_libqflex_state.n_vcpus,
         qemu_libqflex_state.cfg_path,
-        "./flexus.log",
+        "flexus.log",
         nb_cycles->str,
         "."
     );
@@ -134,11 +135,10 @@ libqflex_init(void)
     // libqflex_api_init();
     libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
 
-
     ret = libqflex_flexus_init();
     if (!ret) exit(EXIT_FAILURE);
 
-    // libqflex_trace_init();
+    libqflex_trace_init();
 
     qemu_libqflex_state.is_initialised = true;
     qemu_log("> [Libqflex] Init\n");

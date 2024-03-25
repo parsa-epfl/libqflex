@@ -1,43 +1,43 @@
+#ifndef LIBQFLEX_TRACE_H
+#define LIBQFLEX_TRACE_H
+
+
 #include "qemu/osdep.h"
 #include "middleware/libqflex/libqflex-legacy-api.h"
 
-// typedef enum { BRANCH } branch_type_t;
-typedef enum { TRANS_L } translation_type_t;
+struct mem_access {
+    uint8_t is_load    :1 ;
+    uint8_t is_store   :1 ;
+    uint8_t is_vector  :1 ;
+    uint8_t is_signed  :1 ;
+    uint8_t is_pair    :1 ;
+    uint8_t is_atomic  :1 ;
+
+    size_t size;
+    uint32_t accesses;
+};
 
 typedef struct
 {
-    bool is_userland; // Require qemu_plugin_is_userland addition to the qemu-plugin.h api, really needed ??
-    size_t target_va_pc;
-    size_t target_pa_pc; // Require qemu_plugin_get_gpaddr addition to the qemu-plugin.h api, really needed ??
-    size_t host_pa_pc;
-    GString* disas_str;
+    size_t                  byte_size;
+    char const *            disas_str; //! Super bad, the string my be overwritten in the futur
+    uint32_t                opcode;
+    uint32_t                exception_lvl;
+    mem_op_type_t           type;
 
-    uint32_t opcode;
-    size_t instruction_bytes_size;
+    logical_address_t  target_pc_va;
+    physical_address_t target_pc_pa;  // Require qemu_plugin_get_gpaddr addition to the qemu-plugin.h api, really needed ??
+    physical_address_t host_pc_pa;
 
-    translation_type_t type;
+} trace_insn_t;
 
-} transaction_state_t;
+void
+libqflex_trace_init(void);
 
-struct memory_transaction_state
-{
-    transaction_state_t transaction;
+bool
+decode_armv8_mem_opcode(struct mem_access*, uint32_t);
 
-    uint64_t va_page;
-    uint64_t pa_page;
+bool
+decode_armv8_branch_opcode(branch_type_t*, uint32_t);
 
-    bool is_io;
-    bool is_store;
-};
-
-struct instr_transaction_state
-{
-    transaction_state_t transaction;
-    branch_type_t branch_type;
-};
-
-// Define a trace callback
-//! Should not use void* but a defined type
-// typedef void (*qflex_trace_cb_t) (void* userdata, void* cb);
-
-void qemu_plugin_trace_init(void);
+#endif

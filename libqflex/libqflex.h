@@ -65,6 +65,15 @@ libqflex_read_register(
     register_kwargs_t);
 
 /**
+ * Return the number of cores QEMU is emulating
+ *
+ * @return a 64bits unsigned integer value,
+ *         containg the core count
+ */
+size_t
+libqflex_get_nb_cores(void);
+
+/**
  * USED IN FLEXUS
  *
  * QEMU_read_unhashed_sysreg

@@ -163,3 +163,19 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, register_kwar
     };
 
 }
+
+size_t
+libqflex_get_nb_cores(void)
+{
+    return qemu_libqflex_state.n_vcpus;
+}
+
+// int
+// libqflex_get_el(size_t cpu_index)
+// {
+
+//     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+
+//     return arm_current_el(cpu_wrapper->env);
+
+// }
