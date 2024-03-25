@@ -9,6 +9,7 @@
 
 #include "qemu/osdep.h"
 #include "qemu/qemu-plugin.h"
+#include "target/arm/cpu.h"
 
 #include "middleware/libqflex/libqflex-legacy-api.h"
 #include "trace.h"
@@ -28,7 +29,7 @@ static GHashTable* transaction_ptr;
 static void
 trans_free(gpointer data)
 {
-    transaction_state_t* trans = (transaction_state_t *) data;
+    trace_insn_t* trans = (trace_insn_t *) data;
     g_string_free(trans->disas_str, true);
     g_free(trans);
 }
@@ -48,25 +49,23 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
 {
 
 
-    transaction_state_t* state = (transaction_state_t*) userdata;
+    trace_insn_t* insn = (trace_insn_t*) userdata;
 
     struct qemu_plugin_hwaddr* hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
 
-    struct memory_transaction_state __attribute__((unused)) mem = {0};
+    struct memory_transaction_t tr = {0};
 
-    //! missing PC physical address
-    mem.transaction.target_va_pc = state->target_va_pc;
-    mem.transaction.instruction_bytes_size = state->instruction_bytes_size;
-    mem.transaction.opcode = state->opcode;
-    //? mem.transaction.type = SMTH
+    tr.s.pc = insn->target_pc_va;
+    tr.s.logical_address = vaddr;
+    tr.s.physical_address = NULL; //TODO
+    tr.s.type = qemu_plugin_mem_is_store(info) = QEMU_Trans_Store : QEMU_Trans_Load;
+    tr.s.size = insn->insn_size;
+    tr.s.opcode = insn->opcode;
+    tr.io = (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr)); //? Works only for full system emulation
 
 
-    mem.va_page = vaddr;
-    mem.pa_page = qemu_plugin_hwaddr_phys_addr(hwaddr);
-    mem.is_store = qemu_plugin_mem_is_store(info);
-    mem.is_io = (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr)); //? Works only for full system emulation
+    // mem.is_store = qemu_plugin_mem_is_store(info);
 
-    //TODO call libqflex or FLEXUS
 
 }
 
@@ -83,11 +82,11 @@ static void
 dispatch_instruction(unsigned int vcpu_index, void* userdata)
 {
 
-    transaction_state_t* state = (transaction_state_t*) userdata;
+    trace_insn_t* state = (trace_insn_t*) userdata;
     struct instr_transaction_state __attribute__((unused)) instr = {0};
 
-    instr.transaction.target_va_pc = state->target_va_pc;
-    instr.transaction.instruction_bytes_size = state->instruction_bytes_size;
+    instr.transaction.target_pc_va = state->target_pc_va;
+    instr.transaction.insn_size = state->insn_size;
     instr.transaction.opcode = state->opcode;
 
     //TODO, maybe ?? instr.branch_type =
@@ -104,48 +103,49 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
     //? Still not sure what to do about it
     // uint64_t block_start = qemu_plugin_tb_vaddr(tb);
 
-    transaction_state_t* transaction;
+    trace_insn_t* transaction;
     size_t nb_instruction = qemu_plugin_tb_n_insns(tb);
 
     // For each instruction in the translation block (TB)
     for (size_t i = 0; i < nb_instruction; i++)
     {
-        struct qemu_plugin_insn* instruction = qemu_plugin_tb_get_insn(tb, i);
+        struct qemu_plugin_insn* insn = qemu_plugin_tb_get_insn(tb, i);
 
-        size_t host_pa_pc = (size_t) qemu_plugin_insn_haddr(instruction);
+        physical_address_t host_pc_pa = qemu_plugin_insn_haddr(insn);
 
         g_mutex_lock(&lock);
-        transaction = g_hash_table_lookup(transaction_ptr, GSIZE_TO_POINTER(host_pa_pc));
+        transaction = g_hash_table_lookup(transaction_ptr, GSIZE_TO_POINTER(host_pc_pa));
         g_mutex_unlock(&lock);
 
         if (transaction == NULL)
         {
-            transaction                         = g_new0(transaction_state_t, 1);
-            transaction->target_va_pc           = qemu_plugin_insn_vaddr(instruction);
-            transaction->host_pa_pc             = host_pa_pc;
-            transaction->opcode                 = *(uint32_t*) qemu_plugin_insn_haddr(instruction); //? From the official plugins
-            transaction->instruction_bytes_size = qemu_plugin_insn_size(instruction);
-            transaction->disas_str              = g_string_new(qemu_plugin_insn_disas(instruction));
+            transaction                         = g_new0(trace_insn_t, 1);
+
+            transaction->host_pc_pa             = host_pc_pa;
+            transaction->target_pc_va           = qemu_plugin_insn_vaddr(insn);
+            transaction->opcode                 = * (uint32_t*)qemu_plugin_insn_haddr(insn); //? From the official plugins
+            transaction->insn_size              = qemu_plugin_insn_size(insn);
+            transaction->disas_str              = qemu_plugin_insn_disas(insn);
+            transaction->exception_lvl          = arm_current_el(&ARM_CPU(current_cpu)->env);
 
             g_mutex_lock(&lock);
-            g_hash_table_insert(transaction_ptr, GSIZE_TO_POINTER(host_pa_pc), transaction);
+            g_hash_table_insert(transaction_ptr, GSIZE_TO_POINTER(host_pc_pa), transaction);
             g_mutex_unlock(&lock);
         }
 
         qemu_plugin_register_vcpu_mem_cb(
-            instruction,
+            insn,
             dispatch_memory_access,
             QEMU_PLUGIN_CB_NO_REGS,
             QEMU_PLUGIN_MEM_RW,
             (void*)transaction);
 
         qemu_plugin_register_vcpu_insn_exec_cb(
-            instruction,
+            insn,
             dispatch_instruction,
             QEMU_PLUGIN_CB_NO_REGS ,
             (void*)transaction);
     }
-
 }
 
 
@@ -155,11 +155,11 @@ exit_plugin(qemu_plugin_id_t id, void* p)
     // ─── Logging Hashmap Translation Cache Size ──────────────────────────
 
     guint hashmap_size = g_hash_table_size(transaction_ptr);
-    gfloat hashmap_M_space = hashmap_size * sizeof(transaction_state_t) / 1e6;
+    gfloat hashmap_M_space = hashmap_size * sizeof(trace_insn_t) / 1e6;
 
     char* size_logger   = g_strdup_printf("> HASH_MAP_SIZE: %i\n", hashmap_size);
     char* space_logger  = g_strdup_printf("> HASH_MAP_MBYTES: %f\n", hashmap_M_space);
-    char* struct_size   = g_strdup_printf("> TRANSLATION_BYTES: %li\n", sizeof(transaction_state_t));
+    char* struct_size   = g_strdup_printf("> TRANSLATION_BYTES: %li\n", sizeof(trace_insn_t));
 
     qemu_plugin_outs(struct_size);
     qemu_plugin_outs(size_logger);
