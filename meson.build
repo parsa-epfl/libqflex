@@ -9,6 +9,8 @@ arm_ss.add(when: middleware_dep['libqflex'], if_true: files(
 # of the trace plugin
 specific_ss.add(when: middleware_dep['libqflex'], if_true: files(
     'libqflex/plugins/trace/trace.c',
+    'libqflex/plugins/trace/branch-decoder.c',
+    'libqflex/plugins/trace/memory-decoder.c',
 ))
 
 # Add snapshot related file to the system target to access other snapshot

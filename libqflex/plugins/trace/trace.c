@@ -8,6 +8,8 @@
  */
 
 #include "qemu/osdep.h"
+
+#include "qemu/plugin-memory.h"
 #include "qemu/qemu-plugin.h"
 #include "target/arm/cpu.h"
 
@@ -20,7 +22,7 @@
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
 static GMutex lock;
-static GHashTable* transaction_ptr;
+static GHashTable* tb_table;
 
 /**
  * Free a translation cache entry from the GHashMap
@@ -30,7 +32,7 @@ static void
 trans_free(gpointer data)
 {
     trace_insn_t* trans = (trace_insn_t *) data;
-    g_string_free(trans->disas_str, true);
+    // g_string_free(trans->disas_str, true);
     g_free(trans);
 }
 
@@ -48,25 +50,40 @@ static void
 dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void* userdata)
 {
 
-
     trace_insn_t* insn = (trace_insn_t*) userdata;
+
+    /**
+     * Checking if the decoder and QEMU agree on the type of memory access
+     * Usless possibly, only useful to retrieve info about atomic store or load
+     */
+    struct mem_access mem_info = {0};
+    g_assert(decode_armv8_mem_opcode(&mem_info, insn->opcode));
+    g_assert(mem_info.is_store == qemu_plugin_mem_is_store(info));
+
+    // ─────────────────────────────────────────────────────────────────────
+
 
     struct qemu_plugin_hwaddr* hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
 
-    struct memory_transaction_t tr = {0};
 
-    tr.s.pc = insn->target_pc_va;
+    memory_transaction_t tr = {0};
+
+    tr.io = (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr));
+
+    tr.s.pc              = insn->target_pc_va;
+    tr.s.opcode          = insn->opcode;
     tr.s.logical_address = vaddr;
-    tr.s.physical_address = NULL; //TODO
-    tr.s.type = qemu_plugin_mem_is_store(info) = QEMU_Trans_Store : QEMU_Trans_Load;
-    tr.s.size = insn->insn_size;
-    tr.s.opcode = insn->opcode;
-    tr.io = (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr)); //? Works only for full system emulation
+    tr.s.exception       = insn->exception_lvl;
+    //? function used previously to get the phys_addr
+    //? arm_cpu_get_phys_page_attrs_debug(CPUState *cs, vaddr addr, MemTxAttrs *attrs)
+    tr.s.physical_address = hwaddr->phys_addr;  //! What the heck do we need this
+
+    tr.s.size   = mem_info.size;
+    tr.s.atomic = mem_info.is_atomic;
+    tr.s.type   = mem_info.is_store ? QEMU_Trans_Store : QEMU_Trans_Load;
 
 
-    // mem.is_store = qemu_plugin_mem_is_store(info);
-
-
+    flexus_api.trace_mem(vcpu_index, &tr);
 }
 
 /**
@@ -82,16 +99,25 @@ static void
 dispatch_instruction(unsigned int vcpu_index, void* userdata)
 {
 
-    trace_insn_t* state = (trace_insn_t*) userdata;
-    struct instr_transaction_state __attribute__((unused)) instr = {0};
+    trace_insn_t* insn = (trace_insn_t*) userdata;
+    g_assert(insn->target_pc_va);
 
-    instr.transaction.target_pc_va = state->target_pc_va;
-    instr.transaction.insn_size = state->insn_size;
-    instr.transaction.opcode = state->opcode;
+    branch_type_t br_type;
+    memory_transaction_t tr = {0};
 
-    //TODO, maybe ?? instr.branch_type =
+    tr.io = false;
 
-    //TODO call libqflex or FLEXUS
+    tr.s.pc               = insn->target_pc_va;
+    tr.s.opcode           = insn->opcode;
+    tr.s.exception        = insn->exception_lvl;
+    tr.s.logical_address  = insn->target_pc_va;
+    tr.s.physical_address = insn->host_pc_pa;
+
+    tr.s.size        = insn->byte_size;
+    tr.s.branch_type = decode_armv8_branch_opcode(&br_type, insn->opcode) ? br_type : QEMU_Non_Branch;
+    tr.s.type        = QEMU_Trans_Instr_Fetch;
+
+    flexus_api.trace_mem(vcpu_index, &tr);
 }
 
 /**
@@ -103,7 +129,7 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
     //? Still not sure what to do about it
     // uint64_t block_start = qemu_plugin_tb_vaddr(tb);
 
-    trace_insn_t* transaction;
+    trace_insn_t* transaction = NULL;
     size_t nb_instruction = qemu_plugin_tb_n_insns(tb);
 
     // For each instruction in the translation block (TB)
@@ -111,10 +137,10 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
     {
         struct qemu_plugin_insn* insn = qemu_plugin_tb_get_insn(tb, i);
 
-        physical_address_t host_pc_pa = qemu_plugin_insn_haddr(insn);
+        physical_address_t host_pc_pa = (u_int64_t) qemu_plugin_insn_haddr(insn);
 
         g_mutex_lock(&lock);
-        transaction = g_hash_table_lookup(transaction_ptr, GSIZE_TO_POINTER(host_pc_pa));
+        transaction = g_hash_table_lookup(tb_table, GSIZE_TO_POINTER(host_pc_pa));
         g_mutex_unlock(&lock);
 
         if (transaction == NULL)
@@ -124,12 +150,12 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
             transaction->host_pc_pa             = host_pc_pa;
             transaction->target_pc_va           = qemu_plugin_insn_vaddr(insn);
             transaction->opcode                 = * (uint32_t*)qemu_plugin_insn_haddr(insn); //? From the official plugins
-            transaction->insn_size              = qemu_plugin_insn_size(insn);
+            transaction->byte_size              = qemu_plugin_insn_size(insn);
             transaction->disas_str              = qemu_plugin_insn_disas(insn);
             transaction->exception_lvl          = arm_current_el(&ARM_CPU(current_cpu)->env);
 
             g_mutex_lock(&lock);
-            g_hash_table_insert(transaction_ptr, GSIZE_TO_POINTER(host_pc_pa), transaction);
+            g_hash_table_insert(tb_table, GSIZE_TO_POINTER(host_pc_pa), transaction);
             g_mutex_unlock(&lock);
         }
 
@@ -154,7 +180,7 @@ exit_plugin(qemu_plugin_id_t id, void* p)
 {
     // ─── Logging Hashmap Translation Cache Size ──────────────────────────
 
-    guint hashmap_size = g_hash_table_size(transaction_ptr);
+    guint hashmap_size = g_hash_table_size(tb_table);
     gfloat hashmap_M_space = hashmap_size * sizeof(trace_insn_t) / 1e6;
 
     char* size_logger   = g_strdup_printf("> HASH_MAP_SIZE: %i\n", hashmap_size);
@@ -169,7 +195,7 @@ exit_plugin(qemu_plugin_id_t id, void* p)
     g_free(size_logger);
     g_free(space_logger);
 
-    g_hash_table_destroy(transaction_ptr);
+    g_hash_table_destroy(tb_table);
     qemu_plugin_outs("==> TRACE END");
 }
 
@@ -179,12 +205,12 @@ exit_plugin(qemu_plugin_id_t id, void* p)
  * as well as plugin exit.
  */
 void
-qemu_plugin_trace_init(void)
+libqflex_trace_init(void)
 {
 
     qemu_plugin_id_t qflex_trace_id = qemu_plugin_register_builtin();
 
-    transaction_ptr = g_hash_table_new_full(
+    tb_table = g_hash_table_new_full(
         NULL,
         g_direct_equal,
         NULL,

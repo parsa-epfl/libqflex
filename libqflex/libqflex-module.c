@@ -135,11 +135,10 @@ libqflex_init(void)
     // libqflex_api_init();
     libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
 
-
     ret = libqflex_flexus_init();
     if (!ret) exit(EXIT_FAILURE);
 
-    // libqflex_trace_init();
+    libqflex_trace_init();
 
     qemu_libqflex_state.is_initialised = true;
     qemu_log("> [Libqflex] Init\n");

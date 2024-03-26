@@ -5,7 +5,7 @@
 #include "qemu/osdep.h"
 #include "middleware/libqflex/libqflex-legacy-api.h"
 
-typedef struct mem_access {
+struct mem_access {
     uint8_t is_load    :1 ;
     uint8_t is_store   :1 ;
     uint8_t is_vector  :1 ;
@@ -19,19 +19,25 @@ typedef struct mem_access {
 
 typedef struct
 {
-    size_t          const   insn_size;
-    char const *    const   disas_str; //! Super bad, the string my be overwritten in the futur
-    uint32_t        const   opcode;
-    uint32_t        const   exception_lvl;
-    translation_type_t      type;
+    size_t                  byte_size;
+    char const *            disas_str; //! Super bad, the string my be overwritten in the futur
+    uint32_t                opcode;
+    uint32_t                exception_lvl;
+    mem_op_type_t           type;
 
-    logical_address_t const   target_pc_va;
-    physical_address_t const  target_pc_ha;  // Require qemu_plugin_get_gpaddr addition to the qemu-plugin.h api, really needed ??
-    physical_address_t const  host_pc_ha;
+    logical_address_t  target_pc_va;
+    physical_address_t target_pc_pa;  // Require qemu_plugin_get_gpaddr addition to the qemu-plugin.h api, really needed ??
+    physical_address_t host_pc_pa;
 
 } trace_insn_t;
 
+void
+libqflex_trace_init(void);
 
-void qemu_plugin_trace_init(void);
+bool
+decode_armv8_mem_opcode(struct mem_access*, uint32_t);
+
+bool
+decode_armv8_branch_opcode(branch_type_t*, uint32_t);
 
 #endif
