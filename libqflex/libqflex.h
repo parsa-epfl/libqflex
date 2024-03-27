@@ -62,7 +62,7 @@ uint64_t
 libqflex_read_register(
     size_t,
     register_type_t,
-    register_kwargs_t);
+    size_t);
 
 /**
  * Return the number of cores QEMU is emulating

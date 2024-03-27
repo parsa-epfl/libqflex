@@ -21,7 +21,7 @@ vCPU_t* libqflex_vcpus = NULL;
  */
 static inline void
 assert_index_in_range(size_t idx, size_t min, size_t max) {
-    g_assert(min <= idx && idx < max);
+    g_assert(min <= idx && idx <= max);
 }
 
 /**
@@ -34,28 +34,6 @@ lookup_vcpu(size_t idx)
 {
     assert_index_in_range(idx, 0, qemu_libqflex_state.n_vcpus);
     return &libqflex_vcpus[idx];
-}
-
-
-/**
- * Return the content of an ISA register.
- * ! ISA does not ONLY contain 64bits register.
- * ! Beware with future implementation
- * @param cpu_wrapper Pointer to a CPU structure
- * @param isa ISA register type
- */
-static uint64_t
-dispatch_isa_register(vCPU_t* cpu_wrapper, isa_regs_t isa)
-{
-    switch (isa)
-    {
-    case ID_AA64MMFR1:
-        return cpu_wrapper->cpu->isar.id_aa64mmfr1;
-        break;
-
-    default:
-        g_assert_not_reached();
-    };
 }
 
 /**
@@ -95,19 +73,16 @@ libqflex_populate_vcpus(size_t n_vcpu)
 }
 
 uint64_t
-libqflex_read_register(size_t cpu_index, register_type_t reg_type, register_kwargs_t read_args)
+libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
 {
 
     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
-
-    size_t idx      = read_args.index;
-    isa_regs_t isa  = read_args.isa_regs;
 
     switch (reg_type)
     {
 
     case GENERAL:
-        assert_index_in_range(idx, 0, 32);
+        assert_index_in_range(idx, 0, 31);
         return cpu_wrapper->env->regs[idx];
 
     /**
@@ -140,23 +115,30 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, register_kwar
         *
         * Align the data for use with TCG host vector operations.
         */
-        assert_index_in_range(idx, 0, 64);
+        assert_index_in_range(idx, 0, 63);
         return cpu_wrapper->env->vfp.zregs[idx].d[0];
+        break;
+
+    case SCTLR:
+        assert_index_in_range(idx, 1, 3);
+        return cpu_wrapper->env->cp15.sctlr_el[idx];
+        break;
 
     case TTBR0:
-        assert_index_in_range(idx, 0, 4);
+        assert_index_in_range(idx, 1, 3);
         return cpu_wrapper->env->cp15.ttbr0_el[idx];
 
     case TTBR1:
-        assert_index_in_range(idx, 0, 4);
+        assert_index_in_range(idx, 1, 2);
         return cpu_wrapper->env->cp15.ttbr1_el[idx];
 
     case TCR:
-        assert_index_in_range(idx, 0, 4);
+        assert_index_in_range(idx, 1, 3);
         return cpu_wrapper->env->cp15.tcr_el[idx];
 
-    case ISA:
-        return dispatch_isa_register(cpu_wrapper, isa);
+    case ID_AA64MMFR0:
+        return cpu_wrapper->cpu->isar.id_aa64mmfr0;
+        break;
 
     default:
         g_assert_not_reached();
