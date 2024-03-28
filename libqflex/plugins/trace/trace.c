@@ -58,6 +58,11 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
      */
     struct mem_access mem_info = {0};
     g_assert(decode_armv8_mem_opcode(&mem_info, insn->opcode));
+    /**
+     * Store Exclusive is conditional, therefore we should make sure
+     * that memory was infact accessed
+     */
+    mem_info.is_store &= qemu_plugin_mem_is_store(info);
     g_assert(mem_info.is_store == qemu_plugin_mem_is_store(info));
 
     // ─────────────────────────────────────────────────────────────────────

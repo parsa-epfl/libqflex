@@ -129,7 +129,7 @@ handle_sync(branch_type_t* s, uint32_t opcode,
          */
         // reset_btype(s);
         // gen_goto_tb(s, 0, 4);
-        *s = QEMU_Barrier_Branch;
+        *s = QEMU_Non_Branch;
         return true;
 
     case 7: /* SB */
@@ -141,7 +141,7 @@ handle_sync(branch_type_t* s, uint32_t opcode,
          * MB and end the TB instead.
          */
         // gen_goto_tb(s, 0, 4);
-        *s = QEMU_Barrier_Branch;
+        *s = QEMU_Non_Branch;
         return true;
 
     default:
