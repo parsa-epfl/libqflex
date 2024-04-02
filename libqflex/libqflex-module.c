@@ -42,6 +42,11 @@ QemuOptsList qemu_libqflex_opts = {
             .type = QEMU_OPT_NUMBER,
 
         },
+        {
+            .name = "debug",
+            .type = QEMU_OPT_STRING,
+
+        },
         { /* end of list */ }
     },
 };
@@ -54,6 +59,7 @@ struct libqflex_state_t qemu_libqflex_state = {
     .lib_path       = "",
     .cfg_path       = "",
     .cycles         = 0,
+    .debug_lvl      = "vverb"
 };
 
 // ─── Local Variable ──────────────────────────────────────────────────────────
@@ -105,9 +111,9 @@ libqflex_flexus_init(void)
         &qemu_api, &flexus_api,
         qemu_libqflex_state.n_vcpus,
         qemu_libqflex_state.cfg_path,
-        "flexus.log",
+        qemu_libqflex_state.debug_lvl,
         nb_cycles->str,
-        "."
+        "." // CWD
     );
 
     return true;
@@ -145,7 +151,7 @@ libqflex_init(void)
     qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
     qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
     qemu_log("> [Libqflex] CYCLES       =%d\n", qemu_libqflex_state.cycles);
-    // qemu_log("> [Libqflex] PC=%lx \n", libqflex_vcpus[0].env->pc);
+    qemu_log("> [Libqflex] DEBUG        =%s\n", qemu_libqflex_state.debug_lvl);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,11 +169,13 @@ libqflex_parse_opts(char const * optarg)
 
     char const * const lib_path = qemu_opt_get(opts, "lib-path");
     char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
+    char const * const debug_lvl = qemu_opt_get(opts, "debug");
     uint32_t const cycles       = qemu_opt_get_number(opts, "cycles", 0);
 
     qemu_libqflex_state.cycles = cycles;
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
+    if (debug_lvl) qemu_libqflex_state.debug_lvl = strdup(debug_lvl);
 
     qemu_opts_del(opts);
 
