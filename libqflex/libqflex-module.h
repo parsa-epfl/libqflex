@@ -26,6 +26,7 @@ struct libqflex_state_t {
     char const *   debug_lvl;
 
     u_int32_t   cycles;
+    u_int32_t   cycles_mask;
 
 };
 

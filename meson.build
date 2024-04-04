@@ -1,8 +1,10 @@
 
 # Add libqflex to the ARM target to access CPU register
 arm_ss.add(when: middleware_dep['libqflex'], if_true: files(
+    'libqflex/libqflex.c',
     'libqflex/libqflex-module.c',
-    'libqflex/libqflex.c'
+    'libqflex/libqflex-hmp-cmds.c',
+    'libqflex/libqflex-qmp-cmds.c',
 ))
 
 # Add pulgins to the utils target to keep coherence with working version

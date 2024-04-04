@@ -19,7 +19,7 @@
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-FLEXUS_API_t flexus_api;
+FLEXUS_API_t flexus_api = {NULL};
 
 // ─── Global Variable ─────────────────────────────────────────────────────────
 
@@ -38,7 +38,12 @@ QemuOptsList qemu_libqflex_opts = {
 
         },
         {
-            .name = "cylces",
+            .name = "cycles",
+            .type = QEMU_OPT_NUMBER,
+
+        },
+        {
+            .name = "cycles-mask",
             .type = QEMU_OPT_NUMBER,
 
         },
@@ -59,6 +64,7 @@ struct libqflex_state_t qemu_libqflex_state = {
     .lib_path       = "",
     .cfg_path       = "",
     .cycles         = 0,
+    .cycles_mask    = 0,
     .debug_lvl      = "vverb"
 };
 
@@ -104,6 +110,7 @@ libqflex_flexus_init(void)
         .get_num_cores      = libqflex_get_nb_cores,
     };
 
+    // Flexus is stupid, so it's to put with its stupidity
     g_autoptr(GString) nb_cycles = g_string_new("");
     g_string_printf(nb_cycles, "%d", qemu_libqflex_state.cycles);
 
@@ -171,8 +178,10 @@ libqflex_parse_opts(char const * optarg)
     char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
     char const * const debug_lvl = qemu_opt_get(opts, "debug");
     uint32_t const cycles       = qemu_opt_get_number(opts, "cycles", 0);
+    uint32_t const cycles_mask  = qemu_opt_get_number(opts, "cycles-mask", 1);
 
     qemu_libqflex_state.cycles = cycles;
+    qemu_libqflex_state.cycles_mask = cycles_mask;
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
     if (debug_lvl) qemu_libqflex_state.debug_lvl = strdup(debug_lvl);
