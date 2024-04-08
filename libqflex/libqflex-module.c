@@ -29,6 +29,11 @@ QemuOptsList qemu_libqflex_opts = {
     .head = QTAILQ_HEAD_INITIALIZER(qemu_libqflex_opts.head),
     .desc = {
         {
+            .name = "mode",
+            .type = QEMU_OPT_STRING,
+
+        },
+        {
             .name = "lib-path",
             .type = QEMU_OPT_STRING,
         },
@@ -65,7 +70,8 @@ struct libqflex_state_t qemu_libqflex_state = {
     .cfg_path       = "",
     .cycles         = 0,
     .cycles_mask    = 0,
-    .debug_lvl      = "vverb"
+    .debug_lvl      = "vverb",
+    .mode           = MODE_TRACE,
 };
 
 // ─── Local Variable ──────────────────────────────────────────────────────────
@@ -151,7 +157,8 @@ libqflex_init(void)
     ret = libqflex_flexus_init();
     if (!ret) exit(EXIT_FAILURE);
 
-    libqflex_trace_init();
+    if (qemu_libqflex_state.mode == MODE_TRACE)
+        libqflex_trace_init();
 
     qemu_libqflex_state.is_initialised = true;
     qemu_log("> [Libqflex] Init\n");
@@ -174,6 +181,7 @@ libqflex_parse_opts(char const * optarg)
     if (opts == NULL)
         exit(EXIT_FAILURE);
 
+    char const * const mode = qemu_opt_get(opts, "mode");
     char const * const lib_path = qemu_opt_get(opts, "lib-path");
     char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
     char const * const debug_lvl = qemu_opt_get(opts, "debug");
@@ -182,9 +190,15 @@ libqflex_parse_opts(char const * optarg)
 
     qemu_libqflex_state.cycles = cycles;
     qemu_libqflex_state.cycles_mask = cycles_mask;
+
+
+
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
     if (debug_lvl) qemu_libqflex_state.debug_lvl = strdup(debug_lvl);
+
+    if (strcmp(strdup(mode), "trace") == 0)  qemu_libqflex_state.mode = MODE_TRACE;
+    if (strcmp(strdup(mode), "timing") == 0) qemu_libqflex_state.mode = MODE_TIMING;
 
     qemu_opts_del(opts);
 

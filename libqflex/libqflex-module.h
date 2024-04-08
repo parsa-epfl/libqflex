@@ -28,6 +28,8 @@ struct libqflex_state_t {
     u_int32_t   cycles;
     u_int32_t   cycles_mask;
 
+    enum { MODE_TRACE, MODE_TIMING, } mode;
+
 };
 
 /**
