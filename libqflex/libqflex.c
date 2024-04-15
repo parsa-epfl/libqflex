@@ -152,6 +152,26 @@ libqflex_get_nb_cores(void)
     return qemu_libqflex_state.n_vcpus;
 }
 
+
+physical_address_t
+libqflex_translate_VA(size_t cpu_index, logical_address_t va)
+{
+    MemTxAttrs attrs;
+    vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+
+    hwaddr pa = arm_cpu_get_phys_page_attrs_debug(cpu_wrapper->state, va, &attrs);
+
+    // Return the error if there is one, otherwise cast the returned address
+    return (pa == -1) ? pa : (physical_address_t)pa;
+}
+
+logical_address_t
+libqflex_get_pc(size_t cpu_index)
+{
+    vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+    return cpu_wrapper->env->pc;
+}
+
 // int
 // libqflex_get_el(size_t cpu_index)
 // {

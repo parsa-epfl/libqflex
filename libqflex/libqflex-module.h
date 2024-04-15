@@ -37,12 +37,22 @@ struct libqflex_state_t {
  * The function is not self-aware of QEMU' state and -libqflex flags,
  * therefore the state is kept within a file scoped structure.
  */
-void libqflex_init(void);
+void
+libqflex_init(void);
 
 /**
  * CLI argument parser. This is called to parse libqflex args during QEMU
  * initialisation phase.
  */
-void libqflex_parse_opts(char const * optarg);
+void
+libqflex_parse_opts(char const * optarg);
+
+
+/**
+ * Return true if the mode is timing and it has been sucessfully initialised
+ * Used by the TCG to check if flexus can start singlestepping.
+ */
+bool
+libqflex_is_timing_ready(void);
 
 #endif

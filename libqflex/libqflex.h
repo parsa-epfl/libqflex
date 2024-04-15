@@ -74,6 +74,30 @@ size_t
 libqflex_get_nb_cores(void);
 
 /**
+ * Translate the guest virtual address to the guest physical address
+ * for Flexus
+ *
+ * @param size_t Virtual CPU index
+ * @param logical_address_t the address to translate
+ *
+ * @return a 64bits address
+ */
+physical_address_t
+libqflex_translate_VA(
+    size_t,
+    logical_address_t);
+
+/**
+ * Return the current PC of a core
+ *
+ * @param size_t Virtual CPU Index
+ *
+ * @return a 64bits address
+ */
+logical_address_t
+libqflex_get_pc(size_t);
+
+/**
  * USED IN FLEXUS
  *
  * QEMU_read_unhashed_sysreg

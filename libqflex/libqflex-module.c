@@ -114,6 +114,8 @@ libqflex_flexus_init(void)
     {
         .read_register      = libqflex_read_register,
         .get_num_cores      = libqflex_get_nb_cores,
+        .translate_va2pa    = libqflex_translate_VA,
+        .get_pc             = libqflex_get_pc
     };
 
     // Flexus is stupid, so it's to put with its stupidity
@@ -191,16 +193,25 @@ libqflex_parse_opts(char const * optarg)
     qemu_libqflex_state.cycles = cycles;
     qemu_libqflex_state.cycles_mask = cycles_mask;
 
-
-
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
     if (debug_lvl) qemu_libqflex_state.debug_lvl = strdup(debug_lvl);
 
-    if (strcmp(strdup(mode), "trace") == 0)  qemu_libqflex_state.mode = MODE_TRACE;
-    if (strcmp(strdup(mode), "timing") == 0) qemu_libqflex_state.mode = MODE_TIMING;
+    if (mode)
+    {
+        if (strcmp(strdup(mode), "trace") == 0)  qemu_libqflex_state.mode = MODE_TRACE;
+        if (strcmp(strdup(mode), "timing") == 0) qemu_libqflex_state.mode = MODE_TIMING;
+    }
 
     qemu_opts_del(opts);
 
     qemu_libqflex_state.is_configured = true;
+}
+
+
+bool
+libqflex_is_timing_ready(void)
+{
+    return qemu_libqflex_state.is_initialised &&
+            (qemu_libqflex_state.mode == MODE_TIMING);
 }
