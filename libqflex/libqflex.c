@@ -1,5 +1,7 @@
 #include "qemu/osdep.h"
 
+//#include "include/hw/core/cpu.h"
+#include "hw/core/tcg-cpu-ops.h"
 #include "qemu/log.h"
 
 #include "libqflex.h"
@@ -61,6 +63,9 @@ libqflex_populate_vcpus(size_t n_vcpu)
 
         libqflex_vcpus[i].state = qemu_get_cpu(i);
         g_assert(libqflex_vcpus[i].state != NULL);
+
+        libqflex_vcpus[i].cc = CPU_GET_CLASS(libqflex_vcpus[i].state);
+        g_assert(libqflex_vcpus[i].cc != NULL);
 
         libqflex_vcpus[i].env = cpu_env(libqflex_vcpus[i].state);
         g_assert(libqflex_vcpus[i].env != NULL);
@@ -171,6 +176,21 @@ libqflex_get_pc(size_t cpu_index)
     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
     return cpu_wrapper->env->pc;
 }
+
+bool
+libqflex_has_interrupt(size_t cpu_index)
+{
+
+    vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+    return cpu_wrapper
+        ->cc
+        ->tcg_ops
+            ->cpu_check_interrupt(
+                cpu_wrapper->state,
+                cpu_wrapper->state->interrupt_request);
+
+}
+
 
 // int
 // libqflex_get_el(size_t cpu_index)

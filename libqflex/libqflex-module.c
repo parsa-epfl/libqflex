@@ -115,7 +115,8 @@ libqflex_flexus_init(void)
         .read_register      = libqflex_read_register,
         .get_num_cores      = libqflex_get_nb_cores,
         .translate_va2pa    = libqflex_translate_VA,
-        .get_pc             = libqflex_get_pc
+        .get_pc             = libqflex_get_pc,
+        .has_irq            = libqflex_has_interrupt
     };
 
     // Flexus is stupid, so it's to put with its stupidity

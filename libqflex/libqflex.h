@@ -1,12 +1,12 @@
 #ifndef LIBQFLEX_H
 #define LIBQFLEX_H
 
+#include "include/hw/core/cpu.h"
 #include "target/arm/cpu.h"
+
 #include "libqflex-legacy-api.h"
 
 extern struct libqflex_state_t qemu_libqflex_state;
-
-
 
 /**
  * This is a vCPU wrapper.
@@ -27,6 +27,9 @@ typedef struct
     // vCPU index (informative)
     size_t index;
 
+    // Highest level. Contain all the methods which
+    // acts on the CPUState, or ARMCPU.
+    CPUClass* cc;
     // High-level logical access to a vCPU,
     // eg: vCPU state, memory allocation,
     CPUState* state;
@@ -97,6 +100,8 @@ libqflex_translate_VA(
 logical_address_t
 libqflex_get_pc(size_t);
 
+bool
+libqflex_has_interrupt(size_t cpu_index);
 /**
  * USED IN FLEXUS
  *
