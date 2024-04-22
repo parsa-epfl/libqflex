@@ -146,4 +146,15 @@ libqflex_has_interrupt(size_t cpu_index);
  */
 
 
+#define EXCP_QFLEX_IDLE    0x10010
+#define EXCP_QFLEX_UNPLUG  0x10011
+#define EXCP_QFLEX_STOP    0x10012
+#define EXCP_QFLEX_UNKNOWN 0x10013
+
+uint64_t
+libqflex_advance(size_t, bool);
+
+uint64_t
+libqflex_step(CPUState*);
+
 #endif
