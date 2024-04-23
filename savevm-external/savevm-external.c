@@ -417,7 +417,7 @@ bool save_snapshot_external(
 //     if (!ret) goto end;
 
 // #ifdef CONFIG_LIBQFLEX
-//     if (qemu_libqflex_state.is_initialised) {
+//     if (qemu_libqflex_state.is_running) {
 //         g_autoptr(GString) dst_path = g_string_new("");
 
 //         g_autofree char* base_bdrv_dirname = g_path_get_dirname(new_bdrv_path);

@@ -19,7 +19,7 @@ struct libqflex_state_t {
     size_t n_vcpus;
 
     bool    is_configured;
-    bool    is_initialised;
+    bool    is_running;
 
     char const *   lib_path;
     char const *   cfg_path;

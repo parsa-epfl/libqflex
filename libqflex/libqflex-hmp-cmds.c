@@ -17,7 +17,7 @@ extern struct libqflex_state_t qemu_libqflex_state;
 void
 hmp_flexus_save_measure(Monitor *mon, const QDict *qdict)
 {
-    if (! qemu_libqflex_state.is_initialised)
+    if (! qemu_libqflex_state.is_running)
     {
         monitor_printf(mon, "Please activate `libqflex' to use flexus QMP commands.\n");
         return;

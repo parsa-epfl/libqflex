@@ -65,7 +65,7 @@ QemuOptsList qemu_libqflex_opts = {
 struct libqflex_state_t qemu_libqflex_state = {
     .n_vcpus        = 0,
     .is_configured  = false,
-    .is_initialised = false,
+    .is_running = false,
     .lib_path       = "",
     .cfg_path       = "",
     .cycles         = 0,
@@ -164,7 +164,7 @@ libqflex_init(void)
     if (qemu_libqflex_state.mode == MODE_TRACE)
         libqflex_trace_init();
 
-    qemu_libqflex_state.is_initialised = true;
+    qemu_libqflex_state.is_running = true;
     qemu_log("> [Libqflex] Init\n");
     qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
     qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
@@ -214,6 +214,6 @@ libqflex_parse_opts(char const * optarg)
 bool
 libqflex_is_timing_ready(void)
 {
-    return qemu_libqflex_state.is_initialised &&
+    return qemu_libqflex_state.is_running &&
             (qemu_libqflex_state.mode == MODE_TIMING);
 }
