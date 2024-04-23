@@ -199,6 +199,23 @@ libqflex_advance(size_t cpu_index, bool trigger_count)
 
     return libqflex_step(cpu_wrapper->state);
 }
+bool
+libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes)
+{
+
+    assert_index_in_range(bytes, 0, 15);
+
+    if ((int64_t)(pa) < 0) {
+        memset(buffer, -1, bytes);
+        return true;
+    }
+
+    cpu_physical_memory_read(pa, buffer, bytes);
+
+    return true;
+}
+
+
 // int
 // libqflex_get_el(size_t cpu_index)
 // {

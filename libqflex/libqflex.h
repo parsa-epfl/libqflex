@@ -158,3 +158,6 @@ uint64_t
 libqflex_step(CPUState*);
 
 #endif
+
+bool
+libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes);
