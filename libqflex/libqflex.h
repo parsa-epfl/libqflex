@@ -100,6 +100,13 @@ libqflex_translate_VA(
 logical_address_t
 libqflex_get_pc(size_t);
 
+/**
+ * Return true if an interrupt is pending
+ *
+ * @param size_t Virtual CPU Index
+ *
+ * @return bool
+ */
 bool
 libqflex_has_interrupt(size_t cpu_index);
 /**
@@ -157,7 +164,10 @@ libqflex_advance(size_t, bool);
 uint64_t
 libqflex_step(CPUState*);
 
-#endif
+void
+libqflex_stop(char const * const msg);
 
 bool
 libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes);
+
+#endif

@@ -25,8 +25,8 @@ struct libqflex_state_t {
     char const *   cfg_path;
     char const *   debug_lvl;
 
-    u_int32_t   cycles;
-    u_int32_t   cycles_mask;
+    uint32_t   cycles;
+    uint32_t   cycles_mask;
 
     enum { MODE_TRACE, MODE_TIMING, } mode;
 

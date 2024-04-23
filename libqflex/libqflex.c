@@ -3,6 +3,8 @@
 //#include "include/hw/core/cpu.h"
 #include "hw/core/tcg-cpu-ops.h"
 #include "qemu/log.h"
+#include "qapi/qapi-commands-misc.h"
+#include "qapi/qapi-commands-control.h"
 
 #include "libqflex.h"
 #include "libqflex-module.h"
@@ -188,8 +190,9 @@ libqflex_has_interrupt(size_t cpu_index)
             ->cpu_check_interrupt(
                 cpu_wrapper->state,
                 cpu_wrapper->state->interrupt_request);
-
 }
+
+
 
 uint64_t
 libqflex_advance(size_t cpu_index, bool trigger_count)
@@ -199,6 +202,26 @@ libqflex_advance(size_t cpu_index, bool trigger_count)
 
     return libqflex_step(cpu_wrapper->state);
 }
+
+void
+libqflex_stop(char const * const msg)
+{
+    Error* err = NULL;
+    qemu_log("> [Libqflex] Stopping: %s\n", msg);
+
+    qmp_stop(&err);
+
+//    if (qemu_libqflex_state.is_running) {
+
+        //if (qflex_state.update && (qflex_state.cycles <= 0))
+        //    qflex_state.update++;
+        //else
+        //qmp_quit(errp);
+  //  }
+    qemu_libqflex_state.is_running = false;
+    qmp_quit(&err);
+}
+
 bool
 libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes)
 {
