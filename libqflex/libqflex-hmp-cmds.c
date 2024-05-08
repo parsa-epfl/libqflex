@@ -17,7 +17,7 @@ extern struct libqflex_state_t qemu_libqflex_state;
 void
 hmp_flexus_save_measure(Monitor *mon, const QDict *qdict)
 {
-    if (! qemu_libqflex_state.is_running)
+    if (! qemu_libqflex_state.is_configured)
     {
         monitor_printf(mon, "Please activate `libqflex' to use flexus QMP commands.\n");
         return;
@@ -26,7 +26,10 @@ hmp_flexus_save_measure(Monitor *mon, const QDict *qdict)
     Error* err = NULL;
 
     flexus_api.qmp(QMP_FLEXUS_SAVESTATS, "all.stats.out");
-    flexus_api.qmp(QMP_FLEXUS_WRITEMEASUREMENT, "all:all.measurment.out");
+    flexus_api.qmp(QMP_FLEXUS_WRITEMEASUREMENT, "all:all.measurement.out");
+
+    hmp_handle_error(mon, err);
+}
 
     hmp_handle_error(mon, err);
 }
