@@ -23,6 +23,7 @@ struct libqflex_state_t {
 
     char const *   lib_path;
     char const *   cfg_path;
+    char const *   ckpt_path;
     char const *   debug_lvl;
 
     uint32_t   cycles;

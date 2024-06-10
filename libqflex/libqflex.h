@@ -170,4 +170,10 @@ libqflex_stop(char const * const msg);
 bool
 libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes);
 
+void
+libqflex_save_ckpt(char const * const dirname);
+
+void
+libqflex_load_ckpt(char const * const dirname);
+
 #endif

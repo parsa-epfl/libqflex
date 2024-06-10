@@ -5,14 +5,12 @@
 #include "qapi/qmp/qdict.h"
 #include "qemu/error-report.h"
 #include "qemu/log.h"
-#include "sysemu/runstate.h"
 
 #include "qapi/qmp/qdict.h"
 
 #include "middleware/trace.h"
 #include "libqflex-module.h"
-
-extern struct libqflex_state_t qemu_libqflex_state;
+#include "libqflex.h"
 
 void
 hmp_flexus_save_measure(Monitor *mon, const QDict *qdict) {
@@ -39,14 +37,22 @@ hmp_flexus_save_ckpt(Monitor* mon, const QDict* qdict)
         return;
     }
 
-    Error    *err           = NULL;
-    int saved_vm_running = runstate_is_running();
-    vm_stop(RUN_STATE_SAVE_VM);
+    Error* err = NULL;
 
-    flexus_api.qmp(QMP_FLEXUS_DOSAVE, "./flexus_ckpt");
+    // Memory leak here
+    char const * dst_path;
 
-    if (saved_vm_running)
-        vm_start();
+    if(!qdict_get_try_str(qdict, "dirname"))
+    {
+        g_autoptr(GDateTime) now = g_date_time_new_now_local();
+        dst_path = g_date_time_format(now, "checkpoint/%Y_%m_%d-%H%M_%S");
+    }
+    else
+    {
+        dst_path = qdict_get_try_str(qdict, "dirname");
+    }
+
+    libqflex_save_ckpt(dst_path);
 
     hmp_handle_error(mon, err);
 }
@@ -60,17 +66,12 @@ hmp_flexus_load_ckpt(Monitor* mon, const QDict* qdict)
         return;
     }
 
-    Error    *err           = NULL;
-    int saved_vm_running = runstate_is_running();
-    vm_stop(RUN_STATE_SAVE_VM);
+    Error* err = NULL;
 
     // TODO: Check that the directory exists
-    const char *folder_name = qdict_get_try_str(qdict, "dirname");
+    char const * const folder_name = qdict_get_try_str(qdict, "dirname");
 
-    flexus_api.qmp(QMP_FLEXUS_DOLOAD, folder_name);
-
-    if (saved_vm_running)
-        vm_start();
+    libqflex_load_ckpt(folder_name);
 
     hmp_handle_error(mon, err);
 }

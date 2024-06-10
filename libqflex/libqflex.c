@@ -1,10 +1,10 @@
 #include "qemu/osdep.h"
 
-//#include "include/hw/core/cpu.h"
 #include "hw/core/tcg-cpu-ops.h"
 #include "qemu/log.h"
 #include "qapi/qapi-commands-misc.h"
 #include "qapi/qapi-commands-control.h"
+#include "sysemu/runstate.h"
 
 #include "libqflex.h"
 #include "libqflex-module.h"
@@ -238,7 +238,30 @@ libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes)
     return true;
 }
 
+void
+libqflex_save_ckpt(char const * const dirname)
+{
+    int saved_vm_running = runstate_is_running();
+    vm_stop(RUN_STATE_SAVE_VM);
 
+    g_mkdir_with_parents(dirname, 0700);
+    flexus_api.qmp(QMP_FLEXUS_DOSAVE, dirname);
+
+    if (saved_vm_running)
+        vm_start();
+}
+
+void
+libqflex_load_ckpt(char const * const dirname)
+{
+    int saved_vm_running = runstate_is_running();
+    vm_stop(RUN_STATE_SAVE_VM);
+
+    flexus_api.qmp(QMP_FLEXUS_DOLOAD, dirname);
+
+    if (saved_vm_running)
+        vm_start();
+}
 // int
 // libqflex_get_el(size_t cpu_index)
 // {

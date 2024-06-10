@@ -43,6 +43,11 @@ QemuOptsList qemu_libqflex_opts = {
 
         },
         {
+            .name = "ckpt-path",
+            .type = QEMU_OPT_STRING,
+
+        },
+        {
             .name = "cycles",
             .type = QEMU_OPT_NUMBER,
 
@@ -65,9 +70,10 @@ QemuOptsList qemu_libqflex_opts = {
 struct libqflex_state_t qemu_libqflex_state = {
     .n_vcpus        = 0,
     .is_configured  = false,
-    .is_running = false,
+    .is_running     = false,
     .lib_path       = "",
     .cfg_path       = "",
+    .ckpt_path      = "",
     .cycles         = 0,
     .cycles_mask    = 0,
     .debug_lvl      = "vverb",
@@ -149,7 +155,6 @@ libqflex_init(void)
 
     bool ret = true;
 
-
     if (! tcg_enabled()) {
         error_report("ERROR: TCG must be enabled");
         exit(EXIT_FAILURE);
@@ -157,7 +162,6 @@ libqflex_init(void)
 
     //? `current_machine` accessible only after options parsing
     qemu_libqflex_state.n_vcpus = current_machine->smp.cpus;
-    // libqflex_api_init();
     libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
 
     ret = libqflex_flexus_init();
@@ -166,10 +170,16 @@ libqflex_init(void)
     if (qemu_libqflex_state.mode == MODE_TRACE)
         libqflex_trace_init();
 
+
+    if (qemu_libqflex_state.ckpt_path)
+        libqflex_load_ckpt(qemu_libqflex_state.ckpt_path);
+
+
     qemu_libqflex_state.is_running = true;
     qemu_log("> [Libqflex] Init\n");
     qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
     qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
+    qemu_log("> [Libqflex] CKPT_PATH    =%s\n", qemu_libqflex_state.ckpt_path);
     qemu_log("> [Libqflex] CYCLES       =%d\n", qemu_libqflex_state.cycles);
     qemu_log("> [Libqflex] DEBUG        =%s\n", qemu_libqflex_state.debug_lvl);
 }
@@ -190,6 +200,7 @@ libqflex_parse_opts(char const * optarg)
     char const * const mode = qemu_opt_get(opts, "mode");
     char const * const lib_path = qemu_opt_get(opts, "lib-path");
     char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
+    char const * const ckpt_path = qemu_opt_get(opts, "ckpt-path");
     char const * const debug_lvl = qemu_opt_get(opts, "debug");
     uint32_t const cycles       = qemu_opt_get_number(opts, "cycles", 0);
     uint32_t const cycles_mask  = qemu_opt_get_number(opts, "cycles-mask", 1);
@@ -200,6 +211,7 @@ libqflex_parse_opts(char const * optarg)
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
     if (debug_lvl) qemu_libqflex_state.debug_lvl = strdup(debug_lvl);
+    if (ckpt_path) qemu_libqflex_state.ckpt_path = strdup(ckpt_path);
 
     if (mode)
     {
@@ -211,7 +223,6 @@ libqflex_parse_opts(char const * optarg)
 
     qemu_libqflex_state.is_configured = true;
 }
-
 
 bool
 libqflex_is_timing_ready(void)
