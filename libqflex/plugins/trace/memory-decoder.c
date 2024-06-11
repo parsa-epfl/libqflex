@@ -1275,11 +1275,90 @@ disas_ldst(struct mem_access* s, uint32_t opcode)
     return has_mem_access;
 }
 
+static bool
+disas_branch(struct mem_access* s, uint32_t opcode)
+{
+    // unallocated_encoding(s);
+    bool has_mem_access = false;
+    switch(extract32(opcode, 29, 3)) {
+        case 0x6:
+            switch(extract32(opcode, 25, 4)) {
+                case 0x4:
+                    switch(extract32(opcode, 22, 2)) {
+                        case 0x1:
+                            has_mem_access = true;  /* System instructions */
+                            break;
+                        default:
+                            has_mem_access = false;
+                            break;
+                    }
+                    break;
+                default:
+                    has_mem_access = false;
+                    break;
+            }
+            break;
+        default:
+            has_mem_access = false;
+            break;
+    }
+    return has_mem_access;
+}
+
+static bool
+disas_sve(struct mem_access* s, uint32_t opcode)
+{
+    bool has_mem_access = false;
+    bool is_vector = true;      // Is vector instruction?
+    bool is_store = false;      // Is load/store instruction?
+    bool is_signed = false;     // Is signed load/store instruction? (Sign-extends or zero-extends)
+    // bool is_pair = false;       // Is pair instruction?
+    // bool is_atomic = false;     // Is atomic instruction?
+    size_t size = 0;            // 10 for 32-bit and 11 for 64-bit
+    // uint32_t accesses = 0;      // Number of elements loaded
+
+    switch(extract32(opcode, 29, 3)) {
+        case 0x4:
+            has_mem_access = true;  /* SVE Memory - 32-bit Gather and Unsized Contiguous */
+            size = 2;               /* 32-bit */
+            is_store = false;       /* All Prefetch (Load) instructions */
+            break;
+        case 0x5:
+            has_mem_access = true;  /* SVE Memory - Contiguous Load */
+            is_store = true;        // TODO: add sizes
+            break;
+        case 0x6:
+            has_mem_access = true;  /* SVE Memory - 64-bit Gather */
+            size = 3;
+            is_store = false;
+            break;
+        case 0x7:
+            has_mem_access = true;  /* Misc SVE operations */
+            is_store = true;
+            break;
+        default:
+            has_mem_access = false;
+            break;
+    }
+
+    *s = (struct mem_access) {.size = size,
+        .is_vector = is_vector,
+        .is_load = !is_store,
+        .is_store = is_store,
+        .is_signed = is_signed,
+        .is_pair = false,
+        .accesses = 1};
+
+    return has_mem_access;
+}
+
 bool
 decode_armv8_mem_opcode(struct mem_access* s, uint32_t opcode)
 {
 
     memset(s, 0, sizeof(struct mem_access));
+
+    bool has_mem_access = false;
 
     switch (extract32(opcode, 25, 4)) {
     case 0x0:
@@ -1288,16 +1367,18 @@ decode_armv8_mem_opcode(struct mem_access* s, uint32_t opcode)
         // unallocated_encoding;
         break;
     case 0x2: /* SVE */
+        has_mem_access = disas_sve(s, opcode);
         break;
     case 0x8: case 0x9: /* Data processing - immediate */
         break;
     case 0xa: case 0xb: /* Branch, exception generation and system opcodes */
+        has_mem_access = disas_branch(s, opcode);
         break;
     case 0x4:
     case 0x6:
     case 0xc:
     case 0xe:      /* Loads and stores */
-        return disas_ldst(s, opcode);
+        has_mem_access = disas_ldst(s, opcode);
         break;
     case 0x5:
     case 0xd:      /* Data processing - register */
@@ -1308,5 +1389,11 @@ decode_armv8_mem_opcode(struct mem_access* s, uint32_t opcode)
     default:
         g_assert_not_reached(); /* all 15 cases should be handled above */
     }
-    return false;
+
+    if (has_mem_access) {
+        return true;
+    } else {
+        printf("ERROR for extracted opcode: %x, full opcode: %x\n", extract32(opcode, 25, 4), opcode);
+        return false;
+    }
 }
