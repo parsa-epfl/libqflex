@@ -69,7 +69,7 @@ libqflex_populate_vcpus(size_t n_vcpu)
         libqflex_vcpus[i].cc = CPU_GET_CLASS(libqflex_vcpus[i].state);
         g_assert(libqflex_vcpus[i].cc != NULL);
 
-        libqflex_vcpus[i].env = cpu_env(libqflex_vcpus[i].state);
+        libqflex_vcpus[i].env = libqflex_vcpus[i].state->env_ptr;
         g_assert(libqflex_vcpus[i].env != NULL);
 
         libqflex_vcpus[i].cpu = ARM_CPU(libqflex_vcpus[i].state);
@@ -269,5 +269,3 @@ libqflex_load_ckpt(char const * const dirname)
 //     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
 
 //     return arm_current_el(cpu_wrapper->env);
-
-// }
