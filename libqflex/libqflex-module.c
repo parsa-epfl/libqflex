@@ -126,6 +126,7 @@ libqflex_flexus_init(void)
         .cpu_exec           = libqflex_advance,
         .stop               = libqflex_stop,
         .get_mem            = libqflex_read_main_memory,
+        .tick               = libqflex_tick,
     };
 
     // Flexus is stupid, so it's to put with its stupidity

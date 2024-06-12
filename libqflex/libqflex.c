@@ -1,6 +1,10 @@
 #include "qemu/osdep.h"
 
 #include "hw/core/tcg-cpu-ops.h"
+#include "sysemu/cpu-timers.h"
+#include "include/qemu/seqlock.h"
+#include "include/sysemu/cpu-timers-internal.h"
+#include "accel/tcg/tcg-accel-ops-icount.h"
 #include "qemu/log.h"
 #include "qapi/qapi-commands-misc.h"
 #include "qapi/qapi-commands-control.h"
@@ -193,6 +197,22 @@ libqflex_has_interrupt(size_t cpu_index)
 }
 
 
+void
+libqflex_tick(void)
+{
+    g_assert(qemu_libqflex_state.is_configured);
+    g_assert(qemu_libqflex_state.is_running);
+    g_assert(qemu_libqflex_state.mode == MODE_TIMING);
+
+    // proceed one clock cycle
+    seqlock_write_lock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
+    qatomic_set_i64(&timers_state.qemu_icount, timers_state.qemu_icount + 1);
+    seqlock_write_unlock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
+    // fire qemu timers to generate guest timer interrupts
+    icount_account_warp_timer();
+    icount_handle_deadline();
+
+}
 
 uint64_t
 libqflex_advance(size_t cpu_index, bool trigger_count)

@@ -152,7 +152,6 @@ libqflex_has_interrupt(size_t cpu_index);
  * QEMU_cpu_set_quantum
  */
 
-
 #define EXCP_QFLEX_IDLE    0x10010
 #define EXCP_QFLEX_UNPLUG  0x10011
 #define EXCP_QFLEX_STOP    0x10012
@@ -160,6 +159,9 @@ libqflex_has_interrupt(size_t cpu_index);
 
 uint64_t
 libqflex_advance(size_t, bool);
+
+void
+libqflex_tick(void);
 
 uint64_t
 libqflex_step(CPUState*);
