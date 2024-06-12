@@ -75,11 +75,13 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
 
     tr.io = (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr));
 
-    tr.s.pc                 = insn->target_pc_va;
-    tr.s.opcode             = insn->opcode;
-    tr.s.logical_address    = vaddr;
-    tr.s.exception          = insn->exception_lvl;
-    tr.s.physical_address   = hwaddr->phys_addr;
+    tr.s.pc              = insn->target_pc_va;
+    tr.s.opcode          = insn->opcode;
+    tr.s.logical_address = vaddr;
+    tr.s.exception       = insn->exception_lvl;
+
+    MemTxAttrs attrs = {0};
+    tr.s.physical_address = arm_cpu_get_phys_page_attrs_debug(current_cpu, vaddr, &attrs);
 
     tr.s.size   = mem_info.size;
     tr.s.atomic = mem_info.is_atomic;
