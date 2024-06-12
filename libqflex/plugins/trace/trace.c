@@ -79,9 +79,9 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
     tr.s.opcode          = insn->opcode;
     tr.s.logical_address = vaddr;
     tr.s.exception       = insn->exception_lvl;
-    //? function used previously to get the phys_addr
-    //? arm_cpu_get_phys_page_attrs_debug(CPUState *cs, vaddr addr, MemTxAttrs *attrs)
-    tr.s.physical_address = hwaddr->phys_addr;  //! What the heck do we need this
+
+    MemTxAttrs attrs = {0};
+    tr.s.physical_address = arm_cpu_get_phys_page_attrs_debug(current_cpu, vaddr, &attrs);
 
     tr.s.size   = mem_info.size;
     tr.s.atomic = mem_info.is_atomic;
