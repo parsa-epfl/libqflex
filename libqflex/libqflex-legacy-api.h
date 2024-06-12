@@ -245,11 +245,12 @@ typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
 typedef bool              (*QEMU_GET_IRQ_t)         (size_t core_index);
 typedef uint64_t          (*QEMU_CPU_EXEC_t)        (size_t core_index, bool count);
+typedef void              (*QEMU_TICK_t)            (void);
 typedef bool              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
 typedef void              (*QEMU_STOP_t)            (char const * const msg);
 // ─────────────────────────────────────────────────────────────────────────────
 
-typedef void              (*FLEXUS_START_t)        (void);
+typedef void              (*FLEXUS_START_t)        (uint64_t);
 typedef void              (*FLEXUS_STOP_t)         (void);
 typedef void              (*FLEXUS_QMP_t)          (qmp_flexus_cmd_t, const char *);
 typedef void              (*FLEXUS_TRACE_MEM_t)    (uint64_t, memory_transaction_t *);
@@ -286,6 +287,7 @@ typedef struct QEMU_API_t
   QEMU_CPU_EXEC_t        cpu_exec;
   QEMU_GET_MEM_t         get_mem;
   QEMU_STOP_t            stop;
+  QEMU_TICK_t            tick;
   // ─────────────────────────────────────────────────────────────────────
 
 
