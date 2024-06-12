@@ -3,7 +3,7 @@
 #include "hw/core/tcg-cpu-ops.h"
 #include "sysemu/cpu-timers.h"
 #include "include/qemu/seqlock.h"
-#include "include/sysemu/cpu-timers-internal.h"
+#include "softmmu/timers-state.h"
 #include "accel/tcg/tcg-accel-ops-icount.h"
 #include "qemu/log.h"
 #include "qapi/qapi-commands-misc.h"
