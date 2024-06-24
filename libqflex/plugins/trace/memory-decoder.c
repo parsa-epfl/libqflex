@@ -1276,14 +1276,14 @@ disas_ldst(struct mem_access* s, uint32_t opcode)
 }
 
 static bool
-disas_branch(struct mem_access* s, uint32_t opcode)
+disas_branch_sys(struct mem_access* s, uint32_t opcode)
 {
     // unallocated_encoding(s);
     bool has_mem_access = false;
     switch(extract32(opcode, 29, 3)) {
         case 0x6:
             switch(extract32(opcode, 25, 4)) {
-                case 0x4:
+                case 0x4: // TODO: Can this happen?
                     switch(extract32(opcode, 22, 2)) {
                         case 0x1:
                             has_mem_access = true;  /* System instructions */
@@ -1293,12 +1293,50 @@ disas_branch(struct mem_access* s, uint32_t opcode)
                             break;
                     }
                     break;
+                case 0xa:
+                    switch(extract32(opcode, 19, 6)) {
+                        case 0x21: /* SYS instruction */
+                        switch (extract32(opcode, 12, 4)) {
+                            case 0x7:
+                                switch (extract32(opcode, 8, 4)) {
+                                case 0x1: 
+                                case 0x4: 
+                                case 0x5: 
+                                case 0x6: 
+                                case 0xa:
+                                case 0xb:
+                                case 0xc:
+                                case 0xd:
+                                case 0xe:
+                                    has_mem_access = true;  /* Cache maintaenance ex. IC IALLUIS */
+                                    s->is_store = true;
+                                    // printf("ERROR:QFlex, We do not support memory callbacks for cache maintenance.");
+                                    break;
+                                default:
+                                    has_mem_access = false;  /* System instructions */
+                                    break;
+                                }
+                                break;
+                            case 0x8: case 0x9: /* TLB maintenance */
+                            case 0xb: case 0xe: /* Reserved */
+                                has_mem_access = false;
+                                break;
+                            default:
+                                has_mem_access = false;
+                                break;
+                        }
+                        break;
+                        default:
+                            has_mem_access = false;  
+                            break;
+                    }
+                    break;
                 default:
                     has_mem_access = false;
                     break;
             }
             break;
-        default:
+        default: /* branches */
             has_mem_access = false;
             break;
     }
@@ -1372,7 +1410,7 @@ decode_armv8_mem_opcode(struct mem_access* s, uint32_t opcode)
     case 0x8: case 0x9: /* Data processing - immediate */
         break;
     case 0xa: case 0xb: /* Branch, exception generation and system opcodes */
-        has_mem_access = disas_branch(s, opcode);
+        has_mem_access = disas_branch_sys(s, opcode);
         break;
     case 0x4:
     case 0x6:
