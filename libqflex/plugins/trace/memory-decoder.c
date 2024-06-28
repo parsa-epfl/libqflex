@@ -1275,71 +1275,107 @@ disas_ldst(struct mem_access* s, uint32_t opcode)
     return has_mem_access;
 }
 
+/*
+    * Branches and system instructions
+    * 
+*/
+
 static bool
 disas_branch_sys(struct mem_access* s, uint32_t opcode)
 {
-    // unallocated_encoding(s);
     bool has_mem_access = false;
-    switch(extract32(opcode, 29, 3)) {
-        case 0x6:
-            switch(extract32(opcode, 25, 4)) {
-                case 0x4: // TODO: Can this happen?
-                    switch(extract32(opcode, 22, 2)) {
-                        case 0x1:
-                            has_mem_access = true;  /* System instructions */
-                            break;
-                        default:
-                            has_mem_access = false;
-                            break;
-                    }
-                    break;
-                case 0xa:
-                    switch(extract32(opcode, 19, 6)) {
-                        case 0x21: /* SYS instruction */
-                        switch (extract32(opcode, 12, 4)) {
-                            case 0x7:
-                                switch (extract32(opcode, 8, 4)) {
-                                case 0x1: 
-                                case 0x4: 
-                                case 0x5: 
-                                case 0x6: 
-                                case 0xa:
-                                case 0xb:
-                                case 0xc:
-                                case 0xd:
-                                case 0xe:
-                                    has_mem_access = true;  /* Cache maintaenance ex. IC IALLUIS */
-                                    s->is_store = true;
-                                    // printf("ERROR:QFlex, We do not support memory callbacks for cache maintenance.");
-                                    break;
-                                default:
-                                    has_mem_access = false;  /* System instructions */
-                                    break;
-                                }
-                                break;
-                            case 0x8: case 0x9: /* TLB maintenance */
-                            case 0xb: case 0xe: /* Reserved */
-                                has_mem_access = false;
-                                break;
-                            default:
-                                has_mem_access = false;
-                                break;
-                        }
-                        break;
-                        default:
-                            has_mem_access = false;  
-                            break;
-                    }
-                    break;
-                default:
-                    has_mem_access = false;
-                    break;
-            }
-            break;
-        default: /* branches */
-            has_mem_access = false;
-            break;
-    }
+    printf("ERROR:QFlex, We do not support memory callbacks for branches and system instructions.\n");
+    printf("Opcode: %x\n", opcode);
+
+    // size_t size = 0;                // 10 for 32-bit and 11 for 64-bit
+    // bool is_atomic = false;         // Is atomic instruction?
+    // bool is_store = false;          // Is load/store instruction?
+
+    // switch(extract32(opcode, 29, 3)) {
+    //     case 0x2:       /* Conditional/Misc branch */
+    //         break;
+    //     case 0x6:       /* Exception handling and system instructions */
+    //         switch(extract32(opcode, 24, 2)) {
+    //             case 0x0:       /* Exception generation */
+    //                 break;
+    //             case 0x1:
+    //                 break;
+    //             case 0x2:       /* Unconditional branch */
+    //             case 0x3:
+    //                 break;
+    //         }
+    //         break;
+    //     case 0x0:       /* Unconditional branch */
+    //     case 0x4:
+    //         break;
+    //     case 0x1:       /* Compare and branch */
+    //     case 0x5:
+    //         break;
+    //     case 0x3:       /* Unallocated */
+    //     case 0x7:
+    //         break;
+    // }
+
+    // switch(extract32(opcode, 29, 3)) {
+    //     case 0x6:
+    //         switch(extract32(opcode, 25, 4)) {
+    //             case 0x4: // TODO: Can this happen?
+    //                 switch(extract32(opcode, 22, 2)) {
+    //                     case 0x1:
+    //                         has_mem_access = true;  /* System instructions */
+    //                         break;
+    //                     default:
+    //                         has_mem_access = false;
+    //                         break;
+    //                 }
+    //                 break;
+    //             case 0xa:
+    //                 switch(extract32(opcode, 19, 6)) {
+    //                     case 0x21: /* SYS instruction */
+    //                     switch (extract32(opcode, 12, 4)) {
+    //                         case 0x7:
+    //                             switch (extract32(opcode, 8, 4)) {
+    //                             case 0x1: 
+    //                             case 0x4: 
+    //                             case 0x5: 
+    //                             case 0x6: 
+    //                             case 0xa:
+    //                             case 0xb:
+    //                             case 0xc:
+    //                             case 0xd:
+    //                             case 0xe:
+    //                                 has_mem_access = true;  /* Cache maintaenance ex. IC IALLUIS */
+    //                                 s->is_store = true;
+    //                                 // printf("ERROR:QFlex, We do not support memory callbacks for cache maintenance.");
+    //                                 break;
+    //                             default:
+    //                                 has_mem_access = false;  /* System instructions */
+    //                                 break;
+    //                             }
+    //                             break;
+    //                         case 0x8: case 0x9: /* TLB maintenance */
+    //                         case 0xb: case 0xe: /* Reserved */
+    //                             has_mem_access = false;
+    //                             break;
+    //                         default:
+    //                             has_mem_access = false;
+    //                             break;
+    //                     }
+    //                     break;
+    //                     default:
+    //                         has_mem_access = false;  
+    //                         break;
+    //                 }
+    //                 break;
+    //             default:
+    //                 has_mem_access = false;
+    //                 break;
+    //         }
+    //         break;
+    //     default: /* branches */
+    //         has_mem_access = false;
+    //         break;
+    // }
     return has_mem_access;
 }
 
@@ -1431,87 +1467,83 @@ disas_sve(struct mem_access* s, uint32_t opcode)
             has_mem_access = true;  /* SVE Memory - Contiguous Load */
             is_store = false;       /* All Contiguous load instructions */
             assert(extract32(opcode, 25, 4) == 0x2);
-            switch(extract32(opcode, 21, 2)) {
+            switch(extract32(opcode, 13, 3)) {
                 case 0x0:
-                        switch(extract32(opcode, 13, 3)) {
-                            case 0x7:
-                                if(extract32(opcode, 20, 1) == 0x0)
-                                    size = extract32(opcode, 23, 2);
-                                else {
-                                    size = 4;
-                                    printf("[Warn]:QFlex, loading quadwords, setting size_t = 4.\n");
-                                }
-                                break;
-                            case 0x1:
-                            case 0x4:
-                            case 0x6:
-                                size = extract32(opcode, 23, 2);
-                                break;
-                            default:
-                                printf("[Error]:QFlex, Unallocated encoding.\n");
-                                assert(false);  /* Unallocated encoding */
-                                break;
-                        }
+                    size = extract32(opcode, 23, 2);
                     break;
-                default:
-                    switch(extract32(opcode, 13, 3)) {
-                        case 0x4:
-                            size = 4;
-                            printf("[Warn]:QFlex, loading quadwords, setting size_t = 4.\n");
-                            break;
-                        case 0x7:
-                        case 0x6:
-                        case 0x1:
+                case 0x2:
+                case 0x3:
+                case 0x5:
+                    switch(extract32(opcode, 23, 2)) {
                         case 0x0:
-                            size = extract32(opcode, 23, 2);
+                            size = extract32(opcode, 21, 2);
                             break;
-                        case 0x5:
+                        case 0x1:
+                            size = (extract32(opcode, 21, 2)==0x0)? 2 : extract32(opcode, 21, 2);
+                            break;
                         case 0x2:
-                        case 0x3:
-                            switch(extract32(opcode, 23, 2)) {
+                            switch(extract32(opcode, 21, 2)) {
                                 case 0x0:
-                                    size = extract32(opcode, 21, 2);
+                                    size = 3;
                                     break;
                                 case 0x1:
-                                    size = (extract32(opcode, 21, 2)==0x0)? 2 : extract32(opcode, 21, 2);
+                                    size = 2;
                                     break;
                                 case 0x2:
-                                    switch(extract32(opcode, 21, 2)) {
-                                        case 0x0:
-                                            size = 3;
-                                            break;
-                                        case 0x1:
-                                            size = 2;
-                                            break;
-                                        case 0x2:
-                                            size = 2;
-                                            break;
-                                        case 0x3:
-                                            size = 3;
-                                            break;
-                                    }
+                                    size = 2;
                                     break;
                                 case 0x3:
-                                    switch(extract32(opcode, 21, 2)) {
-                                        case 0x0:
-                                            size = 3;
-                                            break;
-                                        case 0x1:
-                                            size = 2;
-                                            break;
-                                        case 0x2:
-                                            size = 1;
-                                            break;
-                                        case 0x3:
-                                            size = 3;
-                                            break;
-                                    }
+                                    size = 3;
+                                    break;
                             }
+                            break;
+                        case 0x3:
+                            switch(extract32(opcode, 21, 2)) {
+                                case 0x0:
+                                    size = 3;
+                                    break;
+                                case 0x1:
+                                    size = 2;
+                                    break;
+                                case 0x2:
+                                    size = 1;
+                                    break;
+                                case 0x3:
+                                    size = 3;
+                                    break;
+                            }
+                    }
+                    break;
+                case 0x1:
+                case 0x6:
+                    size = extract32(opcode, 23, 2);
+                    break;
+                case 0x7:
+                    switch(extract32(opcode, 21, 2)) {
+                        case 0x0:
+                            if(extract32(opcode, 20, 1) == 0x0)
+                                size = extract32(opcode, 23, 2);
+                            else {
+                                size = 4;
+                                printf("[Warn]:QFlex, loading quadwords, setting size_t = 4.\n");
+                            }
+                            break;
+                        default:
+                            assert(extract32(opcode, 20, 1) == 0x0); /* The other one is unallocated */
+                            size = extract32(opcode, 23, 2);
+                            break;
+                    }
+                    break;
+                case 0x4:
+                    switch(extract32(opcode, 21, 2)) {
+                        case 0x0:
+                        case 0x1:
+                            size = extract32(opcode, 23, 2);
                             break;
                         default:
                             printf("[Error]:QFlex, Unallocated encoding.\n");
                             assert(false);  /* Unallocated encoding */
-                            break;
+                            break;                        
                     }
                     break;
             }
@@ -1534,7 +1566,7 @@ disas_sve(struct mem_access* s, uint32_t opcode)
                             size = 2;
                             break;
                         default:
-                            if(extrac32(opcode, 14, 1)==0x1)
+                            if(extract32(opcode, 14, 1)==0x1)
                                 size = extract32(opcode, 23, 2);
                             else {
                                 size = 4;
