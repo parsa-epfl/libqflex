@@ -1276,112 +1276,99 @@ disas_ldst(struct mem_access* s, uint32_t opcode)
 }
 
 /*
-    * Branches and system instructions
-    * 
+    * Link to branches and system instructions:
+    * https://developer.arm.com/documentation/ddi0602/2024-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions
 */
 
 static bool
 disas_branch_sys(struct mem_access* s, uint32_t opcode)
 {
     bool has_mem_access = false;
-    printf("ERROR:QFlex, We do not support memory callbacks for branches and system instructions.\n");
-    printf("Opcode: %x\n", opcode);
 
-    // size_t size = 0;                // 10 for 32-bit and 11 for 64-bit
-    // bool is_atomic = false;         // Is atomic instruction?
-    // bool is_store = false;          // Is load/store instruction?
+    size_t size = 0;                // 10 for 32-bit and 11 for 64-bit
+    bool is_atomic = false;         // Is atomic instruction?
+    bool is_store = false;          // Is load/store instruction?
 
-    // switch(extract32(opcode, 29, 3)) {
-    //     case 0x2:       /* Conditional/Misc branch */
-    //         break;
-    //     case 0x6:       /* Exception handling and system instructions */
-    //         switch(extract32(opcode, 24, 2)) {
-    //             case 0x0:       /* Exception generation */
-    //                 break;
-    //             case 0x1:
-    //                 break;
-    //             case 0x2:       /* Unconditional branch */
-    //             case 0x3:
-    //                 break;
-    //         }
-    //         break;
-    //     case 0x0:       /* Unconditional branch */
-    //     case 0x4:
-    //         break;
-    //     case 0x1:       /* Compare and branch */
-    //     case 0x5:
-    //         break;
-    //     case 0x3:       /* Unallocated */
-    //     case 0x7:
-    //         break;
-    // }
+    switch(extract32(opcode, 29, 3)) {
+        case 0x2:       /* Conditional/Misc branch */
+            break;
+        case 0x6:       /* Exception handling and system instructions */
+            switch(extract32(opcode, 24, 2)) {
+                case 0x0:       /* Exception generation */
+                    break;
+                case 0x1:
+                    switch(extract32(opcode, 12, 12)) {
+                        case 0x31:  /* Wait for timer interrrupt */
+                        case 0x32:  /* Hints to compiler and special instructions like NOPs (TODO: may need to be checked in detail) */
+                        case 0x33:  /* Barriers */
+                        case 0x4: case 0x14: case 0x24: case 0x34: case 0x44: case 0x54: case 0x64: case 0x74: /* For controlling processor flags */   
+                            break;
+                        default:
+                            switch(extract32(opcode, 19, 5)) {
+                                case 0x4:   /* Transcation start and end */
+                                    break;
+                                case 0x1: case 0x5: /* System instructions */
+                                    switch(extract32(opcode, 12, 4)) {
+                                        case 0x7:   /* Data Cache and Instr. Cache operation */
+                                            switch(extract32(opcode, 8, 4)) {   /* CRm field */
+                                                case 0x1:
+                                                case 0x4:
+                                                case 0x5:
+                                                case 0x6:
+                                                case 0xa:
+                                                case 0xb:
+                                                case 0xc:
+                                                case 0xd:
+                                                    has_mem_access = true;
+                                                    is_store = true;
+                                                    size = 2;       /* Everything should be 32-bit */
+                                                    break;
+                                                default:
+                                                    printf("[Error]:QFlex, Unallocated encoding.\n");
+                                                    assert(false);  /* Unallocated encoding */
+                                                    break;
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                    }
 
-    // switch(extract32(opcode, 29, 3)) {
-    //     case 0x6:
-    //         switch(extract32(opcode, 25, 4)) {
-    //             case 0x4: // TODO: Can this happen?
-    //                 switch(extract32(opcode, 22, 2)) {
-    //                     case 0x1:
-    //                         has_mem_access = true;  /* System instructions */
-    //                         break;
-    //                     default:
-    //                         has_mem_access = false;
-    //                         break;
-    //                 }
-    //                 break;
-    //             case 0xa:
-    //                 switch(extract32(opcode, 19, 6)) {
-    //                     case 0x21: /* SYS instruction */
-    //                     switch (extract32(opcode, 12, 4)) {
-    //                         case 0x7:
-    //                             switch (extract32(opcode, 8, 4)) {
-    //                             case 0x1: 
-    //                             case 0x4: 
-    //                             case 0x5: 
-    //                             case 0x6: 
-    //                             case 0xa:
-    //                             case 0xb:
-    //                             case 0xc:
-    //                             case 0xd:
-    //                             case 0xe:
-    //                                 has_mem_access = true;  /* Cache maintaenance ex. IC IALLUIS */
-    //                                 s->is_store = true;
-    //                                 // printf("ERROR:QFlex, We do not support memory callbacks for cache maintenance.");
-    //                                 break;
-    //                             default:
-    //                                 has_mem_access = false;  /* System instructions */
-    //                                 break;
-    //                             }
-    //                             break;
-    //                         case 0x8: case 0x9: /* TLB maintenance */
-    //                         case 0xb: case 0xe: /* Reserved */
-    //                             has_mem_access = false;
-    //                             break;
-    //                         default:
-    //                             has_mem_access = false;
-    //                             break;
-    //                     }
-    //                     break;
-    //                     default:
-    //                         has_mem_access = false;  
-    //                         break;
-    //                 }
-    //                 break;
-    //             default:
-    //                 has_mem_access = false;
-    //                 break;
-    //         }
-    //         break;
-    //     default: /* branches */
-    //         has_mem_access = false;
-    //         break;
-    // }
+                                break;
+                            }
+                            break;
+                    }
+                    break;
+                case 0x2:       /* Unconditional branch */
+                case 0x3:
+                    break;
+            }
+            break;
+        case 0x0:       /* Unconditional branch */
+        case 0x4:
+            break;
+        case 0x1:       /* Compare and branch */
+        case 0x5:
+            break;
+        case 0x3:       /* Unallocated */
+        case 0x7:
+            break;
+    }
+
+    *s = (struct mem_access) {.size = size,
+        .is_vector = true,
+        .is_load = !is_store,
+        .is_store = is_store,
+        .is_signed = false,         // TODO: Not handled for now because unused
+        .is_pair = false,
+        .is_atomic = is_atomic,
+        .accesses = 1};             // TODO: Not handled for now because unused
+
     return has_mem_access;
 }
 
 /* 
-    Link to SVE instructions:
-    https://developer.arm.com/documentation/ddi0602/2024-03/Index-by-Encoding/SVE-encodings
+    * Link to SVE instructions:
+    * https://developer.arm.com/documentation/ddi0602/2024-03/Index-by-Encoding/SVE-encodings
 */
 static bool
 disas_sve(struct mem_access* s, uint32_t opcode)
