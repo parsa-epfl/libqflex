@@ -1257,7 +1257,7 @@ disas_ldst(struct mem_access* s, uint32_t opcode)
         break;
     case 0x19:
         if (extract32(opcode, 21, 1) != 0) {
-            printf("ERROR:QFlex, We do not support memory callbacks for tags.");
+            printf("ERROR:QFlex, We do not support memory callbacks for tags.\n");
             // has_mem_access = disas_ldst_tag(s, opcode);
             return false;
         } else if (extract32(opcode, 10, 2) == 0) {
@@ -1343,36 +1343,224 @@ disas_branch_sys(struct mem_access* s, uint32_t opcode)
     return has_mem_access;
 }
 
+/* 
+    Link to SVE instructions:
+    https://developer.arm.com/documentation/ddi0602/2024-03/Index-by-Encoding/SVE-encodings
+*/
 static bool
 disas_sve(struct mem_access* s, uint32_t opcode)
 {
     bool has_mem_access = false;
-    bool is_vector = true;      // Is vector instruction?
-    bool is_store = false;      // Is load/store instruction?
-    bool is_signed = false;     // Is signed load/store instruction? (Sign-extends or zero-extends)
-    // bool is_pair = false;       // Is pair instruction?
-    // bool is_atomic = false;     // Is atomic instruction?
-    size_t size = 0;            // 10 for 32-bit and 11 for 64-bit
-    // uint32_t accesses = 0;      // Number of elements loaded
+    // Only handling these three fields as others not used
+    size_t size = 0;                // 10 for 32-bit and 11 for 64-bit
+    bool is_atomic = false;         // Is atomic instruction? False for all SVE memory accesses
+    bool is_store = false;          // Is load/store instruction?
 
     switch(extract32(opcode, 29, 3)) {
         case 0x4:
             has_mem_access = true;  /* SVE Memory - 32-bit Gather and Unsized Contiguous */
-            size = 2;               /* 32-bit */
             is_store = false;       /* All Prefetch (Load) instructions */
+            assert(extract32(opcode, 25, 4) == 0x2);
+            switch(extract32(opcode, 23, 2)) {
+                case 0x3:           /* LDR, and SVE prefetch */
+                    switch(extract32(opcode, 22, 1)) {
+                        case 0x1:       /* SVE prefetch (scalar + immediate) */
+                            size = extract32(opcode, 13, 2);
+                            break;
+                        default:
+                            size = 3;   /* 32-bit (TODO: How to set this for vector register?) */
+                            break;
+                    }
+                    break;
+                default:
+                    switch(extract32(opcode, 13, 3)) {
+                        case 0x6:       /* SVE prefetch (scalar + scalar) */
+                            size = extract32(opcode, 23, 2);
+                            break;
+                        default:
+                            if(extract32(opcode, 22, 1)==0x1 && extract32(opcode, 15, 1)==0x1) {    /* SVE load and broadcast*/
+                                switch(extract32(opcode, 23, 2)) {
+                                    case 0x0:
+                                        size = extract32(opcode, 13, 2);
+                                        break;
+                                    case 0x1:
+                                        size = (extract32(opcode, 13, 2)==0x0)? 2 : extract32(opcode, 13, 2);
+                                        break;
+                                    case 0x2:
+                                        switch(extract32(opcode, 13, 2)) {
+                                            case 0x0:
+                                                size = 3;
+                                                break;
+                                            case 0x1:
+                                                size = 2;
+                                                break;
+                                            case 0x2:
+                                                size = 2;
+                                                break;
+                                            case 0x3:
+                                                size = 3;
+                                                break;
+                                        }
+                                        break;
+                                    case 0x3:
+                                        switch(extract32(opcode, 13, 2)) {
+                                            case 0x0:
+                                                size = 3;
+                                                break;
+                                            case 0x1:
+                                                size = 2;
+                                                break;
+                                            case 0x2:
+                                                size = 1;
+                                                break;
+                                            case 0x3:
+                                                size = 3;
+                                                break;
+                                        }
+                                        break;
+                                } 
+                            } else {        /* All others are 32 bit */
+                                size = 3;
+                            }
+                            break;
+                    }
+                    break;
+            }
             break;
         case 0x5:
             has_mem_access = true;  /* SVE Memory - Contiguous Load */
-            is_store = true;        // TODO: add sizes
+            is_store = false;       /* All Contiguous load instructions */
+            assert(extract32(opcode, 25, 4) == 0x2);
+            switch(extract32(opcode, 21, 2)) {
+                case 0x0:
+                        switch(extract32(opcode, 13, 3)) {
+                            case 0x7:
+                                if(extract32(opcode, 20, 1) == 0x0)
+                                    size = extract32(opcode, 23, 2);
+                                else {
+                                    size = 4;
+                                    printf("[Warn]:QFlex, loading quadwords, setting size_t = 4.\n");
+                                }
+                                break;
+                            case 0x1:
+                            case 0x4:
+                            case 0x6:
+                                size = extract32(opcode, 23, 2);
+                                break;
+                            default:
+                                printf("[Error]:QFlex, Unallocated encoding.\n");
+                                assert(false);  /* Unallocated encoding */
+                                break;
+                        }
+                    break;
+                default:
+                    switch(extract32(opcode, 13, 3)) {
+                        case 0x4:
+                            size = 4;
+                            printf("[Warn]:QFlex, loading quadwords, setting size_t = 4.\n");
+                            break;
+                        case 0x7:
+                        case 0x6:
+                        case 0x1:
+                        case 0x0:
+                            size = extract32(opcode, 23, 2);
+                            break;
+                        case 0x5:
+                        case 0x2:
+                        case 0x3:
+                            switch(extract32(opcode, 23, 2)) {
+                                case 0x0:
+                                    size = extract32(opcode, 21, 2);
+                                    break;
+                                case 0x1:
+                                    size = (extract32(opcode, 21, 2)==0x0)? 2 : extract32(opcode, 21, 2);
+                                    break;
+                                case 0x2:
+                                    switch(extract32(opcode, 21, 2)) {
+                                        case 0x0:
+                                            size = 3;
+                                            break;
+                                        case 0x1:
+                                            size = 2;
+                                            break;
+                                        case 0x2:
+                                            size = 2;
+                                            break;
+                                        case 0x3:
+                                            size = 3;
+                                            break;
+                                    }
+                                    break;
+                                case 0x3:
+                                    switch(extract32(opcode, 21, 2)) {
+                                        case 0x0:
+                                            size = 3;
+                                            break;
+                                        case 0x1:
+                                            size = 2;
+                                            break;
+                                        case 0x2:
+                                            size = 1;
+                                            break;
+                                        case 0x3:
+                                            size = 3;
+                                            break;
+                                    }
+                            }
+                            break;
+                        default:
+                            printf("[Error]:QFlex, Unallocated encoding.\n");
+                            assert(false);  /* Unallocated encoding */
+                            break;
+                    }
+                    break;
+            }
             break;
         case 0x6:
             has_mem_access = true;  /* SVE Memory - 64-bit Gather */
-            size = 3;
-            is_store = false;
+            size = 3;               /* 64-bit */
+            is_store = false;       /* All Gather (Load) instructions */
+            assert(extract32(opcode, 25, 4) == 0x2);
             break;
         case 0x7:
-            has_mem_access = true;  /* Misc SVE operations */
+            has_mem_access = true;  /* Misc SVE store operations */
             is_store = true;
+            assert(extract32(opcode, 25, 4) == 0x2);
+            switch(extract32(opcode, 13, 3)) {
+                case 0x0:
+                case 0x2:
+                    switch(extract32(opcode, 23, 2)) {
+                        case 0x6:
+                            size = 2;
+                            break;
+                        default:
+                            if(extrac32(opcode, 14, 1)==0x1)
+                                size = extract32(opcode, 23, 2);
+                            else {
+                                size = 4;
+                                printf("[Warn]:QFlex, loading quadwords, setting size_t = 4.\n");
+                            }
+                            break;
+                    }
+                    break;
+                case 0x1:
+                    if(extract32(opcode, 21, 1)==0x1) {
+                        size = 4;
+                        printf("[Warn]:QFlex, loading quadwords, setting size_t = 4.\n");
+                    } else {
+                        size = (extract32(opcode, 22, 1) == 0x0) ? 3 : 2;
+                    }
+                    break;
+                case 0x3:
+                case 0x4:
+                case 0x6:
+                case 0x7:
+                    size = extract32(opcode, 23, 2);
+                    break;
+                case 0x5:
+                    size = (extract32(opcode, 21, 2) == 0x3)? 2 : 3;
+                    break;
+            }
             break;
         default:
             has_mem_access = false;
@@ -1380,12 +1568,13 @@ disas_sve(struct mem_access* s, uint32_t opcode)
     }
 
     *s = (struct mem_access) {.size = size,
-        .is_vector = is_vector,
+        .is_vector = true,
         .is_load = !is_store,
         .is_store = is_store,
-        .is_signed = is_signed,
+        .is_signed = false,         // TODO: Not handled for now because unused
         .is_pair = false,
-        .accesses = 1};
+        .is_atomic = is_atomic,
+        .accesses = 1};             // TODO: Not handled for now because unused
 
     return has_mem_access;
 }
@@ -1428,10 +1617,8 @@ decode_armv8_mem_opcode(struct mem_access* s, uint32_t opcode)
         g_assert_not_reached(); /* all 15 cases should be handled above */
     }
 
-    if (has_mem_access) {
-        return true;
-    } else {
-        printf("ERROR for extracted opcode: %x, full opcode: %x\n", extract32(opcode, 25, 4), opcode);
-        return false;
-    }
+    if(!has_mem_access)
+        printf("ERROR:QFlex, No memory access found for opcode: %x.\n", opcode);
+
+    return has_mem_access;
 }
