@@ -1325,7 +1325,7 @@ disas_branch_sys(struct mem_access* s, uint32_t opcode)
                                                     break;
                                                 default:
                                                     printf("[Error]:QFlex, Unallocated encoding.\n");
-                                                    assert(false);  /* Unallocated encoding */
+                                                    g_assert_not_reached();
                                                     break;
                                             }
                                             break;
@@ -1383,7 +1383,7 @@ disas_sve(struct mem_access* s, uint32_t opcode)
         case 0x4:
             has_mem_access = true;  /* SVE Memory - 32-bit Gather and Unsized Contiguous */
             is_store = false;       /* All Prefetch (Load) instructions */
-            assert(extract32(opcode, 25, 4) == 0x2);
+            g_assert(extract32(opcode, 25, 4) == 0x2);
             switch(extract32(opcode, 23, 2)) {
                 case 0x3:           /* LDR, and SVE prefetch */
                     switch(extract32(opcode, 22, 1)) {
@@ -1453,7 +1453,7 @@ disas_sve(struct mem_access* s, uint32_t opcode)
         case 0x5:
             has_mem_access = true;  /* SVE Memory - Contiguous Load */
             is_store = false;       /* All Contiguous load instructions */
-            assert(extract32(opcode, 25, 4) == 0x2);
+            g_assert(extract32(opcode, 25, 4) == 0x2);
             switch(extract32(opcode, 13, 3)) {
                 case 0x0:
                     size = extract32(opcode, 23, 2);
@@ -1516,7 +1516,7 @@ disas_sve(struct mem_access* s, uint32_t opcode)
                             }
                             break;
                         default:
-                            assert(extract32(opcode, 20, 1) == 0x0); /* The other one is unallocated */
+                            g_assert(extract32(opcode, 20, 1) == 0x0); /* The other one is unallocated */
                             size = extract32(opcode, 23, 2);
                             break;
                     }
@@ -1529,8 +1529,8 @@ disas_sve(struct mem_access* s, uint32_t opcode)
                             break;
                         default:
                             printf("[Error]:QFlex, Unallocated encoding.\n");
-                            assert(false);  /* Unallocated encoding */
-                            break;                        
+                            g_assert_not_reached();
+                            break;
                     }
                     break;
             }
@@ -1539,12 +1539,12 @@ disas_sve(struct mem_access* s, uint32_t opcode)
             has_mem_access = true;  /* SVE Memory - 64-bit Gather */
             size = 3;               /* 64-bit */
             is_store = false;       /* All Gather (Load) instructions */
-            assert(extract32(opcode, 25, 4) == 0x2);
+            g_assert(extract32(opcode, 25, 4) == 0x2);
             break;
         case 0x7:
             has_mem_access = true;  /* Misc SVE store operations */
             is_store = true;
-            assert(extract32(opcode, 25, 4) == 0x2);
+            g_assert(extract32(opcode, 25, 4) == 0x2);
             switch(extract32(opcode, 13, 3)) {
                 case 0x0:
                 case 0x2:
