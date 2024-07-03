@@ -26,8 +26,6 @@ typedef struct
     mem_op_type_t           type;
 
     logical_address_t  target_pc_va;
-    physical_address_t target_pc_pa;  // Require qemu_plugin_get_gpaddr addition to the qemu-plugin.h api, really needed ??
-    physical_address_t host_pc_pa;
 
 } trace_insn_t;
 
