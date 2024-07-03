@@ -75,13 +75,11 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
 
     tr.io = (hwaddr && qemu_plugin_hwaddr_is_io(hwaddr));
 
-    tr.s.pc              = insn->target_pc_va;
-    tr.s.opcode          = insn->opcode;
-    tr.s.logical_address = vaddr;
-    tr.s.exception       = insn->exception_lvl;
-    //? function used previously to get the phys_addr
-    //? arm_cpu_get_phys_page_attrs_debug(CPUState *cs, vaddr addr, MemTxAttrs *attrs)
-    tr.s.physical_address = hwaddr->phys_addr;  //! What the heck do we need this
+    tr.s.pc                 = insn->target_pc_va;
+    tr.s.opcode             = insn->opcode;
+    tr.s.logical_address    = vaddr;
+    tr.s.exception          = insn->exception_lvl;
+    tr.s.physical_address   = hwaddr->phys_addr;
 
     tr.s.size   = mem_info.size;
     tr.s.atomic = mem_info.is_atomic;
@@ -107,16 +105,17 @@ dispatch_instruction(unsigned int vcpu_index, void* userdata)
     trace_insn_t* insn = (trace_insn_t*) userdata;
     g_assert(insn->target_pc_va);
 
+    MemTxAttrs attrs;
     branch_type_t br_type;
     memory_transaction_t tr = {0};
 
     tr.io = false;
 
-    tr.s.pc               = insn->target_pc_va;
     tr.s.opcode           = insn->opcode;
-    tr.s.exception        = insn->exception_lvl;
+    tr.s.pc               = insn->target_pc_va;
     tr.s.logical_address  = insn->target_pc_va;
-    tr.s.physical_address = insn->host_pc_pa;
+    tr.s.physical_address = arm_cpu_get_phys_page_attrs_debug(current_cpu, insn->target_pc_va,  &attrs);
+    tr.s.exception        = insn->exception_lvl;
 
     tr.s.size        = insn->byte_size;
     tr.s.branch_type = decode_armv8_branch_opcode(&br_type, insn->opcode) ? br_type : QEMU_Non_Branch;
@@ -142,7 +141,7 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
     {
         struct qemu_plugin_insn* insn = qemu_plugin_tb_get_insn(tb, i);
 
-        physical_address_t host_pc_pa = (u_int64_t) qemu_plugin_insn_haddr(insn);
+        physical_address_t host_pc_pa = (uint64_t) qemu_plugin_insn_haddr(insn);
 
         g_mutex_lock(&lock);
         transaction = g_hash_table_lookup(tb_table, GSIZE_TO_POINTER(host_pc_pa));
@@ -152,7 +151,6 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
         {
             transaction                         = g_new0(trace_insn_t, 1);
 
-            transaction->host_pc_pa             = host_pc_pa;
             transaction->target_pc_va           = qemu_plugin_insn_vaddr(insn);
             transaction->opcode                 = * (uint32_t*)qemu_plugin_insn_haddr(insn); //? From the official plugins
             transaction->byte_size              = qemu_plugin_insn_size(insn);
