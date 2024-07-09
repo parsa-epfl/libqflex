@@ -297,7 +297,7 @@ extern QEMU_API_t   qemu_api;
 extern FLEXUS_API_t flexus_api;
 
 #ifdef FLEXUS
-  void FLEXUS_start    (void);
+  void FLEXUS_start    (uint64_t);
   void FLEXUS_stop     (void);
   void FLEXUS_qmp      (qmp_flexus_cmd_t, const char*);
   void FLEXUS_trace_mem(uint64_t, memory_transaction_t*);
