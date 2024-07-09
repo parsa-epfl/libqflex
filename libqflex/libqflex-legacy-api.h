@@ -223,20 +223,20 @@ typedef struct {
  *-------------------------TYPEDEFS----------------------------
  *---------------------------------------------------------------*/
 
-typedef bool              (*QEMU_CPU_BUSY_t)       (conf_object_t* cpu);
-typedef char             *(*QEMU_DISASS_t)         (conf_object_t* cpu, uint64_t addr);
-typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
-typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
+//typedef bool              (*QEMU_CPU_BUSY_t)       (conf_object_t* cpu);
+//typedef char             *(*QEMU_DISASS_t)         (conf_object_t* cpu, uint64_t addr);
+//typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
+//typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
 typedef int               (*QEMU_GET_CPU_IDX_t)    (conf_object_t *cpu);
-typedef uint64_t          (*QEMU_GET_CSR_t)        (conf_object_t *cpu, int idx);
-typedef uint64_t          (*QEMU_GET_CYCLES_LEFT_t)(void);
-typedef uint64_t          (*QEMU_GET_FPR_t)        (conf_object_t *cpu, int idx);
-typedef uint64_t          (*QEMU_GET_GPR_t)        (conf_object_t *cpu, int idx);
-typedef conf_object_t    *(*QEMU_GET_OBJ_BY_NAME_t)(const char *name);
-typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
-typedef char             *(*QEMU_GET_SNAP_t)       (conf_object_t* cpu);
-typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
-typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
+//typedef uint64_t          (*QEMU_GET_CSR_t)        (conf_object_t *cpu, int idx);
+//typedef uint64_t          (*QEMU_GET_CYCLES_LEFT_t)(void);
+//typedef uint64_t          (*QEMU_GET_FPR_t)        (conf_object_t *cpu, int idx);
+//typedef uint64_t          (*QEMU_GET_GPR_t)        (conf_object_t *cpu, int idx);
+//typedef conf_object_t    *(*QEMU_GET_OBJ_BY_NAME_t)(const char *name);
+//typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
+//typedef char             *(*QEMU_GET_SNAP_t)       (conf_object_t* cpu);
+//typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
+//typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
 
 // ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_address_t va);
@@ -264,20 +264,20 @@ typedef struct FLEXUS_API_t {
 
 typedef struct QEMU_API_t
 {
-  QEMU_CPU_BUSY_t        cpu_busy;
-  QEMU_DISASS_t          disass;
-  QEMU_GET_ALL_CPUS_t    get_all_cpus;
-  QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
-  QEMU_GET_CPU_IDX_t     get_cpu_idx;
-  QEMU_GET_CSR_t         get_csr;
-  QEMU_GET_CYCLES_LEFT_t get_cycles_left;
-  QEMU_GET_FPR_t         get_fpr;
-  QEMU_GET_GPR_t         get_gpr;
-  QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
-  QEMU_GET_PL_t          get_pl;
-  QEMU_GET_SNAP_t        get_snap;
-  QEMU_MEM_OP_IS_DATA_t  mem_op_is_data;
-  QEMU_MEM_OP_IS_WRITE_t mem_op_is_write;
+//  QEMU_CPU_BUSY_t        cpu_busy;
+//  QEMU_DISASS_t          disass;
+//  QEMU_GET_ALL_CPUS_t    get_all_cpus;
+//  QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
+    QEMU_GET_CPU_IDX_t     get_cpu_idx;
+//  QEMU_GET_CSR_t         get_csr;
+//  QEMU_GET_CYCLES_LEFT_t get_cycles_left;
+//  QEMU_GET_FPR_t         get_fpr;
+//  QEMU_GET_GPR_t         get_gpr;
+//  QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
+//  QEMU_GET_PL_t          get_pl;
+//  QEMU_GET_SNAP_t        get_snap;
+//  QEMU_MEM_OP_IS_DATA_t  mem_op_is_data;
+//  QEMU_MEM_OP_IS_WRITE_t mem_op_is_write;
   // ─── Bryan ───────────────────────────────────────────────────────────
   QEMU_GET_NUM_CORES_t   get_num_cores;
   QEMU_READ_REG_t        read_register;
