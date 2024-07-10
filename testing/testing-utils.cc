@@ -1,19 +1,11 @@
-// #include "testing-utils.hh"
-#include <iostream>
-#include <bitset>
-#include <string>
-#include <cstring>
-#include <random>
-#include <cassert>
-#include <vector>
-#include <functional>
-#include <initializer_list>
-#include <numeric>
+#include "testing-utils.hh"
 
+// Function to check if a character represents a bit
 bool isBit(char c) {
   return c == '0' || c == '1' || c == 'x';
 }
 
+// Function to check if a string is a valid bitmask
 bool isBitmask(const std::string& str) {
   for (const auto& c : str) {
     if (!isBit(c)) {
@@ -23,130 +15,95 @@ bool isBitmask(const std::string& str) {
   return true;
 }
 
-class Field {
-  public:
-    Field(const std::string& str) : bitmask(str) {
-      assert(isBitmask(str) && "Invalid bitmask string.");
+// Constructor that initializes the field with a bitmask string
+Field::Field(const std::string& str) : bitmask(str) {
+  assert(isBitmask(str) && "Invalid bitmask string.");
+}
+
+// Assignment operator to set the bitmask
+Field& Field::operator=(const std::string& str) {
+  assert(isBitmask(str) && "Invalid bitmask string.");
+  bitmask = str;
+  return *this;
+}
+
+// Terminal case for the variadic template
+void Instruction::addFields() {}
+
+// Add a field by reference
+void Instruction::addField(std::reference_wrapper<Field> field) {
+  fields.push_back(&field.get());
+}
+
+// Add a field by string
+void Instruction::addField(const std::string& str) {
+  assert(isBitmask(str) && "Invalid bitmask string.");
+  fields.push_back(new Field(str));
+}
+
+// Begin iterator for the instruction
+Instruction::InstructionIterator Instruction::begin() const {
+  return InstructionIterator(*this);
+}
+
+// End iterator for the instruction
+Instruction::InstructionIterator Instruction::end() const {
+  return InstructionIterator(*this, true);
+}
+
+// Constructor for the iterator
+Instruction::InstructionIterator::InstructionIterator(const Instruction& instruction, bool end) : instruction(instruction) {
+  for (const auto& field : instruction.fields) {
+    bitmask += field->bitmask;
+  }
+  assert(bitmask.size() == 32 && "Bitmask size must be 32.");
+
+  int numDontCares = std::count(bitmask.begin(), bitmask.end(), 'x');
+
+  if (numDontCares <= 20) {
+    brute = true;
+    maxIter = 1 << numDontCares;
+  } else {
+    brute = false;
+    maxIter = 1 << 20;
+  }
+
+  if (end) {
+    currIter = maxIter;
+  } else {
+    currIter = 0;
+  }
+}
+
+// Pre-increment operator
+Instruction::InstructionIterator& Instruction::InstructionIterator::operator++() {
+  currIter++;
+  return *this;
+}
+
+// Dereference operator to get the current instruction value
+uint32_t Instruction::InstructionIterator::operator*() const {
+  uint32_t result = 0;
+
+  int N = bitmask.size();
+
+  for (int i = 0, j = 0; i < N; ++i) {
+    if (bitmask[N - 1 - i] == 'x') {
+      if (brute) {
+        result |= ((currIter >> j) & 1) << i;
+      } else {
+        result |= dist(rand_eng) << i;
+      }
+      ++j;
+    } else if (bitmask[N - 1 - i] == '1') {
+      result |= 1 << i;
     }
+  }
 
-    Field& operator=(const std::string& bits) {
-      bitmask = bits;
-      return *this;
-    }
+  return result;
+}
 
-    std::string bitmask;
-};
-
-struct Instruction {
-  public:
-    class InstructionIterator {
-      public:
-        InstructionIterator(const Instruction& instruction, bool end = false) : instruction(instruction) {
-          for (const auto& field : instruction.fields) {
-            bitmask += field->bitmask;
-          }
-
-          int numDontCares = std::count(bitmask.begin(), bitmask.end(), 'x');
-          
-          if (numDontCares <= 20) {
-            brute = true;
-            maxIter = 1 << numDontCares;
-          } else {
-            brute = false;
-            maxIter = 1 << 20;
-          }
-
-          if (end) {
-            currIter = maxIter;
-          } else {
-            currIter = 0;
-          }
-        }
-
-        InstructionIterator& operator++() {
-          currIter++;
-          return *this;
-        }
-
-        uint32_t operator*() const {
-          uint32_t result = 0;
-
-          int N = bitmask.size();
-
-          for (int i = 0, j = 0; i < N; ++i) {
-            if (bitmask[N - 1 - i] == 'x') {
-              if (brute) { 
-                result |= ((currIter >> j) & 1) << i;
-              } else {
-                result |= dist(rand_eng) << i;
-              }
-              ++j;
-            } else if (bitmask[N - 1 - i] == '1') {
-              result |= 1 << i;
-            }
-          }
-
-          return result;
-        }
-
-        bool operator!=(const InstructionIterator& other) const {
-            return currIter != other.currIter;
-        }
-
-      private:
-        const Instruction& instruction;
-        std::string bitmask{""};
-        int currIter;
-        int maxIter;
-        bool brute;
-        mutable std::mt19937 rand_eng{std::random_device{}()};
-        mutable std::uniform_int_distribution<int> dist{0, 1};
-    };
-
-  public:
-    template<typename... Args>
-    Instruction(Args&&... args) {
-      addFields(std::forward<Args>(args)...);
-    }
-
-    std::vector<Field*> fields;
-
-    InstructionIterator begin() const {
-      return InstructionIterator(*this);
-    }
-
-    InstructionIterator end() const {
-      return InstructionIterator(*this, true);
-    }
-
-  private:
-    template<typename First, typename... Rest>
-    void addFields(First&& first, Rest&&... rest) {
-      addField(std::forward<First>(first));
-      addFields(std::forward<Rest>(rest)...);
-    }
-
-    void addFields() {}
-
-    void addField(std::reference_wrapper<Field> field) {
-      fields.push_back(&field.get());
-    }
-
-    void addField(const std::string& str) {
-      assert(isBitmask(str) && "Invalid bitmask string.");
-      fields.push_back(new Field(str));
-    }
-};
-
-int main() {
-    Field b1("110x");
-    Field b2("1x10x1");
-
-    Instruction instr(b1, b2);
-
-    for (const auto& i : instr) {
-      std::cout << i << std::endl;
-    }
-
-    return 0;
+// Inequality operator for iterators
+bool Instruction::InstructionIterator::operator!=(const InstructionIterator& other) const {
+  return currIter != other.currIter;
 }
