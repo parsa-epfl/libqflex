@@ -8,48 +8,46 @@ extern "C" {
 
 struct mem_access mem_access;
 
-uint sz;
-uint L;
-uint o0;
-uint Rt2 = 0b11111;
+Field sz("x");
+Field L("x");
+Field Rs("xxxxx");
+Field o0("x");
+Field Rt2("11111");
+Field Rn("xxxxx");
+Field Rt("xxxxx");
 
-uint32_t opcode = (0b0 << 31) | (0b0010000 << 23) | (0b1 << 21) | (Rt2 << 10);
+Instruction bitmask("0", sz, "0010000", L, "1", Rs, o0, Rt2, Rn, Rt);
 
-TEST(CompareAndSwapPair, CASP32Bit)
+TEST(CompareAndSwapPair, CompareAndSwapPair32Bit)
 {
-  sz = 0b0;
-  L = 0b0;
-  o0 = 0b0;
+  sz = "0";
 
-  opcode |= (sz << 30) | (L << 22) | (o0 << 15);
-
-  EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, opcode), true);
-  EXPECT_EQ(mem_access.is_load, true);
-  EXPECT_EQ(mem_access.is_store, true); // conditional store?
-  EXPECT_EQ(mem_access.is_vector, false);
-  EXPECT_EQ(mem_access.is_signed, false);
-  EXPECT_EQ(mem_access.is_pair, true);
-  EXPECT_EQ(mem_access.is_atomic, true);
-  EXPECT_EQ(mem_access.size, 0b10);
-  EXPECT_EQ(mem_access.accesses, 1); // conditional store?
+  for (uint32_t instr : bitmask) {
+    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    EXPECT_EQ(mem_access.is_load, true);
+    EXPECT_EQ(mem_access.is_store, true); // conditional store?
+    EXPECT_EQ(mem_access.is_vector, false);
+    EXPECT_EQ(mem_access.is_signed, false);
+    EXPECT_EQ(mem_access.is_pair, true);
+    EXPECT_EQ(mem_access.is_atomic, true);
+    EXPECT_EQ(mem_access.size, 0b10);
+    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+  }
 }
 
-
-TEST(CompareAndSwapPair, CASPL32Bit)
+TEST(CompareAndSwapPair, CompareAndSwapPair64Bit)
 {
-  sz = 0b0;
-  L = 0b0;
-  o0 = 0b1;
+  sz = "1";
 
-  opcode |= (sz << 30) | (L << 22) | (o0 << 15);
-
-  EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, opcode), true);
-  EXPECT_EQ(mem_access.is_load, true);
-  EXPECT_EQ(mem_access.is_store, true); // conditional store?
-  EXPECT_EQ(mem_access.is_vector, false);
-  EXPECT_EQ(mem_access.is_signed, false);
-  EXPECT_EQ(mem_access.is_pair, true);
-  EXPECT_EQ(mem_access.is_atomic, true);
-  EXPECT_EQ(mem_access.size, 0b10);
-  EXPECT_EQ(mem_access.accesses, 1); // conditional store?
+  for (uint32_t instr : bitmask) {
+    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    EXPECT_EQ(mem_access.is_load, true);
+    EXPECT_EQ(mem_access.is_store, true); // conditional store?
+    EXPECT_EQ(mem_access.is_vector, false);
+    EXPECT_EQ(mem_access.is_signed, false);
+    EXPECT_EQ(mem_access.is_pair, true);
+    EXPECT_EQ(mem_access.is_atomic, true);
+    EXPECT_EQ(mem_access.size, 0b11);
+    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+  }
 }
