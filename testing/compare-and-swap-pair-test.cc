@@ -17,7 +17,7 @@ Field Rt("xxxxx");
 
 Instruction bitmask("0", sz, "0010000", L, "1", Rs, o0, Rt2, Rn, Rt);
 
-TEST(CompareAndSwapPair, CompareAndSwapPair32Bit)
+TEST(Compare_And_Swap_Pair, CASP_32Bit)
 {
   sz = "0";
 
@@ -34,7 +34,7 @@ TEST(CompareAndSwapPair, CompareAndSwapPair32Bit)
   }
 }
 
-TEST(CompareAndSwapPair, CompareAndSwapPair64Bit)
+TEST(Compare_And_Swap_Pair, CASP_64Bit)
 {
   sz = "1";
 

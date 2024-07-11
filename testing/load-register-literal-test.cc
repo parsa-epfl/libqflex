@@ -14,7 +14,7 @@ Field Rt("xxxxx");
 
 Instruction bitmask(opc, "011", vr, "00", imm19, Rt);
 
-TEST(LoadRegisterLiteralTestSuite, LDRLiteral32BitVariantTest)
+TEST(Load_Register_Literal, LDR_Literal_32Bit)
 {
   opc = "00";
   vr = "0";
@@ -31,7 +31,7 @@ TEST(LoadRegisterLiteralTestSuite, LDRLiteral32BitVariantTest)
   }
 }
 
-TEST(LoadRegisterLiteralTestSuite, LDRLiteralSIMDFP32BitVariantTest)
+TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_32Bit)
 {
   opc = "00";
   vr = "1";
@@ -48,7 +48,7 @@ TEST(LoadRegisterLiteralTestSuite, LDRLiteralSIMDFP32BitVariantTest)
   }
 }
 
-TEST(LoadRegisterLiteralTestSuite, LDRLiteral64BitVariantTest)
+TEST(Load_Register_Literal, LDR_Literal_64Bit)
 {
   opc = "01";
   vr = "0";
@@ -65,7 +65,7 @@ TEST(LoadRegisterLiteralTestSuite, LDRLiteral64BitVariantTest)
   }
 }
 
-TEST(LoadRegisterLiteralTestSuite, LDRLiteralSIMDFP64BitVariantTest)
+TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_64Bit)
 {
   opc = "01";
   vr = "1";
@@ -82,7 +82,7 @@ TEST(LoadRegisterLiteralTestSuite, LDRLiteralSIMDFP64BitVariantTest)
   }
 }
 
-TEST(LoadRegisterLiteralTestSuite, LDRSWLiteralTest)
+TEST(Load_Register_Literal, LDRSW_Literal)
 {
   opc = "10";
   vr = "0";
@@ -99,7 +99,7 @@ TEST(LoadRegisterLiteralTestSuite, LDRSWLiteralTest)
   }
 }
 
-TEST(LoadRegisterLiteralTestSuite, LDRLiteralSIMDFP128BitVariantTest)
+TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_128Bit)
 {
   opc = "10";
   vr = "1";

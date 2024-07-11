@@ -20,7 +20,7 @@ Instruction bitmask(opc, "101", VR, _25to23, L, imm7, Rt2, Rn, Rt);
 
 std::string _25to23_values[] = {"001", "010", "011"}; /* post-indexed, offset, pre-indexed */
 
-TEST(LoadStoreRegisterPair, STP32Bit)
+TEST(Load_Store_Register_Pair, STP_32Bit)
 {
   opc = "00";
   VR = "0";
@@ -42,7 +42,7 @@ TEST(LoadStoreRegisterPair, STP32Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, LDP32Bit)
+TEST(Load_Store_Register_Pair, LDP_32Bit)
 {
   opc = "00";
   VR = "0";
@@ -64,7 +64,7 @@ TEST(LoadStoreRegisterPair, LDP32Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, STPSIMDFP32Bit)
+TEST(Load_Store_Register_Pair, STP_SIMD_FP_32Bit)
 {
   opc = "00";
   VR = "1";
@@ -86,7 +86,7 @@ TEST(LoadStoreRegisterPair, STPSIMDFP32Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, LDPSIMDFP32Bit)
+TEST(Load_Store_Register_Pair, LDP_SIMD_FP_32Bit)
 {
   opc = "00";
   VR = "1";
@@ -108,7 +108,7 @@ TEST(LoadStoreRegisterPair, LDPSIMDFP32Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, STGP)
+TEST(Load_Store_Register_Pair, STGP)
 {
   opc = "01";
   VR = "0";
@@ -130,7 +130,7 @@ TEST(LoadStoreRegisterPair, STGP)
   }
 }
 
-TEST(LoadStoreRegisterPair, LDPSW)
+TEST(Load_Store_Register_Pair, LDPSW)
 {
   opc = "01";
   VR = "0";
@@ -152,7 +152,7 @@ TEST(LoadStoreRegisterPair, LDPSW)
   }
 }
 
-TEST(LoadStoreRegisterPair, STPSIMDFP64Bit)
+TEST(Load_Store_Register_Pair, STP_SIMD_FP_64Bit)
 {
   opc = "01";
   VR = "1";
@@ -174,7 +174,7 @@ TEST(LoadStoreRegisterPair, STPSIMDFP64Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, LDPSIMDFP64Bit)
+TEST(Load_Store_Register_Pair, LDP_SIMD_FP_64Bit)
 {
   opc = "01";
   VR = "1";
@@ -196,7 +196,7 @@ TEST(LoadStoreRegisterPair, LDPSIMDFP64Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, STP64Bit)
+TEST(Load_Store_Register_Pair, STP_64Bit)
 {
   opc = "10";
   VR = "0";
@@ -218,7 +218,7 @@ TEST(LoadStoreRegisterPair, STP64Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, LDP64Bit)
+TEST(Load_Store_Register_Pair, LDP_64Bit)
 {
   opc = "10";
   VR = "0";
@@ -240,7 +240,7 @@ TEST(LoadStoreRegisterPair, LDP64Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, STPSIMDFP128Bit)
+TEST(Load_Store_Register_Pair, STP_SIMD_FP_128Bit)
 {
   opc = "10";
   VR = "1";
@@ -262,7 +262,7 @@ TEST(LoadStoreRegisterPair, STPSIMDFP128Bit)
   }
 }
 
-TEST(LoadStoreRegisterPair, LDPSIMDFP128Bit)
+TEST(Load_Store_Register_Pair, LDP_SIMD_FP_128Bit)
 {
   opc = "10";
   VR = "1";
