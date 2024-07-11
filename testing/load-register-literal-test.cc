@@ -115,3 +115,20 @@ TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_128Bit)
     EXPECT_EQ(mem_access.accesses, 1);
   }
 }
+
+TEST(Load_Register_Literal, PRFM_Literal)
+{
+  opc = "11";
+  vr = "0";
+
+  for (uint32_t instr : bitmask) {
+    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    EXPECT_EQ(mem_access.is_load, false);
+    EXPECT_EQ(mem_access.is_store, false);
+    EXPECT_EQ(mem_access.is_vector, false);
+    EXPECT_EQ(mem_access.is_pair, false);
+    EXPECT_EQ(mem_access.is_atomic, false);
+    EXPECT_EQ(mem_access.size, 0b10); /* prefetch? */
+    EXPECT_EQ(mem_access.accesses, 1); /* prefetch? */
+  }
+}
