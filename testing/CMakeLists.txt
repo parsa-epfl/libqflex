@@ -24,13 +24,32 @@ pkg_check_modules(GLIB REQUIRED glib-2.0)
 include_directories(${GLIB_INCLUDE_DIRS})
 
 add_executable(
-  compare-and-swap-pair-test ../libqflex/plugins/trace/memory-decoder.c compare-and-swap-pair-test.cc
+  compare-and-swap-pair-test ../libqflex/plugins/trace/memory-decoder.c  testing-utils.cc compare-and-swap-pair-test.cc
 )
+add_executable(
+  load-register-literal-test ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-register-literal-test.cc
+)
+add_executable(
+  load-store-register-pair-test ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-pair-test.cc
+)
+
 target_link_libraries(
   compare-and-swap-pair-test
+  GTest::gtest_main
+  ${GLIB_LIBRARIES}
+)
+target_link_libraries(
+  load-register-literal-test
+  GTest::gtest_main
+  ${GLIB_LIBRARIES}
+)
+target_link_libraries(
+  load-store-register-pair-test
   GTest::gtest_main
   ${GLIB_LIBRARIES}
 )
 
 include(GoogleTest)
 gtest_discover_tests(compare-and-swap-pair-test)
+gtest_discover_tests(load-register-literal-test)
+gtest_discover_tests(load-store-register-pair-test)
