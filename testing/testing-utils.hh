@@ -12,12 +12,16 @@
 #include <initializer_list>
 #include <algorithm>
 
+// Maximum number of don't care bits to iterate over
+constexpr int MAX_ITER_DONT_CARE = 20;
+
 // Check if a character represents a bit
 bool isBit(char c);
 
 // Check if a string is a valid bitmask
 bool isBitmask(const std::string& str);
 
+// Field class that represents a field with a bitmask
 class Field {
   public:
     // Constructor that initializes the field with a bitmask string
@@ -30,68 +34,83 @@ class Field {
     std::string bitmask;
 };
 
-struct Instruction {
+// Instruction class that represents an instruction with multiple fields 
+class Instruction {
   public:
-    // Nested class for iterating over instructions
+    // An iterator for iterating over all possible values of an instruction based on its bitmask
+    // This iterator is used to allow range-based for loops over the instruction bitmask
     class InstructionIterator {
       public:
         // Constructor for the iterator
         InstructionIterator(const Instruction& instruction, bool end = false);
 
-        // Pre-increment operator
+        // Pre-increment operator to allow range-based for loops
         InstructionIterator& operator++();
 
-        // Dereference operator to get the current instruction value
+        // Dereference operator to get the current instruction value during range-based for loops
         uint32_t operator*() const;
 
-        // Inequality operator for iterators
+        // Inequality operator for iterators to allow range-based for loops
         bool operator!=(const InstructionIterator& other) const;
 
       private:
+        // Reference to the Instruction the iterator is iterating over
         const Instruction& instruction;
+
+        // Bitmask of the Instruction
         std::string bitmask{""};
+
+        // Current iteration number (iterates from 0 to numIters - 1)
         int currIter;
-        int maxIter;
+
+        // Number of iterations based on the number of don't cares 
+        int numIters;
+
+        // Flag to indicate if the iterator is a brute force iterator
+        // Brute force iterators iterate over all possible values of the don't cares
+        // Non-brute force iterators randomly choose the values of the don't cares
         bool brute;
+
+        // Random number generator for non-brute force iterators
         mutable std::mt19937 rand_eng{std::random_device{}()};
         mutable std::uniform_int_distribution<int> dist{0, 1};
     };
 
-    // Constructor for the instruction with variadic template arguments
+    // Variadic template constructor to allow combination of Field references and string literals
     template<typename... Args>
     Instruction(Args&&... args);
 
-    // Vector to hold pointers to fields
+    // Vector to hold pointers to Field objects
     std::vector<Field*> fields;
 
-    // Begin iterator for the instruction
+    // Begin iterator for the Instruction to allow range-based for loops
     InstructionIterator begin() const;
 
-    // End iterator for the instruction
+    // End iterator for the Instruction to allow range-based for loops
     InstructionIterator end() const;
 
   private:
-    // Template function to add fields to the instruction
+    // Variadic template function to add fields (Field objects or string literals) to the instruction
     template<typename First, typename... Rest>
     void addFields(First&& first, Rest&&... rest);
 
-    // Function to add a single field to the instruction
+    // Terminal function for the variadic template addFields
     void addFields();
 
-    // Function to add a field by reference
+    // Function to add a Field object by reference
     void addField(std::reference_wrapper<Field> field);
 
-    // Function to add a field by string
+    // Function to add a field by string literal
     void addField(const std::string& str);
 };
 
-// Instruction class constructor
+// Variadic template constructor implementation
 template<typename... Args>
 Instruction::Instruction(Args&&... args) {
   addFields(std::forward<Args>(args)...);
 }
 
-// AddFields implementation for variadic templates
+// Variadic template addFields implementation
 template<typename First, typename... Rest>
 void Instruction::addFields(First&& first, Rest&&... rest) {
   addField(std::forward<First>(first));

@@ -8,16 +8,16 @@ extern "C" {
 struct mem_access mem_access;
 
 Field opc("xx");
-Field vr("x");
+Field VR("x");
 Field imm19("xxxxxxxxxxxxxxxxxxx");
 Field Rt("xxxxx");
 
-Instruction bitmask(opc, "011", vr, "00", imm19, Rt);
+Instruction bitmask(opc, "011", VR, "00", imm19, Rt);
 
-TEST(Load_Register_Literal, LDR_Literal_32Bit)
+TEST(LoadRegister_Literal, LDR_32Bit)
 {
   opc = "00";
-  vr = "0";
+  VR = "0";
 
   for (uint32_t instr : bitmask) {
     EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
@@ -31,10 +31,10 @@ TEST(Load_Register_Literal, LDR_Literal_32Bit)
   }
 }
 
-TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_32Bit)
+TEST(LoadRegister_Literal, LDR_SIMDFP_32Bit)
 {
   opc = "00";
-  vr = "1";
+  VR = "1";
 
   for (uint32_t instr : bitmask) {
     EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
@@ -48,10 +48,10 @@ TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_32Bit)
   }
 }
 
-TEST(Load_Register_Literal, LDR_Literal_64Bit)
+TEST(LoadRegister_Literal, LDR_64Bit)
 {
   opc = "01";
-  vr = "0";
+  VR = "0";
 
   for (uint32_t instr : bitmask) {
     EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
@@ -65,10 +65,10 @@ TEST(Load_Register_Literal, LDR_Literal_64Bit)
   }
 }
 
-TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_64Bit)
+TEST(LoadRegister_Literal, LDR_SIMDFP_64Bit)
 {
   opc = "01";
-  vr = "1";
+  VR = "1";
 
   for (uint32_t instr : bitmask) {
     EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
@@ -82,10 +82,10 @@ TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_64Bit)
   }
 }
 
-TEST(Load_Register_Literal, LDRSW_Literal)
+TEST(LoadRegister_Literal, LDRSW)
 {
   opc = "10";
-  vr = "0";
+  VR = "0";
 
   for (uint32_t instr : bitmask) {
     EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
@@ -99,10 +99,10 @@ TEST(Load_Register_Literal, LDRSW_Literal)
   }
 }
 
-TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_128Bit)
+TEST(LoadRegister_Literal, LDR_SIMDFP_128Bit)
 {
   opc = "10";
-  vr = "1";
+  VR = "1";
 
   for (uint32_t instr : bitmask) {
     EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
@@ -116,10 +116,10 @@ TEST(Load_Register_Literal, LDR_Literal_SIMD_FP_128Bit)
   }
 }
 
-TEST(Load_Register_Literal, PRFM_Literal)
+TEST(LoadRegister_Literal, PRFM)
 {
   opc = "11";
-  vr = "0";
+  VR = "0";
 
   for (uint32_t instr : bitmask) {
     EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);

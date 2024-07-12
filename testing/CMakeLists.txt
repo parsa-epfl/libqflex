@@ -24,32 +24,50 @@ pkg_check_modules(GLIB REQUIRED glib-2.0)
 include_directories(${GLIB_INCLUDE_DIRS})
 
 add_executable(
-  compare-and-swap-pair-test ../libqflex/plugins/trace/memory-decoder.c  testing-utils.cc compare-and-swap-pair-test.cc
+  compare-and-swap-pair ../libqflex/plugins/trace/memory-decoder.c  testing-utils.cc compare-and-swap-pair.cc
 )
 add_executable(
-  load-register-literal-test ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-register-literal-test.cc
+  load-register-literal ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-register-literal.cc
 )
 add_executable(
-  load-store-register-pair-test ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-pair-test.cc
+  load-store-register-pair-post-indexed ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-pair-post-indexed.cc
+)
+add_executable(
+  load-store-register-unscaled-immediate ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-unscaled-immediate.cc
+)
+add_executable(
+  load-store-register-immediate-post-indexed ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-immediate-post-indexed.cc
 )
 
 target_link_libraries(
-  compare-and-swap-pair-test
+  compare-and-swap-pair
   GTest::gtest_main
   ${GLIB_LIBRARIES}
 )
 target_link_libraries(
-  load-register-literal-test
+  load-register-literal
   GTest::gtest_main
   ${GLIB_LIBRARIES}
 )
 target_link_libraries(
-  load-store-register-pair-test
+  load-store-register-pair-post-indexed
+  GTest::gtest_main
+  ${GLIB_LIBRARIES}
+)
+target_link_libraries(
+  load-store-register-unscaled-immediate
+  GTest::gtest_main
+  ${GLIB_LIBRARIES}
+)
+target_link_libraries(
+  load-store-register-immediate-post-indexed
   GTest::gtest_main
   ${GLIB_LIBRARIES}
 )
 
 include(GoogleTest)
-gtest_discover_tests(compare-and-swap-pair-test)
-gtest_discover_tests(load-register-literal-test)
-gtest_discover_tests(load-store-register-pair-test)
+gtest_discover_tests(compare-and-swap-pair)
+gtest_discover_tests(load-register-literal)
+gtest_discover_tests(load-store-register-pair-post-indexed)
+gtest_discover_tests(load-store-register-unscaled-immediate)
+gtest_discover_tests(load-store-register-immediate-post-indexed)
