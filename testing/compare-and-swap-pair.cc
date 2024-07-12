@@ -24,15 +24,15 @@ TEST(CompareAndSwapPair, CASP_32Bit)
   o0 = "0";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b10);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b10);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }
 
@@ -43,15 +43,15 @@ TEST(CompareAndSwapPair, CASPL_32Bit)
   o0 = "1";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b10);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b10);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }
 
@@ -62,15 +62,15 @@ TEST(CompareAndSwapPair, CASPA_32Bit)
   o0 = "0";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b10);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b10);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }
 
@@ -81,15 +81,15 @@ TEST(CompareAndSwapPair, CASPAL_32Bit)
   o0 = "1";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b10);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b10);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }
 
@@ -100,15 +100,15 @@ TEST(CompareAndSwapPair, CASP_64Bit)
   o0 = "0";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b11);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b11);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }
 
@@ -119,15 +119,15 @@ TEST(CompareAndSwapPair, CASPL_64Bit)
   o0 = "1";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b11);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b11);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }
 
@@ -138,15 +138,15 @@ TEST(CompareAndSwapPair, CASPA_64Bit)
   o0 = "0";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b11);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b11);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }
 
@@ -157,14 +157,14 @@ TEST(CompareAndSwapPair, CASPAL_64Bit)
   o0 = "1";
 
   for (uint32_t instr : bitmask) {
-    EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-    EXPECT_EQ(mem_access.is_load, true);
-    EXPECT_EQ(mem_access.is_store, true); // conditional store?
-    EXPECT_EQ(mem_access.is_vector, false);
-    EXPECT_EQ(mem_access.is_signed, false);
-    EXPECT_EQ(mem_access.is_pair, true);
-    EXPECT_EQ(mem_access.is_atomic, true);
-    EXPECT_EQ(mem_access.size, 0b11);
-    EXPECT_EQ(mem_access.accesses, 4); // conditional store?
+    ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+    ASSERT_EQ(mem_access.is_load, true);
+    ASSERT_EQ(mem_access.is_store, true); // conditional store?
+    ASSERT_EQ(mem_access.is_vector, false);
+    ASSERT_EQ(mem_access.is_signed, false);
+    ASSERT_EQ(mem_access.is_pair, true);
+    ASSERT_EQ(mem_access.is_atomic, true);
+    ASSERT_EQ(mem_access.size, 0b11);
+    ASSERT_EQ(mem_access.accesses, 4); // conditional store?
   }
 }

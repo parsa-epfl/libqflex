@@ -23,15 +23,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STRB)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b00);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b00);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -42,15 +42,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDRB)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b00);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b00);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -61,15 +61,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDRSB_64Bit)
     opc = "10";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, true);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b00);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, true);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b00);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -80,15 +80,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDRSB_32Bit)
     opc = "11";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, true);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b00);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, true);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b00);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -99,15 +99,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STR_SIMDFP_8Bit)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b00);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b00);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -118,15 +118,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDR_SIMDFP_8Bit)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b00);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b00);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -137,15 +137,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STR_SIMDFP_128Bit)
     opc = "10";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b100);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b100);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -156,15 +156,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDR_SIMDFP_128Bit)
     opc = "11";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b100);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b100);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -175,15 +175,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STRH)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b01);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b01);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -194,15 +194,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDRH)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b01);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b01);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -213,15 +213,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDRSH_64Bit)
     opc = "10";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, true);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b01);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, true);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b01);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -232,15 +232,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDRSH_32Bit)
     opc = "11";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, true);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b01);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, true);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b01);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -251,15 +251,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STR_SIMDFP_16Bit)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b01);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b01);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -270,15 +270,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDR_SIMDFP_16Bit)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b01);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b01);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -289,15 +289,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STR_32Bit)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b10);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b10);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -308,15 +308,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDR_32Bit)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b10);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b10);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -327,15 +327,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDRSW)
     opc = "10";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, true);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b10);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, true);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b10);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -346,15 +346,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STR_SIMDFP_32Bit)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b10);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b10);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -365,15 +365,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDR_SIMDFP_32Bit)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b10);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b10);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -384,15 +384,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STR_64Bit)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b11);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b11);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -403,15 +403,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDR_64Bit)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, false);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b11);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, false);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b11);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -422,15 +422,15 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, STR_SIMDFP_64Bit)
     opc = "00";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, false);
-        EXPECT_EQ(mem_access.is_store, true);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b11);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, false);
+        ASSERT_EQ(mem_access.is_store, true);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b11);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
 
@@ -441,14 +441,14 @@ TEST(LoadStoreRegister_ImmediatePostIndexed, LDR_SIMDFP_64Bit)
     opc = "01";
 
     for (uint32_t instr : bitmask) {
-        EXPECT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
-        EXPECT_EQ(mem_access.is_load, true);
-        EXPECT_EQ(mem_access.is_store, false);
-        EXPECT_EQ(mem_access.is_vector, true);
-        EXPECT_EQ(mem_access.is_signed, false);
-        EXPECT_EQ(mem_access.is_pair, false);
-        EXPECT_EQ(mem_access.is_atomic, false);
-        EXPECT_EQ(mem_access.size, 0b11);
-        EXPECT_EQ(mem_access.accesses, 1);
+        ASSERT_EQ(decode_armv8_mem_opcode(&mem_access, instr), true);
+        ASSERT_EQ(mem_access.is_load, true);
+        ASSERT_EQ(mem_access.is_store, false);
+        ASSERT_EQ(mem_access.is_vector, true);
+        ASSERT_EQ(mem_access.is_signed, false);
+        ASSERT_EQ(mem_access.is_pair, false);
+        ASSERT_EQ(mem_access.is_atomic, false);
+        ASSERT_EQ(mem_access.size, 0b11);
+        ASSERT_EQ(mem_access.accesses, 1);
     }
 }
