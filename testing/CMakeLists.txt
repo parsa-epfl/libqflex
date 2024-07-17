@@ -24,51 +24,29 @@ pkg_check_modules(GLIB REQUIRED glib-2.0)
 # Include GLib directories
 include_directories(${GLIB_INCLUDE_DIRS})
 
-add_executable(
-  compare-and-swap-pair ../libqflex/plugins/trace/memory-decoder.c  testing-utils.cc compare-and-swap-pair.cc
-)
-add_executable(
-  load-register-literal ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-register-literal.cc
-)
-add_executable(
-  load-store-register-pair-post-indexed ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-pair-post-indexed.cc
-)
-add_executable(
-  load-store-register-unscaled-immediate ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-unscaled-immediate.cc
-)
-add_executable(
-  load-store-register-immediate-post-indexed ../libqflex/plugins/trace/memory-decoder.c testing-utils.cc load-store-register-immediate-post-indexed.cc
-)
-
-target_link_libraries(
-  compare-and-swap-pair
-  GTest::gtest_main
-  ${GLIB_LIBRARIES}
-)
-target_link_libraries(
-  load-register-literal
-  GTest::gtest_main
-  ${GLIB_LIBRARIES}
-)
-target_link_libraries(
-  load-store-register-pair-post-indexed
-  GTest::gtest_main
-  ${GLIB_LIBRARIES}
-)
-target_link_libraries(
-  load-store-register-unscaled-immediate
-  GTest::gtest_main
-  ${GLIB_LIBRARIES}
-)
-target_link_libraries(
-  load-store-register-immediate-post-indexed
-  GTest::gtest_main
-  ${GLIB_LIBRARIES}
-)
+add_definitions(-DTESTING=1)
 
 include(GoogleTest)
-gtest_discover_tests(compare-and-swap-pair)
-gtest_discover_tests(load-register-literal)
-gtest_discover_tests(load-store-register-pair-post-indexed)
-gtest_discover_tests(load-store-register-unscaled-immediate)
-gtest_discover_tests(load-store-register-immediate-post-indexed)
+
+set(EXECUTABLES
+  compare-and-swap-pair
+  load-register-literal
+  load-store-register-pair-post-indexed
+  load-store-register-unscaled-immediate
+  load-store-register-immediate-post-indexed
+)
+
+foreach(EXEC ${EXECUTABLES})
+  add_executable(${EXEC}
+    ../libqflex/plugins/trace/memory-decoder.c
+    testing-utils.cc
+    ${EXEC}.cc
+  )
+
+  target_link_libraries(${EXEC}
+    GTest::gtest_main
+    ${GLIB_LIBRARIES}
+  )
+
+  gtest_discover_tests(${EXEC})
+endforeach()

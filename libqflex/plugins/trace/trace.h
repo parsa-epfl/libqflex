@@ -1,9 +1,10 @@
 #ifndef LIBQFLEX_TRACE_H
 #define LIBQFLEX_TRACE_H
 
-
-#include "qemu/osdep.h"
-#include "middleware/libqflex/libqflex-legacy-api.h"
+#include "../../libqflex-legacy-api.h"
+#ifndef TESTING
+    #include "qemu/osdep.h"
+#endif
 
 struct mem_access {
     uint8_t is_load    :1 ;

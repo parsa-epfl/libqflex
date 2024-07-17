@@ -1,5 +1,9 @@
-#include "qemu/osdep.h"
-#include "qemu/bitops.h"
+#ifndef TESTING
+    #include "qemu/osdep.h"
+    #include "qemu/bitops.h"
+#else
+    #include "testing-includes.h"
+#endif
 
 #include "trace.h"
 
@@ -1301,7 +1305,7 @@ disas_branch_sys(struct mem_access* s, uint32_t opcode)
                         case 0x31:  /* Wait for timer interrrupt */
                         case 0x32:  /* Hints to compiler and special instructions like NOPs (TODO: may need to be checked in detail) */
                         case 0x33:  /* Barriers */
-                        case 0x4: case 0x14: case 0x24: case 0x34: case 0x44: case 0x54: case 0x64: case 0x74: /* For controlling processor flags */   
+                        case 0x4: case 0x14: case 0x24: case 0x34: case 0x44: case 0x54: case 0x64: case 0x74: /* For controlling processor flags */
                             break;
                         default:
                             switch(extract32(opcode, 19, 5)) {
@@ -1366,7 +1370,7 @@ disas_branch_sys(struct mem_access* s, uint32_t opcode)
     return has_mem_access;
 }
 
-/* 
+/*
     * Link to SVE instructions:
     * https://developer.arm.com/documentation/ddi0602/2024-03/Index-by-Encoding/SVE-encodings
 */
@@ -1441,7 +1445,7 @@ disas_sve(struct mem_access* s, uint32_t opcode)
                                                 break;
                                         }
                                         break;
-                                } 
+                                }
                             } else {        /* All others are 32 bit */
                                 size = 3;
                             }
