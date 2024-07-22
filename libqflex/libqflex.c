@@ -131,6 +131,8 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
         return cpu_wrapper->env->vfp.zregs[idx].d[0];
         break;
 
+    case PC:
+        return cpu_wrapper->env->pc;
     case PSTATE:
         return cpu_wrapper->env->pstate;
 
