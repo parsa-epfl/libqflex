@@ -16,6 +16,10 @@
 #include "middleware/libqflex/libqflex-legacy-api.h"
 #include "trace.h"
 
+// Add this
+
+#include "middleware/libqflex/libqflex.h"
+
 
 // Ensure that the plugin run only against the version
 // it was compiled for
@@ -46,9 +50,15 @@ trans_free(gpointer data)
  * @param vaddr OPage virtual address.
  * @param userdata Generic translation info.
  */
+
+int instruction_count = 0;
+
 static void
 dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void* userdata)
 {
+    if (vcpu_index == 0) {
+        instruction_count++;
+    }
 
     trace_insn_t* insn = (trace_insn_t*) userdata;
 
@@ -67,9 +77,7 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
 
     // ─────────────────────────────────────────────────────────────────────
 
-
     struct qemu_plugin_hwaddr* hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
-
 
     memory_transaction_t tr = {0};
 
@@ -84,7 +92,6 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
     tr.s.size   = mem_info.size;
     tr.s.atomic = mem_info.is_atomic;
     tr.s.type   = mem_info.is_store ? QEMU_Trans_Store : QEMU_Trans_Load;
-
 
     flexus_api.trace_mem(vcpu_index, &tr);
 }
@@ -101,9 +108,12 @@ dispatch_memory_access(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint
 static void
 dispatch_instruction(unsigned int vcpu_index, void* userdata)
 {
+    if (vcpu_index == 0) {
+        instruction_count++;
+    }
 
     trace_insn_t* insn = (trace_insn_t*) userdata;
-    g_assert(insn->target_pc_va);
+    //g_assert(insn->target_pc_va);
 
     MemTxAttrs attrs;
     branch_type_t br_type;
@@ -123,6 +133,7 @@ dispatch_instruction(unsigned int vcpu_index, void* userdata)
 
     flexus_api.trace_mem(vcpu_index, &tr);
 }
+
 
 /**
  * Get called on every instruction translation

@@ -6,6 +6,8 @@
 
 #include "libqflex-legacy-api.h"
 
+extern int instruction_count;
+
 extern struct libqflex_state_t qemu_libqflex_state;
 
 /**
