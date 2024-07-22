@@ -86,7 +86,7 @@ libqflex_get_nb_cores(void);
  * @return a 64bits address
  */
 physical_address_t
-libqflex_translate_VA(
+libqflex_translate_va2pa(
     size_t,
     logical_address_t);
 

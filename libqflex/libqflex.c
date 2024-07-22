@@ -165,7 +165,7 @@ libqflex_get_nb_cores(void)
 
 
 physical_address_t
-libqflex_translate_VA(size_t cpu_index, logical_address_t va)
+libqflex_translate_va2pa(size_t cpu_index, logical_address_t va)
 {
     MemTxAttrs attrs;
     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
@@ -173,7 +173,7 @@ libqflex_translate_VA(size_t cpu_index, logical_address_t va)
     hwaddr pa = arm_cpu_get_phys_page_attrs_debug(cpu_wrapper->state, va, &attrs);
 
     // Return the error if there is one, otherwise cast the returned address
-    return (pa == -1) ? pa : (physical_address_t)pa;
+    return (pa == -1) ? -1 : (physical_address_t)pa;
 }
 
 logical_address_t
