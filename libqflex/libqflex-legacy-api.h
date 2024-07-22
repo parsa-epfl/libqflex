@@ -90,8 +90,7 @@ typedef enum {
   QMP_FLEXUS_PRINTMMU,
 } qmp_flexus_cmd_t;
 
-typedef enum {
-  QEMU_Class_Kind_Vanilla,
+typedef enum { QEMU_Class_Kind_Vanilla,
   QEMU_Class_Kind_Pseudo,
   QEMU_Class_Kind_Session
 } class_data_t;
@@ -227,7 +226,7 @@ typedef struct {
 //typedef char             *(*QEMU_DISASS_t)         (conf_object_t* cpu, uint64_t addr);
 //typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
 //typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
-typedef int               (*QEMU_GET_CPU_IDX_t)    (conf_object_t *cpu);
+//typedef int               (*QEMU_GET_CPU_IDX_t)    (conf_object_t *cpu);
 //typedef uint64_t          (*QEMU_GET_CSR_t)        (conf_object_t *cpu, int idx);
 //typedef uint64_t          (*QEMU_GET_CYCLES_LEFT_t)(void);
 //typedef uint64_t          (*QEMU_GET_FPR_t)        (conf_object_t *cpu, int idx);
@@ -268,7 +267,7 @@ typedef struct QEMU_API_t
 //  QEMU_DISASS_t          disass;
 //  QEMU_GET_ALL_CPUS_t    get_all_cpus;
 //  QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
-    QEMU_GET_CPU_IDX_t     get_cpu_idx;
+//  QEMU_GET_CPU_IDX_t     get_cpu_idx;
 //  QEMU_GET_CSR_t         get_csr;
 //  QEMU_GET_CYCLES_LEFT_t get_cycles_left;
 //  QEMU_GET_FPR_t         get_fpr;
