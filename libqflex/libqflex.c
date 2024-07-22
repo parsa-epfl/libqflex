@@ -9,6 +9,7 @@
 #include "qapi/qapi-commands-misc.h"
 #include "qapi/qapi-commands-control.h"
 #include "sysemu/runstate.h"
+#include "include/disas/disas.h"
 
 #include "libqflex.h"
 #include "libqflex-module.h"
@@ -280,6 +281,12 @@ libqflex_advance(size_t cpu_index, bool trigger_count)
     if (trigger_count) qemu_libqflex_state.cycles--;
 
     return libqflex_step(cpu_wrapper->state);
+}
+
+char* libqflex_disas(size_t cpu_index, uint64_t addr, size_t size)
+{
+    vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+    return plugin_disas(cpu_wrapper->state, addr, size);
 }
 
 void
