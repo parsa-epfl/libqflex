@@ -119,6 +119,7 @@ libqflex_flexus_init(void)
     QEMU_API_t qemu_api =
     {
         .read_register      = libqflex_read_register,
+        .read_sys_register  = libqflex_read_sysreg,
         .get_num_cores      = libqflex_get_nb_cores,
         .translate_va2pa    = libqflex_translate_va2pa,
         .get_pc             = libqflex_get_pc,

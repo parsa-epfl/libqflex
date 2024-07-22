@@ -68,6 +68,18 @@ libqflex_read_register(
     size_t);
 
 /**
+ * Return the unhashed system register
+ */
+uint64_t
+libqflex_read_sysreg(
+    size_t,
+    uint8_t,
+    uint8_t,
+    uint8_t,
+    uint8_t,
+    uint8_t);
+
+/**
  * Return the number of cores QEMU is emulating
  *
  * @return a 64bits unsigned integer value,
@@ -101,7 +113,7 @@ logical_address_t
 libqflex_get_pc(size_t);
 
 /**
- * Return true if an interrupt is pending
+ * Return true if an interrupt is pending for a given core
  *
  * @param size_t Virtual CPU Index
  *

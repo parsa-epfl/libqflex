@@ -236,6 +236,7 @@ typedef struct {
 
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_address_t va);
 typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t reg_info);
+typedef uint64_t          (*QEMU_READ_SYSREG_t)     (size_t core_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
 typedef bool              (*QEMU_GET_IRQ_t)         (size_t core_index);
@@ -276,6 +277,7 @@ typedef struct QEMU_API_t
   // ─── Bryan ───────────────────────────────────────────────────────────
   QEMU_GET_NUM_CORES_t   get_num_cores;
   QEMU_READ_REG_t        read_register;
+  QEMU_READ_SYSREG_t     read_sys_register;
   QEMU_GET_PA_t          translate_va2pa;
   QEMU_GET_PC_t          get_pc;
   QEMU_GET_IRQ_t         has_irq;

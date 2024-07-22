@@ -14,6 +14,7 @@
 #include "libqflex-module.h"
 #include "libqflex-legacy-api.h"
 
+#include "target/arm/cpregs.h" // Need to be last
 // ─────────────────────────────────────────────────────────────────────────────
 
 vCPU_t* libqflex_vcpus = NULL;
@@ -160,6 +161,59 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
 
 }
 
+
+uint64_t
+libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm)
+{
+    vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+
+    ARMCPRegInfo const * ri = get_arm_cp_reginfo(
+        cpu_wrapper->cpu->cp_regs,
+        ENCODE_AA64_CP_REG(CP_REG_ARM64_SYSREG_CP, crn, crm, op0, op1, op2));
+
+    if (!ri) {
+        // Unknown register; this might be a guest error or a QEMU
+        // unimplemented feature.
+        qemu_log("ERROR: read access to unsupported AArch64 "
+                      "system register op0:%d op1:%d crn:%d crm:%d op2:%d\n",
+                      op0, op1, crn, crm, op2);
+        //return 0;
+    }
+    // Check access permissions
+    if (!cp_access_ok(arm_current_el(cpu_wrapper->env), ri, true)) {
+        qemu_log("ERROR: access to sysreg with wrong permissions");
+        g_assert_not_reached();
+    }
+
+    if (ri && !(ri->type & ARM_CP_NO_RAW))
+    {
+        return read_raw_cp_reg(cpu_wrapper->env, ri);
+    }
+
+    // Msutherl: do it the slow way by linear searching if previous encoding didn't work
+    for (size_t i = 0; i < cpu_wrapper->cpu->cpreg_array_len; i++)
+    {
+
+        uint32_t regidx = kvm_to_cpreg_id(cpu_wrapper->cpu->cpreg_indexes[i]);
+
+        ri = get_arm_cp_reginfo(cpu_wrapper->cpu->cp_regs, regidx);
+
+        if (ri->opc0 == op0 &&
+            ri->opc1 == op1 &&
+            ri->opc2 == op2 &&
+            ri->crn == crn &&
+            ri->crm == crm &&
+            !(ri->type & ARM_CP_NO_RAW)) {
+
+            return read_raw_cp_reg(cpu_wrapper->env, ri);
+        }
+    }
+
+    qemu_log("ERROR: QEMU did not recognize sysreg case");
+    g_assert_not_reached();
+    return 0;
+}
+
 size_t
 libqflex_get_nb_cores(void)
 {
@@ -252,8 +306,9 @@ libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes)
     assert_index_in_range(bytes, 0, 15);
 
     if ((int64_t)(pa) < 0) {
-        memset(buffer, -1, bytes);
-        return true;
+        g_assert_not_reached();
+        //memset(buffer, -1, bytes);
+        //return true;
     }
 
     cpu_physical_memory_read(pa, buffer, bytes);
