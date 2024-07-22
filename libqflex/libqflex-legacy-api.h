@@ -99,17 +99,14 @@ typedef enum { QEMU_Class_Kind_Vanilla,
 typedef enum {
   // ─── Bryan ───────────────────────────────────────────────────────────
 
-  GENERAL = 0,            // Regs for A64 mode.
+  GENERAL = 0,        // Regs for A64 mode.
   FLOATING_POINT,
 
-  // PC,              // Program counter
-  // PSTATE,          // PSTATE isn't an architectural register for ARMv8
-  // SYSREG,          // maybe
+  PSTATE,             // PSTATE isn't an architectural register for ARMv8
   TTBR0,              // MMU translation table base 0
   TTBR1,              // MMU translation table base 1
   ID_AA64MMFR0,       // AArch64 Memory Model Feature Register 0
   SCTLR,              // System Control Register
-  // SP,              // AArch64 banked stack pointers
   TCR,
   ISA,
 } register_type_t;
@@ -237,7 +234,6 @@ typedef struct {
 //typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
 //typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
 
-// ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_address_t va);
 typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t reg_info);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
