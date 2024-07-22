@@ -134,6 +134,7 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
 
     case PC:
         return cpu_wrapper->env->pc;
+
     case PSTATE:
         return cpu_wrapper->env->pstate;
 
@@ -223,6 +224,12 @@ libqflex_get_nb_cores(void)
     return qemu_libqflex_state.n_vcpus;
 }
 
+bool
+libqflex_is_core_busy(size_t cpu_index)
+{
+    vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+    return !cpu_wrapper->state->halted;
+}
 
 physical_address_t
 libqflex_translate_va2pa(size_t cpu_index, logical_address_t va)

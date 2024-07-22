@@ -220,7 +220,6 @@ typedef struct {
  *-------------------------TYPEDEFS----------------------------
  *---------------------------------------------------------------*/
 
-//typedef bool              (*QEMU_CPU_BUSY_t)       (conf_object_t* cpu);
 //typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
 //typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
 //typedef int               (*QEMU_GET_CPU_IDX_t)    (conf_object_t *cpu);
@@ -245,6 +244,7 @@ typedef void              (*QEMU_TICK_t)            (void);
 typedef bool              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
 typedef void              (*QEMU_STOP_t)            (char const * const msg);
 typedef char*             (*QEMU_DISASS_t)          (size_t core_index, uint64_t addr, size_t size);
+typedef bool              (*QEMU_CPU_BUSY_t)        (size_t core_index);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void              (*FLEXUS_START_t)        (uint64_t);
@@ -261,7 +261,6 @@ typedef struct FLEXUS_API_t {
 
 typedef struct QEMU_API_t
 {
-//  QEMU_CPU_BUSY_t        cpu_busy;
 //  QEMU_GET_ALL_CPUS_t    get_all_cpus;
 //  QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
 //  QEMU_GET_CPU_IDX_t     get_cpu_idx;
@@ -286,6 +285,7 @@ typedef struct QEMU_API_t
   QEMU_STOP_t            stop;
   QEMU_TICK_t            tick;
   QEMU_DISASS_t          disassembly;
+  QEMU_CPU_BUSY_t        is_busy;
   // ─────────────────────────────────────────────────────────────────────
 
 
