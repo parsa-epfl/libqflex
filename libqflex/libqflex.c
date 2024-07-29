@@ -166,6 +166,13 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
 }
 
 
+void libqflex_dump_state(size_t cpu_index, FILE* f)
+{
+    vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
+    cpu_dump_state(cpu_wrapper->state, f, 0);
+}
+
+
 uint64_t
 libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm)
 {

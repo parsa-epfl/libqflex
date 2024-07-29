@@ -245,6 +245,8 @@ typedef bool              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_a
 typedef void              (*QEMU_STOP_t)            (char const * const msg);
 typedef char*             (*QEMU_DISASS_t)          (size_t core_index, uint64_t addr, size_t size);
 typedef bool              (*QEMU_CPU_BUSY_t)        (size_t core_index);
+// ───── Bugra ─────────────────────────────────────────────────────────────────
+typedef void              (*QEMU_DUMP_STATE_t)      (size_t cpu_index, FILE*);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void              (*FLEXUS_START_t)        (uint64_t);
@@ -286,6 +288,8 @@ typedef struct QEMU_API_t
   QEMU_TICK_t            tick;
   QEMU_DISASS_t          disassembly;
   QEMU_CPU_BUSY_t        is_busy;
+  // ─── Bugra ───────────────────────────────────────────────────────────
+  QEMU_DUMP_STATE_t      dump_state;
   // ─────────────────────────────────────────────────────────────────────
 
 

@@ -67,6 +67,8 @@ libqflex_read_register(
     register_type_t,
     size_t);
 
+void libqflex_dump_state(size_t cpu_index, FILE* f);
+
 /**
  * Return the unhashed system register
  */

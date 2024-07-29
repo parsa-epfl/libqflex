@@ -130,6 +130,7 @@ libqflex_flexus_init(void)
         .tick               = libqflex_tick,
         .disassembly        = libqflex_disas,
         .is_busy            = libqflex_is_core_busy,
+        .dump_state         = libqflex_dump_state,
     };
 
     // Flexus is stupid, so it's to put with its stupidity
