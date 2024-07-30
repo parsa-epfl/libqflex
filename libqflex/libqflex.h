@@ -181,7 +181,7 @@ libqflex_step(struct CPUState*);
 void
 libqflex_stop(char const * const msg);
 
-bool
+void
 libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes);
 
 char* 
