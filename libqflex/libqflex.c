@@ -185,7 +185,7 @@ libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, ui
         qemu_log("ERROR: read access to unsupported AArch64 "
                       "system register op0:%d op1:%d crn:%d crm:%d op2:%d\n",
                       op0, op1, crn, crm, op2);
-        g_assert_not_reached();
+        //return 0;
     }
     // Check access permissions
     if (!cp_access_ok(arm_current_el(cpu_wrapper->env), ri, true)) {
@@ -197,12 +197,6 @@ libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, ui
     {
         return read_raw_cp_reg(cpu_wrapper->env, ri);
     }
-
-    if (ri && (strcmp(ri->name, "SPSel") == 0))
-    {
-        return ri->readfn(cpu_wrapper->env, ri);
-    }
-
 
     // Msutherl: do it the slow way by linear searching if previous encoding didn't work
     for (size_t i = 0; i < cpu_wrapper->cpu->cpreg_array_len; i++)
@@ -333,6 +327,7 @@ libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes)
 
     if ((int64_t)(pa) < 0) {
         g_assert_not_reached();
+        //memset(buffer, -1, bytes);
     }
 
     cpu_physical_memory_read(pa, buffer, bytes);
