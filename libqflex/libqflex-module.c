@@ -119,14 +119,17 @@ libqflex_flexus_init(void)
     QEMU_API_t qemu_api =
     {
         .read_register      = libqflex_read_register,
+        .read_sys_register  = libqflex_read_sysreg,
         .get_num_cores      = libqflex_get_nb_cores,
-        .translate_va2pa    = libqflex_translate_VA,
+        .translate_va2pa    = libqflex_translate_va2pa,
         .get_pc             = libqflex_get_pc,
         .has_irq            = libqflex_has_interrupt,
         .cpu_exec           = libqflex_advance,
         .stop               = libqflex_stop,
         .get_mem            = libqflex_read_main_memory,
         .tick               = libqflex_tick,
+        .disassembly        = libqflex_disas,
+        .is_busy            = libqflex_is_core_busy,
     };
 
     // Flexus is stupid, so it's to put with its stupidity

@@ -68,6 +68,18 @@ libqflex_read_register(
     size_t);
 
 /**
+ * Return the unhashed system register
+ */
+uint64_t
+libqflex_read_sysreg(
+    size_t,
+    uint8_t,
+    uint8_t,
+    uint8_t,
+    uint8_t,
+    uint8_t);
+
+/**
  * Return the number of cores QEMU is emulating
  *
  * @return a 64bits unsigned integer value,
@@ -86,7 +98,7 @@ libqflex_get_nb_cores(void);
  * @return a 64bits address
  */
 physical_address_t
-libqflex_translate_VA(
+libqflex_translate_va2pa(
     size_t,
     logical_address_t);
 
@@ -101,7 +113,7 @@ logical_address_t
 libqflex_get_pc(size_t);
 
 /**
- * Return true if an interrupt is pending
+ * Return true if an interrupt is pending for a given core
  *
  * @param size_t Virtual CPU Index
  *
@@ -164,13 +176,19 @@ void
 libqflex_tick(void);
 
 uint64_t
-libqflex_step(CPUState*);
+libqflex_step(struct CPUState*);
 
 void
 libqflex_stop(char const * const msg);
 
-bool
+void
 libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes);
+
+char* 
+libqflex_disas(size_t, uint64_t, size_t);
+
+bool
+libqflex_is_core_busy(size_t cpu_index);
 
 void
 libqflex_save_ckpt(char const * const dirname);

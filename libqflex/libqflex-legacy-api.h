@@ -90,8 +90,7 @@ typedef enum {
   QMP_FLEXUS_PRINTMMU,
 } qmp_flexus_cmd_t;
 
-typedef enum {
-  QEMU_Class_Kind_Vanilla,
+typedef enum { QEMU_Class_Kind_Vanilla,
   QEMU_Class_Kind_Pseudo,
   QEMU_Class_Kind_Session
 } class_data_t;
@@ -100,17 +99,15 @@ typedef enum {
 typedef enum {
   // ─── Bryan ───────────────────────────────────────────────────────────
 
-  GENERAL = 0,            // Regs for A64 mode.
+  GENERAL = 0,        // Regs for A64 mode.
   FLOATING_POINT,
 
-  // PC,              // Program counter
-  // PSTATE,          // PSTATE isn't an architectural register for ARMv8
-  // SYSREG,          // maybe
+  PC,
+  PSTATE,             // PSTATE isn't an architectural register for ARMv8
   TTBR0,              // MMU translation table base 0
   TTBR1,              // MMU translation table base 1
   ID_AA64MMFR0,       // AArch64 Memory Model Feature Register 0
   SCTLR,              // System Control Register
-  // SP,              // AArch64 banked stack pointers
   TCR,
   ISA,
 } register_type_t;
@@ -223,31 +220,31 @@ typedef struct {
  *-------------------------TYPEDEFS----------------------------
  *---------------------------------------------------------------*/
 
-typedef bool              (*QEMU_CPU_BUSY_t)       (conf_object_t* cpu);
-typedef char             *(*QEMU_DISASS_t)         (conf_object_t* cpu, uint64_t addr);
-typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
-typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
-typedef int               (*QEMU_GET_CPU_IDX_t)    (conf_object_t *cpu);
-typedef uint64_t          (*QEMU_GET_CSR_t)        (conf_object_t *cpu, int idx);
-typedef uint64_t          (*QEMU_GET_CYCLES_LEFT_t)(void);
-typedef uint64_t          (*QEMU_GET_FPR_t)        (conf_object_t *cpu, int idx);
-typedef uint64_t          (*QEMU_GET_GPR_t)        (conf_object_t *cpu, int idx);
-typedef conf_object_t    *(*QEMU_GET_OBJ_BY_NAME_t)(const char *name);
-typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
-typedef char             *(*QEMU_GET_SNAP_t)       (conf_object_t* cpu);
-typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
-typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
+//typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
+//typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
+//typedef int               (*QEMU_GET_CPU_IDX_t)    (conf_object_t *cpu);
+//typedef uint64_t          (*QEMU_GET_CSR_t)        (conf_object_t *cpu, int idx);
+//typedef uint64_t          (*QEMU_GET_CYCLES_LEFT_t)(void);
+//typedef uint64_t          (*QEMU_GET_FPR_t)        (conf_object_t *cpu, int idx);
+//typedef uint64_t          (*QEMU_GET_GPR_t)        (conf_object_t *cpu, int idx);
+//typedef conf_object_t    *(*QEMU_GET_OBJ_BY_NAME_t)(const char *name);
+//typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
+//typedef char             *(*QEMU_GET_SNAP_t)       (conf_object_t* cpu);
+//typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
+//typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
 
-// ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_address_t va);
 typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t reg_info);
+typedef uint64_t          (*QEMU_READ_SYSREG_t)     (size_t core_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
 typedef bool              (*QEMU_GET_IRQ_t)         (size_t core_index);
 typedef uint64_t          (*QEMU_CPU_EXEC_t)        (size_t core_index, bool count);
 typedef void              (*QEMU_TICK_t)            (void);
-typedef bool              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
+typedef void              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
 typedef void              (*QEMU_STOP_t)            (char const * const msg);
+typedef char*             (*QEMU_DISASS_t)          (size_t core_index, uint64_t addr, size_t size);
+typedef bool              (*QEMU_CPU_BUSY_t)        (size_t core_index);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void              (*FLEXUS_START_t)        (uint64_t);
@@ -264,23 +261,22 @@ typedef struct FLEXUS_API_t {
 
 typedef struct QEMU_API_t
 {
-  QEMU_CPU_BUSY_t        cpu_busy;
-  QEMU_DISASS_t          disass;
-  QEMU_GET_ALL_CPUS_t    get_all_cpus;
-  QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
-  QEMU_GET_CPU_IDX_t     get_cpu_idx;
-  QEMU_GET_CSR_t         get_csr;
-  QEMU_GET_CYCLES_LEFT_t get_cycles_left;
-  QEMU_GET_FPR_t         get_fpr;
-  QEMU_GET_GPR_t         get_gpr;
-  QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
-  QEMU_GET_PL_t          get_pl;
-  QEMU_GET_SNAP_t        get_snap;
-  QEMU_MEM_OP_IS_DATA_t  mem_op_is_data;
-  QEMU_MEM_OP_IS_WRITE_t mem_op_is_write;
+//  QEMU_GET_ALL_CPUS_t    get_all_cpus;
+//  QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
+//  QEMU_GET_CPU_IDX_t     get_cpu_idx;
+//  QEMU_GET_CSR_t         get_csr;
+//  QEMU_GET_CYCLES_LEFT_t get_cycles_left;
+//  QEMU_GET_FPR_t         get_fpr;
+//  QEMU_GET_GPR_t         get_gpr;
+//  QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
+//  QEMU_GET_PL_t          get_pl;
+//  QEMU_GET_SNAP_t        get_snap;
+//  QEMU_MEM_OP_IS_DATA_t  mem_op_is_data;
+//  QEMU_MEM_OP_IS_WRITE_t mem_op_is_write;
   // ─── Bryan ───────────────────────────────────────────────────────────
   QEMU_GET_NUM_CORES_t   get_num_cores;
   QEMU_READ_REG_t        read_register;
+  QEMU_READ_SYSREG_t     read_sys_register;
   QEMU_GET_PA_t          translate_va2pa;
   QEMU_GET_PC_t          get_pc;
   QEMU_GET_IRQ_t         has_irq;
@@ -288,6 +284,8 @@ typedef struct QEMU_API_t
   QEMU_GET_MEM_t         get_mem;
   QEMU_STOP_t            stop;
   QEMU_TICK_t            tick;
+  QEMU_DISASS_t          disassembly;
+  QEMU_CPU_BUSY_t        is_busy;
   // ─────────────────────────────────────────────────────────────────────
 
 
@@ -297,7 +295,7 @@ extern QEMU_API_t   qemu_api;
 extern FLEXUS_API_t flexus_api;
 
 #ifdef FLEXUS
-  void FLEXUS_start    (void);
+  void FLEXUS_start    (uint64_t);
   void FLEXUS_stop     (void);
   void FLEXUS_qmp      (qmp_flexus_cmd_t, const char*);
   void FLEXUS_trace_mem(uint64_t, memory_transaction_t*);
