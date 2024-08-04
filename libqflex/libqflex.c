@@ -96,7 +96,7 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
 
     case GENERAL:
         assert_index_in_range(idx, 0, 31);
-        return cpu_wrapper->env->regs[idx];
+        return cpu_wrapper->env->xregs[idx];
 
     /**
      * aa32_vfp_dreg:
