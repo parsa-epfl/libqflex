@@ -1,5 +1,5 @@
-#ifndef TESTING_UTILS_HH
-#define TESTING_UTILS_HH
+#ifndef TESTING_UTILS_H
+#define TESTING_UTILS_H
 
 #include <string>
 #include <vector>
@@ -99,4 +99,4 @@ void Instruction::addFields(First&& first, Rest&&... rest) {
   addFields(std::forward<Rest>(rest)...);
 }
 
-#endif // TESTING_UTILS_HH
+#endif // TESTING_UTILS_H

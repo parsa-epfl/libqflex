@@ -1,6 +1,10 @@
 #ifndef LIBQFLEX_TRACE_H
 #define LIBQFLEX_TRACE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../../libqflex-legacy-api.h"
 #ifndef TESTING
     #include "qemu/osdep.h"
@@ -38,5 +42,9 @@ decode_armv8_mem_opcode(struct mem_access*, uint32_t);
 
 bool
 decode_armv8_branch_opcode(branch_type_t*, uint32_t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

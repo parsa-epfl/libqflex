@@ -1,4 +1,4 @@
-#include "testing-utils.hh"
+#include "testing-utils.h"
 #include <cassert>
 #include <algorithm>
 #include <numeric>

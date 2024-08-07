@@ -24,7 +24,7 @@ pkg_check_modules(GLIB REQUIRED glib-2.0)
 # Include GLib directories
 include_directories(${GLIB_INCLUDE_DIRS})
 
-add_definitions(-DTESTING=1)
+add_definitions(-DTESTING)
 
 include(GoogleTest)
 
@@ -39,8 +39,9 @@ set(EXECUTABLES
 foreach(EXEC ${EXECUTABLES})
   add_executable(${EXEC}
     ../libqflex/plugins/trace/memory-decoder.c
-    testing-utils.cc
-    ${EXEC}.cc
+    ../libqflex/plugins/trace/branch-decoder.c
+    testing-utils.cpp
+    ${EXEC}.cpp
   )
 
   target_link_libraries(${EXEC}

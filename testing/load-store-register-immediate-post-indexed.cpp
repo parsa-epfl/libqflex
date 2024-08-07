@@ -1,9 +1,6 @@
 #include <gtest/gtest.h>
-#include "testing-utils.hh"
-
-extern "C" {
-  #include "../libqflex/plugins/trace/trace.h"
-}
+#include "testing-utils.h"
+#include "../libqflex/plugins/trace/trace.h"
 
 struct mem_access mem_access;
 
