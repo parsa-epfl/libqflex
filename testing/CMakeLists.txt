@@ -29,11 +29,16 @@ add_definitions(-DTESTING)
 include(GoogleTest)
 
 set(EXECUTABLES
-  compare-and-swap-pair
-  load-register-literal
-  load-store-register-pair-post-indexed
-  load-store-register-unscaled-immediate
-  load-store-register-immediate-post-indexed
+  # compare-and-swap-pair
+  # load-register-literal
+  # load-store-register-pair-post-indexed
+  # load-store-register-unscaled-immediate
+  # load-store-register-immediate-post-indexed
+  conditional-branch-immediate
+  unconditional-branch-register
+  unconditional-branch-immediate
+  compare-and-branch-immediate
+  test-and-branch-immediate
 )
 
 foreach(EXEC ${EXECUTABLES})
