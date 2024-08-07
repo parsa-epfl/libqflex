@@ -1,5 +1,9 @@
-#include "qemu/osdep.h"
-#include "qemu/bitops.h"
+#ifndef TESTING
+    #include "qemu/osdep.h"
+    #include "qemu/bitops.h"
+#else
+    #include "testing-includes.h"
+#endif
 
 #include "trace.h"
 
