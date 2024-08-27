@@ -185,7 +185,7 @@ libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, ui
         qemu_log("ERROR: read access to unsupported AArch64 "
                       "system register op0:%d op1:%d crn:%d crm:%d op2:%d\n",
                       op0, op1, crn, crm, op2);
-        //return 0;
+        g_assert_not_reached();
     }
     // Check access permissions
     if (!cp_access_ok(arm_current_el(cpu_wrapper->env), ri, true)) {
@@ -329,11 +329,10 @@ void
 libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes)
 {
 
-    assert_index_in_range(bytes, 0, 15);
+    assert_index_in_range(bytes, 1, 16);
 
     if ((int64_t)(pa) < 0) {
         g_assert_not_reached();
-        //memset(buffer, -1, bytes);
     }
 
     cpu_physical_memory_read(pa, buffer, bytes);
