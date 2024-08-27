@@ -106,6 +106,7 @@ typedef enum {
   PSTATE,             // PSTATE isn't an architectural register for ARMv8
   TTBR0,              // MMU translation table base 0
   TTBR1,              // MMU translation table base 1
+  TPIDR,              // Thread ID
   ID_AA64MMFR0,       // AArch64 Memory Model Feature Register 0
   SCTLR,              // System Control Register
   TCR,

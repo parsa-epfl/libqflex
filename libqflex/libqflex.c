@@ -143,6 +143,10 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
         return cpu_wrapper->env->cp15.sctlr_el[idx];
         break;
 
+    case TPIDR:
+        assert_index_in_range(idx, 0, 3);
+        return cpu_wrapper->env->cp15.tpidr_el[idx];
+
     case TTBR0:
         assert_index_in_range(idx, 1, 3);
         return cpu_wrapper->env->cp15.ttbr0_el[idx];
