@@ -77,7 +77,8 @@ libqflex_read_sysreg(
     uint8_t,
     uint8_t,
     uint8_t,
-    uint8_t);
+    uint8_t,
+    bool);
 
 /**
  * Return the number of cores QEMU is emulating
