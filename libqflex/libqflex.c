@@ -332,7 +332,8 @@ libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes)
     assert_index_in_range(bytes, 1, 16);
 
     if ((int64_t)(pa) < 0) {
-        g_assert_not_reached();
+        memset(buffer, -1, bytes);
+        return;
     }
 
     cpu_physical_memory_read(pa, buffer, bytes);
