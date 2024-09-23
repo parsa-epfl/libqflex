@@ -77,6 +77,7 @@ libqflex_read_sysreg(
     uint8_t,
     uint8_t,
     uint8_t,
+    uint8_t,
     uint8_t);
 
 /**

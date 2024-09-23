@@ -171,7 +171,7 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
 
 
 uint64_t
-libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm)
+libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, uint8_t ignore_permission_check)
 {
     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
 
@@ -188,7 +188,7 @@ libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, ui
         g_assert_not_reached();
     }
     // Check access permissions
-    if (!cp_access_ok(arm_current_el(cpu_wrapper->env), ri, true)) {
+    if (!ignore_permission_check && !cp_access_ok(arm_current_el(cpu_wrapper->env), ri, true)) {
         qemu_log("ERROR: access to sysreg with wrong permissions");
         g_assert_not_reached();
     }
@@ -202,7 +202,7 @@ libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, ui
     {
         return ri->readfn(cpu_wrapper->env, ri);
     }
-
+    
 
     // Msutherl: do it the slow way by linear searching if previous encoding didn't work
     for (size_t i = 0; i < cpu_wrapper->cpu->cpreg_array_len; i++)
