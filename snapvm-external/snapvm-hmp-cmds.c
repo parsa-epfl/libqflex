@@ -15,12 +15,6 @@
 void
 hmp_loadvm_external(Monitor *mon, const QDict *qdict)
 {
-    if (! qemu_snapvm_ext_state.is_enabled)
-    {
-        monitor_printf(mon, "Please activate `savevm-external' to use external snapshots.\n");
-        return;
-    }
-
     Error    *err           = NULL;
     // RunState saved_state    = runstate_get();
     // __attribute_maybe_unused__  const char* name = qdict_get_str(qdict, "name");
@@ -37,12 +31,6 @@ hmp_loadvm_external(Monitor *mon, const QDict *qdict)
 void
 hmp_savevm_external(Monitor* mon, const QDict* qdict)
 {
-    if (! qemu_snapvm_ext_state.is_enabled)
-    {
-        monitor_printf(mon, "Please activate `savevm-external' to use external snapshots.\n");
-        return;
-    }
-
     Error* err = NULL;
 
     SnapTransaction* trans = g_new0(SnapTransaction, 1);

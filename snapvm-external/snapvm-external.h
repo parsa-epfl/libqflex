@@ -3,14 +3,13 @@
 
 #include "block/block_int-io.h"
 
-
-
 // ─── Module ──────────────────────────────────────────────────────────────────
 
 
 struct snapvm_external_state {
     // True if the VM has been started with either -savevm|loadvm-external
-    bool is_enabled;
+    bool is_save_enabled;
+    bool is_load_enabled;
     // True if the VM has loaded an image through -loadvm-external
     bool has_been_loaded;
 };
@@ -75,16 +74,7 @@ save_snapshot_external(
 
 // ─── Load ────────────────────────────────────────────────────────────────────
 
-
-void
-loadvm_external_create_overlay(
-    const char* snap_name,
-    const char* base_bdrv_filename,
-    const char* fmt,
-    GString* overlay_path,
-    Error** errp);
-
 bool
-load_snapshot_external(void);
+load_snapshot_external(const char *name, const char *vmstate, bool has_devices, strList *devices, Error **errp);
 
 #endif
