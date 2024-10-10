@@ -2,9 +2,8 @@
 #define LIBQFLEX_H
 
 #include "include/hw/core/cpu.h"
-#include "target/arm/cpu.h"
-
 #include "libqflex-legacy-api.h"
+#include "target/arm/cpu.h"
 
 extern struct libqflex_state_t qemu_libqflex_state;
 
@@ -22,32 +21,29 @@ extern struct libqflex_state_t qemu_libqflex_state;
  *      tl:dr; ARMCPU, CPUArchState, ARMCPUClass because this file
  *      is compiled with the rest of the ARM target.
  **/
-typedef struct
-{
-    // vCPU index (informative)
-    size_t index;
+typedef struct {
+        // vCPU index (informative)
+        size_t index;
 
-    // Highest level. Contain all the methods which
-    // acts on the CPUState, or ARMCPU.
-    CPUClass* cc;
-    // High-level logical access to a vCPU,
-    // eg: vCPU state, memory allocation,
-    CPUState* state;
-    // ARM Specific vCPU features,
-    // eg: isa register, memory region, extension activated
-    ARMCPU* cpu;
-    // Architecture state of an ARM Core
-    // eg: generic register, pc, pstate, spsr, cpsr, ...
-    CPUArchState* env;
+        // Highest level. Contain all the methods which
+        // acts on the CPUState, or ARMCPU.
+        CPUClass *cc;
+        // High-level logical access to a vCPU,
+        // eg: vCPU state, memory allocation,
+        CPUState *state;
+        // ARM Specific vCPU features,
+        // eg: isa register, memory region, extension activated
+        ARMCPU *cpu;
+        // Architecture state of an ARM Core
+        // eg: generic register, pc, pstate, spsr, cpsr, ...
+        CPUArchState *env;
 
-    // -*- Whatever is needed -*-
+        // -*- Whatever is needed -*-
 } vCPU_t;
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-void
-libqflex_populate_vcpus(size_t n_vcpu);
+void libqflex_populate_vcpus(size_t n_vcpu);
 
 /**
  * Read CPU Arch register.
@@ -61,24 +57,13 @@ libqflex_populate_vcpus(size_t n_vcpu);
  * @return A 64bits register content
  */
 
-uint64_t
-libqflex_read_register(
-    size_t,
-    register_type_t,
-    size_t);
+uint64_t libqflex_read_register(size_t, register_type_t, size_t);
 
 /**
  * Return the unhashed system register
  */
-uint64_t
-libqflex_read_sysreg(
-    size_t,
-    uint8_t,
-    uint8_t,
-    uint8_t,
-    uint8_t,
-    uint8_t,
-    bool);
+uint64_t libqflex_read_sysreg(size_t, uint8_t, uint8_t, uint8_t, uint8_t,
+                              uint8_t, bool);
 
 /**
  * Return the number of cores QEMU is emulating
@@ -86,8 +71,7 @@ libqflex_read_sysreg(
  * @return a 64bits unsigned integer value,
  *         containg the core count
  */
-size_t
-libqflex_get_nb_cores(void);
+size_t libqflex_get_nb_cores(void);
 
 /**
  * Translate the guest virtual address to the guest physical address
@@ -98,10 +82,7 @@ libqflex_get_nb_cores(void);
  *
  * @return a 64bits address
  */
-physical_address_t
-libqflex_translate_va2pa(
-    size_t,
-    logical_address_t);
+physical_address_t libqflex_translate_va2pa(size_t, logical_address_t);
 
 /**
  * Return the current PC of a core
@@ -110,8 +91,7 @@ libqflex_translate_va2pa(
  *
  * @return a 64bits address
  */
-logical_address_t
-libqflex_get_pc(size_t);
+logical_address_t libqflex_get_pc(size_t);
 
 /**
  * Return true if an interrupt is pending for a given core
@@ -120,8 +100,7 @@ libqflex_get_pc(size_t);
  *
  * @return bool
  */
-bool
-libqflex_has_interrupt(size_t cpu_index);
+bool libqflex_has_interrupt(size_t cpu_index);
 /**
  * USED IN FLEXUS
  *
@@ -165,36 +144,28 @@ libqflex_has_interrupt(size_t cpu_index);
  * QEMU_cpu_set_quantum
  */
 
-#define EXCP_QFLEX_IDLE    0x10010
-#define EXCP_QFLEX_UNPLUG  0x10011
-#define EXCP_QFLEX_STOP    0x10012
+#define EXCP_QFLEX_IDLE 0x10010
+#define EXCP_QFLEX_UNPLUG 0x10011
+#define EXCP_QFLEX_STOP 0x10012
 #define EXCP_QFLEX_UNKNOWN 0x10013
 
-uint64_t
-libqflex_advance(size_t, bool);
+uint64_t libqflex_advance(size_t, bool);
 
-void
-libqflex_tick(void);
+void libqflex_tick(void);
 
-uint64_t
-libqflex_step(struct CPUState*);
+uint64_t libqflex_step(struct CPUState *);
 
-void
-libqflex_stop(char const * const msg);
+void libqflex_stop(char const *const msg);
 
-void
-libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes);
+void libqflex_read_main_memory(uint8_t *buffer, physical_address_t pa,
+                               size_t bytes);
 
-char* 
-libqflex_disas(size_t, uint64_t, size_t);
+char *libqflex_disas(size_t, uint64_t, size_t);
 
-bool
-libqflex_is_core_busy(size_t cpu_index);
+bool libqflex_is_core_busy(size_t cpu_index);
 
-void
-libqflex_save_ckpt(char const * const dirname);
+void libqflex_save_ckpt(char const *const dirname);
 
-void
-libqflex_load_ckpt(char const * const dirname);
+void libqflex_load_ckpt(char const *const dirname);
 
 #endif
