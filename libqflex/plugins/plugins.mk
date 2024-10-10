@@ -1,30 +1,30 @@
-# -*- Mode: makefile -*-
+#- * - Mode : makefile - * -
 #
-# This Makefile example is fairly independent from the main QEMU makefile
-# so users can take and adapt it for their build.
+#This Makefile example is fairly independent from the main QEMU makefile
+#so users can take and adapt it for their build.
 #
-# Bryan Perdrizat:
-#		This file is included from the main QEMU (contrib/plugin) Makefile
-#		and is aimed toward building the libqflex-PLUGIN static library in
-#		a separated tree. The variable not defined here are therefore defined
-#		from this parent's Makefile
+#Bryan Perdrizat:
+#This file is included from the main QEMU(contrib / plugin) Makefile
+#and is aimed toward building the libqflex - PLUGIN static library in
+#a separated tree.The variable not defined here are therefore defined
+#from this parent's Makefile
 
 # ─── Variable ─────────────────────────────────────────────────────────────────
 
-# A simlink or hardlink is required in contrib/plugin/ otherwise the next line
-# make no sense
+#A simlink or hardlink is required in contrib / plugin / otherwise the next line
+#make no sense
 LIBQFLEX_VPATH := $(VPATH)/middleware
 BUILD_DIR := $(LIBQFLEX_VPATH)/build
 
-# Add your new library directory here
+#Add your new library directory here
 LIBQFLEX_NAME :=
 LIBQFLEX_NAME += trace
-# LIBQFLEX_NAME += timing
-# NAME become -> lib + {NAME} + .so
+#LIBQFLEX_NAME += timing
+#NAME become->lib + {NAME } +.so
 LIBQFLEX_LIBNAME 	:= $(addsuffix $(SO_SUFFIX),$(addprefix lib,$(LIBQFLEX_NAME)))
 LIBQFLEX_FULL_PATH 	:= $(addprefix $(BUILD_DIR)/,$(LIBQFLEX_LIBNAME))
 
-# All the *.c files and all the .o files
+#All the *.c files and all the.o files
 SRC_FILES := $(foreach dir,$(LIBQFLEX_NAME),$(wildcard $(LIBQFLEX_VPATH)/$(dir)/*.c))
 OBJ_FILES := $(patsubst $(LIBQFLEX_VPATH)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 

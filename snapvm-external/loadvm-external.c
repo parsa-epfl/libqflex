@@ -4,8 +4,8 @@
 #include "block/block_int-io.h"
 #include "block/snapshot.h"
 #include "io/channel-buffer.h"
-#include "io/channel-file.h"
 #include "io/channel-command.h"
+#include "io/channel-file.h"
 #include "migration/migration.h"
 #include "migration/qemu-file.h"
 #include "migration/savevm.h"
@@ -16,134 +16,134 @@
 #include "qemu/error-report.h"
 #include "qemu/log.h"
 #include "qemu/yank.h"
+#include "snapvm-external.h"
 #include "sysemu/replay.h"
 #include "sysemu/runstate.h"
 
-#include "snapvm-external.h"
-
-static char *get_zstd(Error **errp) {
-  char *zstd = g_find_program_in_path("zstd");
-  if (!zstd)
-    error_setg(errp, "zstd not found in PATH");
-
-  return zstd;
-}
-
 bool load_snapshot_external(const char *name, const char *vmstate,
-                            bool has_devices, strList *devices, Error **errp) {
-  BlockDriverState *bs_vm_state;
-  QEMUSnapshotInfo sn;
-  QEMUFile *f;
-  int ret;
-  AioContext *aio_context;
-  MigrationIncomingState *mis = migration_incoming_get_current();
+                            bool has_devices, strList *devices, Error **errp)
+{
+        BlockDriverState *bs_vm_state;
+        QEMUSnapshotInfo sn;
+        QEMUFile *f;
+        int ret;
+        AioContext *aio_context;
+        MigrationIncomingState *mis = migration_incoming_get_current();
 
-  if (!bdrv_all_can_snapshot(has_devices, devices, errp)) {
-    return false;
-  }
-  ret = bdrv_all_has_snapshot(name, has_devices, devices, errp);
-  if (ret < 0) {
-    return false;
-  }
-  if (ret == 0) {
-    error_setg(errp, "Snapshot '%s' does not exist in one or more devices",
-               name);
-    return false;
-  }
+        if (!bdrv_all_can_snapshot(has_devices, devices, errp)) {
+                return false;
+        }
+        ret = bdrv_all_has_snapshot(name, has_devices, devices, errp);
+        if (ret < 0) {
+                return false;
+        }
+        if (ret == 0) {
+                error_setg(
+                    errp, "Snapshot '%s' does not exist in one or more devices",
+                    name);
+                return false;
+        }
 
-  bs_vm_state = bdrv_all_find_vmstate_bs(vmstate, has_devices, devices, errp);
-  if (!bs_vm_state) {
-    return false;
-  }
-  aio_context = bdrv_get_aio_context(bs_vm_state);
+        bs_vm_state = bdrv_all_find_vmstate_bs(vmstate, has_devices, devices, errp);
 
-  /* Don't even try to load empty VM states */
-  aio_context_acquire(aio_context);
-  ret = bdrv_snapshot_find(bs_vm_state, &sn, name);
-  aio_context_release(aio_context);
+        if (!bs_vm_state) {
+                return false;
+        }
+        aio_context = bdrv_get_aio_context(bs_vm_state);
 
-  char snapshot_name[293];
-  snprintf(snapshot_name, sizeof(snapshot_name), "%s.zstd", sn.name);
+        /* Don't even try to load empty VM states */
+        aio_context_acquire(aio_context);
 
-  if (ret < 0) {
-    return false;
-  } else if (sn.vm_state_size == 0 &&
-             !g_file_test(snapshot_name, G_FILE_TEST_IS_REGULAR)) {
-    error_setg(errp, "This is a disk-only snapshot. Revert to it "
-                     " offline using qemu-img");
-    return false;
-  }
+        ret = bdrv_snapshot_find(bs_vm_state, &sn, name);
+        aio_context_release(aio_context);
 
-  /*
-   * Flush the record/replay queue. Now the VM state is going
-   * to change. Therefore we don't need to preserve its consistency
-   */
-  replay_flush_events();
+        if (ret < 0)
+                return false;
 
-  /* Flush all IO requests so they don't interfere with the new state.  */
-  bdrv_drain_all_begin();
+        /**
+         * Looking for a file in the current snapshot directory,
+         * that have the same name as the snapshot name
+         */
+        char snapshot_name[256] = {0};
+        g_snprintf(snapshot_name, sizeof(snapshot_name), "%s.zstd", sn.name);
 
-  ret = bdrv_all_goto_snapshot(name, has_devices, devices, errp);
-  if (ret < 0) {
-    goto err_drain;
-  }
+        if (sn.vm_state_size == 0) 
+        {
+                error_setg(errp, "'%s' a disk-only snapshot.", snapshot_name);
+                return false;
+        }
 
-  /* restore the VM state */
-  if (g_file_test(snapshot_name, G_FILE_TEST_IS_REGULAR)) {
-    char *zstd = get_zstd(errp);
-    if (!zstd)
-      return false;
+        /*
+         * Flush the record/replay queue. Now the VM state is going
+         * to change. Therefore we don't need to preserve its consistency
+         */
+        replay_flush_events();
 
-    const char *args[] = {zstd, "-f", "-q",          "-T0",
-                          "-d", "-c", snapshot_name, NULL};
+        /* Flush all IO requests so they don't interfere with the new state.  */
+        bdrv_drain_all_begin();
 
-    QIOChannelCommand *ioc =
-        qio_channel_command_new_spawn(args, O_RDONLY, errp);
-    if (!ioc) {
-      error_setg(errp, "Could not create pipe for zstd");
-      return false;
-    }
+        ret = bdrv_all_goto_snapshot(name, has_devices, devices, errp);
 
-    qio_channel_set_name(QIO_CHANNEL(ioc), "load_snapshot");
+        if (ret < 0) {
+                goto err_drain;
+        }
 
-    f = qemu_file_new_input(QIO_CHANNEL(ioc));
-    if (!f) {
-      error_setg(errp, "Could not open VM state file");
-      return false;
-    }
+        /* restore the VM state */
+        if (!g_file_test(snapshot_name, G_FILE_TEST_IS_REGULAR))
+        {
+                error_setg(errp, "Could not open .ztsd file: %s", snapshot_name);
+                goto err_drain;
+        }
 
-    g_free(zstd);
+        g_autofree char *zstd = g_find_program_in_path("zstd");
 
-  } else {
-    f = qemu_fopen_bdrv(bs_vm_state, 0);
-    if (!f) {
-      error_setg(errp, "Could not open VM state file");
-      goto err_drain;
-    }
-  }
+        if (!zstd) 
+        {
+            error_setg(errp, "zstd not found in PATH");
+            return false;
+        }
 
-  qemu_system_reset(SHUTDOWN_CAUSE_SNAPSHOT_LOAD);
-  mis->from_src_file = f;
+        const char *args[] = {zstd, "-f", "-q", "-T0", "-d", "-c", snapshot_name, NULL};
 
-  if (!yank_register_instance(MIGRATION_YANK_INSTANCE, errp)) {
-    ret = -EINVAL;
-    goto err_drain;
-  }
-  aio_context_acquire(aio_context);
-  ret = qemu_loadvm_state(f);
-  migration_incoming_state_destroy();
-  aio_context_release(aio_context);
+        QIOChannelCommand *ioc = qio_channel_command_new_spawn(args, O_RDONLY, errp);
 
-  bdrv_drain_all_end();
+        if (!ioc) {
+                error_setg(errp, "Could not create pipe for zstd");
+                return false;
+        }
 
-  if (ret < 0) {
-    error_setg(errp, "Error %d while loading VM state", ret);
-    return false;
-  }
+        qio_channel_set_name(QIO_CHANNEL(ioc), "load_snapshot_external");
 
-  return true;
+        f = qemu_file_new_input(QIO_CHANNEL(ioc));
+
+        if (!f) {
+                error_setg(errp, "Could not open VM state file");
+                return false;
+        }
+
+        qemu_system_reset(SHUTDOWN_CAUSE_SNAPSHOT_LOAD);
+        mis->from_src_file = f;
+
+        if (!yank_register_instance(MIGRATION_YANK_INSTANCE, errp)) {
+                ret = -EINVAL;
+                goto err_drain;
+        }
+
+        aio_context_acquire(aio_context);
+        ret = qemu_loadvm_state(f);
+        migration_incoming_state_destroy();
+        aio_context_release(aio_context);
+
+        bdrv_drain_all_end();
+
+        if (ret < 0) {
+                error_setg(errp, "Error %d while loading VM state", ret);
+                return false;
+        }
+
+        return true;
 
 err_drain:
-  bdrv_drain_all_end();
-  return false;
+        bdrv_drain_all_end();
+        return false;
 }
