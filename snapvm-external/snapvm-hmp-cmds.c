@@ -27,18 +27,16 @@ void hmp_loadvm_external(Monitor *mon, const QDict *qdict)
 
 void hmp_savevm_external(Monitor *mon, const QDict *qdict)
 {
-//        Error *err = NULL;
+        Error *err = NULL;
+        RunState saved_vm_running = runstate_is_running();
 
-//        SnapTransaction *trans = g_new0(SnapTransaction, 1);
-//        trans->new_name = qdict_get_try_str(qdict, "name");
+        const char* name = qdict_get_str(qdict, "name");
 
-        //? Only two mode so far but the idea is left out as a possibility to
-        //? extend the mechinism further wuth new mode.
-//        trans->mode = (trans->new_name) ? NEW_ROOT : INCREMENT;
+        vm_stop(RUN_STATE_SAVE_VM);
+        save_snapshot_external(name, &err);
 
-        // If there is a name is a new root
-//        save_snapshot_external(trans, &err);
-//
-//        g_free(trans);
-//        hmp_handle_error(mon, err);
+        if (saved_vm_running)
+            vm_start();
+
+        hmp_handle_error(mon, err);
 }
