@@ -30,7 +30,6 @@ struct snapvm_state_t qemu_snapvm_state = {
     .loadvm_path = "",
     .is_save_enabled = false,
     .is_load_enabled = false,
-    .has_been_loaded = false,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,9 +51,6 @@ snapvm_loadvm_parse_opts(char const *optarg)
                 qemu_snapvm_state.loadvm_path = strdup(loadvm_path);
 
         qemu_opts_del(opts);
-
-        qemu_snapvm_state.has_been_loaded = true;
-
 }
 /**
  * Called on every block drive during system emulation starting phase.
@@ -66,32 +62,19 @@ void
 snapvm_init(void)
 {
         qemu_log("> [SnapVM] Init\n");
-        qemu_log("> [SnapVM] NAME       =%s\n", qemu_snapvm_state.loadvm_name);
-        qemu_log("> [SnapVM] LOAD_PATH  =%s\n", qemu_snapvm_state.loadvm_path);
+
+        if (qemu_snapvm_state.is_save_enabled)
+        {
+            qemu_log("> [SnapVM] Save External Memory enabled\n");
+        }
+
+        if (qemu_snapvm_state.is_load_enabled)
+        {
+            qemu_log("> [SnapVM] Load External Memory enabled\n");
+            qemu_log("> [SnapVM] NAME       =%s\n", qemu_snapvm_state.loadvm_name);
+            qemu_log("> [SnapVM] LOAD_PATH  =%s\n", qemu_snapvm_state.loadvm_path);
+        }
 }
-//{
-//     const char *readonly = qemu_opt_get(opts, "readonly");
-//
-//     if (readonly && !g_str_equal(readonly, "off"))
-//         return;
-//
-//
-//     const char* file   = qemu_opt_get(opts, "file");
-//     const char* format = qemu_opt_get(opts, "format");
-//     // default to qcow2 if no flag
-//     format = format ?: "qcow2";
-//
-//
-//
-//     // load the new overlay from last backed image
-//     g_assert(g_file_test(file, G_FILE_TEST_IS_REGULAR));
-//     g_autoptr(GString) overlay = g_string_new("");
-//     loadvm_external_create_overlay(loadvm, file, format, overlay, errp);
-//
-//     // open the newly created overlay to not require lock of base image
-//     g_assert(overlay->len > 0); //? making sure the overlay is not an empty
-//     string qemu_opt_set(opts, "file", overlay->str, errp);
-// }
 
 // ─── Common ──────────────────────────────────────────────────────────────────
 
