@@ -9,49 +9,24 @@
 
 // ─── Global Variable ─────────────────────────────────────────────────────────
 
-QemuOptsList qemu_snapvm_loadvm_opts = {
-    .name = "loadvm-external",
-    .merge_lists = true,
-    .head = QTAILQ_HEAD_INITIALIZER(qemu_snapvm_loadvm_opts.head),
-    .desc = {{
-                 .name = "name",
-                 .type = QEMU_OPT_STRING,
-
-             },
-             {
-                 .name = "path",
-                 .type = QEMU_OPT_STRING,
-             },
-             {/* end of list */}},
-};
-
 struct snapvm_state_t qemu_snapvm_state = {
-    .loadvm_name = "",
-    .loadvm_path = "",
+    .name = "",
+    .path = "",
     .is_save_enabled = false,
     .is_load_enabled = false,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-
 void
-snapvm_loadvm_parse_opts(char const *optarg)
+snapvm_external_parse_opts(char const *optarg)
 {
-        QemuOpts *opts = qemu_opts_parse_noisily(qemu_find_opts("loadvm-external"), optarg, false);
 
-        if (opts == NULL)
+        if (optarg == NULL)
                 exit(EXIT_FAILURE);
 
-        char const *const name = qemu_opt_get(opts, "name");
-        char const *const loadvm_path = qemu_opt_get(opts, "path");
-
-        if (name)
-                qemu_snapvm_state.loadvm_name = strdup(name);
-        if (loadvm_path)
-                qemu_snapvm_state.loadvm_path = strdup(loadvm_path);
-
-        qemu_opts_del(opts);
+        qemu_snapvm_state.path = strdup(optarg);
 }
+
 /**
  * Called on every block drive during system emulation starting phase.
  * This look for the 'readonly' flag, if it exist, it make sure that
@@ -66,13 +41,18 @@ snapvm_init(void)
         if (qemu_snapvm_state.is_save_enabled)
         {
             qemu_log("> [SnapVM] Save External Memory enabled\n");
+            qemu_log("> [SnapVM] SAVE_PATH  =%s\n", qemu_snapvm_state.path);
         }
 
         if (qemu_snapvm_state.is_load_enabled)
         {
+            g_assert(qemu_snapvm_state.is_save_enabled); // SnapVM should have been called as argument to inidicate the path for external snapshot
+
+            g_autofree char* load_path = g_build_filename(qemu_snapvm_state.path, qemu_snapvm_state.name, NULL);
             qemu_log("> [SnapVM] Load External Memory enabled\n");
-            qemu_log("> [SnapVM] NAME       =%s\n", qemu_snapvm_state.loadvm_name);
-            qemu_log("> [SnapVM] LOAD_PATH  =%s\n", qemu_snapvm_state.loadvm_path);
+            qemu_log("> [SnapVM] NAME       =%s\n", qemu_snapvm_state.name);
+            qemu_log("> [SnapVM] LOAD_PATH  =%s\n", load_path);
+
         }
 }
 
