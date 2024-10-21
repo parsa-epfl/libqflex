@@ -9,18 +9,17 @@ struct snapvm_state_t {
         // Name of the checkpoint.
         // This should be the same between the external memory filename, and the
         // .qcow2 snapshot name.
-        char const *name;
+        char const* name;
+        char const* path;
         // Path were the checkpoint have to be found
         // This should be the same between the external memory filename, and the
-        // .qcow2 snapshot name.
-        char const *path;
-
+        // .qcow2 snapshot name. char const *path;
         // True if the VM has been started with either -savevm|loadvm-external
         bool is_save_enabled;
         bool is_load_enabled;
 };
 
-//extern QemuOptsList qemu_snapvm_loadvm_opts;
+extern QemuOptsList qemu_snapvm_loadvm_opts;
 extern struct libqflex_state_t qemu_libqflex_state;
 extern struct snapvm_state_t qemu_snapvm_state;
 

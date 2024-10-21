@@ -9,6 +9,17 @@
 
 // ─── Global Variable ─────────────────────────────────────────────────────────
 
+QemuOptsList qemu_snapvm_loadvm_opts = {
+    .name = "snapvm-external",
+    .merge_lists = true,
+    .head = QTAILQ_HEAD_INITIALIZER(qemu_snapvm_loadvm_opts.head),
+    .desc = {{
+                 .name = "path",
+                 .type = QEMU_OPT_STRING,
+             },
+             {/* end of list */}},
+};
+
 struct snapvm_state_t qemu_snapvm_state = {
     .name = "",
     .path = "",
@@ -24,7 +35,15 @@ snapvm_external_parse_opts(char const *optarg)
         if (optarg == NULL)
                 exit(EXIT_FAILURE);
 
-        qemu_snapvm_state.path = strdup(optarg);
+        QemuOpts *opts = qemu_opts_parse_noisily(qemu_find_opts("snapvm-external"), optarg, false);
+
+
+        char const *const path = qemu_opt_get(opts, "path");
+
+        if (path)
+            qemu_snapvm_state.path = strdup(path);
+
+        qemu_opts_del(opts);
 }
 
 /**
@@ -42,6 +61,15 @@ snapvm_init(void)
         {
             qemu_log("> [SnapVM] Save External Memory enabled\n");
             qemu_log("> [SnapVM] SAVE_PATH  =%s\n", qemu_snapvm_state.path);
+
+            GError *error = NULL;
+            if (g_mkdir_with_parents(qemu_snapvm_state.path, 0755) == -1) {
+                qemu_log("> [SnapVM] Error creating directory: %s\n", error->message);
+                g_error_free(error);
+                exit(-1);
+            }
+
+            qemu_log("> [SnapVM] Created directory for SAVE_PATH\n");
         }
 
         if (qemu_snapvm_state.is_load_enabled)

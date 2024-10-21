@@ -30,10 +30,10 @@ void hmp_savevm_external(Monitor *mon, const QDict *qdict)
         Error *err = NULL;
         RunState saved_vm_running = runstate_is_running();
 
-        //const char* name = qdict_get_str(qdict, "name");
 
         vm_stop(RUN_STATE_SAVE_VM);
-        //save_snapshot_external(name, &err);
+
+        save_snapshot_external(qdict_get_try_str(qdict, "name"), true, NULL, false, NULL, &err);
 
         if (saved_vm_running)
             vm_start();
