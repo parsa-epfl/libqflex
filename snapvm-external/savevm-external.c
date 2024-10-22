@@ -250,7 +250,7 @@ bool save_snapshot_external(const char *name, bool overwrite,
 
         /* save the VM state to the specified output file */
         g_autofree char *output_state_file =
-            g_build_filename(qemu_snapvm_state.path, name, NULL);
+            g_build_filename(qemu_snapvm_state.path, sn->name, NULL);
         // f = g_fopen(output_state_file, "wb");
 
         QIOChannelFile *ioc;
