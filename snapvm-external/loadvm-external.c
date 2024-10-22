@@ -23,53 +23,11 @@
 bool load_snapshot_external(const char *name, const char *vmstate,
                             bool has_devices, strList *devices, Error **errp)
 {
-        BlockDriverState *bs_vm_state;
-        QEMUSnapshotInfo sn;
         QEMUFile *f;
         int ret;
-        AioContext *aio_context;
         MigrationIncomingState *mis = migration_incoming_get_current();
 
         if (!bdrv_all_can_snapshot(has_devices, devices, errp)) {
-                return false;
-        }
-        ret = bdrv_all_has_snapshot(name, has_devices, devices, errp);
-        if (ret < 0) {
-                return false;
-        }
-        if (ret == 0) {
-                error_setg(
-                    errp, "Snapshot '%s' does not exist in one or more devices",
-                    name);
-                return false;
-        }
-
-        bs_vm_state = bdrv_all_find_vmstate_bs(vmstate, has_devices, devices, errp);
-
-        if (!bs_vm_state) {
-                return false;
-        }
-        aio_context = bdrv_get_aio_context(bs_vm_state);
-
-        /* Don't even try to load empty VM states */
-        aio_context_acquire(aio_context);
-
-        ret = bdrv_snapshot_find(bs_vm_state, &sn, name);
-        aio_context_release(aio_context);
-
-        if (ret < 0)
-                return false;
-
-        /**
-         * Looking for a file in the current snapshot directory,
-         * that have the same name as the snapshot name
-         */
-        char snapshot_name[256] = {0};
-        g_snprintf(snapshot_name, sizeof(snapshot_name), "%s.zstd", sn.name);
-
-        if (sn.vm_state_size == 0) 
-        {
-                error_setg(errp, "'%s' a disk-only snapshot.", snapshot_name);
                 return false;
         }
 
@@ -82,17 +40,10 @@ bool load_snapshot_external(const char *name, const char *vmstate,
         /* Flush all IO requests so they don't interfere with the new state.  */
         bdrv_drain_all_begin();
 
-        ret = bdrv_all_goto_snapshot(name, has_devices, devices, errp);
-
-        if (ret < 0) {
-                goto err_drain;
-        }
-
-        /* restore the VM state */
+        g_autofree char* snapshot_name = g_build_filename(qemu_snapvm_state.path, name, NULL);
         if (!g_file_test(snapshot_name, G_FILE_TEST_IS_REGULAR))
         {
-                error_setg(errp, "Could not open .ztsd file: %s", snapshot_name);
-                goto err_drain;
+                error_setg(errp, "Could not open .zts file: %s", snapshot_name);
         }
 
         g_autofree char *zstd = g_find_program_in_path("zstd");
@@ -129,10 +80,10 @@ bool load_snapshot_external(const char *name, const char *vmstate,
                 goto err_drain;
         }
 
-        aio_context_acquire(aio_context);
+        //aio_context_acquire(aio_context);
         ret = qemu_loadvm_state(f);
         migration_incoming_state_destroy();
-        aio_context_release(aio_context);
+        //aio_context_release(aio_context);
 
         bdrv_drain_all_end();
 
