@@ -49,12 +49,7 @@ QemuOptsList qemu_libqflex_opts = {
         },
         {
             .name = "cycles",
-            .type = QEMU_OPT_NUMBER,
-
-        },
-        {
-            .name = "cycles-mask",
-            .type = QEMU_OPT_NUMBER,
+            .type = QEMU_OPT_STRING,
 
         },
         {
@@ -68,16 +63,21 @@ QemuOptsList qemu_libqflex_opts = {
 
 
 struct libqflex_state_t qemu_libqflex_state = {
-    .n_vcpus        = 0,
-    .is_configured  = false,
-    .is_running     = false,
-    .lib_path       = "",
-    .cfg_path       = "",
-    .ckpt_path      = "",
-    .cycles         = 0,
-    .cycles_mask    = 0,
-    .debug_lvl      = "vverb",
-    .mode           = MODE_TRACE,
+    .n_vcpus                    = 0,
+    .is_configured              = false,
+    .is_running                 = false,
+    .lib_path                   = "",
+    .cfg_path                   = "",
+    .ckpt_path                  = "",
+
+    .cycles = {
+        .until_stop          = 100000,
+        .stats_interval      = 10000,
+        .log_delay           = 0,
+     },
+
+    .debug_lvl                  = "vverb",
+    .mode                       = MODE_TRACE,
 };
 
 // ─── Local Variable ──────────────────────────────────────────────────────────
@@ -132,16 +132,12 @@ libqflex_flexus_init(void)
         .is_busy            = libqflex_is_core_busy,
     };
 
-    // Flexus is stupid, so it's to put with its stupidity
-    g_autoptr(GString) nb_cycles = g_string_new("");
-    g_string_printf(nb_cycles, "%d", qemu_libqflex_state.cycles);
-
     flexus(
         &qemu_api, &flexus_api,
         qemu_libqflex_state.n_vcpus,
         qemu_libqflex_state.cfg_path,
         qemu_libqflex_state.debug_lvl,
-        nb_cycles->str,
+        qemu_libqflex_state.cycles,
         "." // CWD
     );
 
@@ -181,11 +177,13 @@ libqflex_init(void)
 
     qemu_libqflex_state.is_running = true;
     qemu_log("> [Libqflex] Init\n");
-    qemu_log("> [Libqflex] LIB_PATH     =%s\n", qemu_libqflex_state.lib_path);
-    qemu_log("> [Libqflex] CFG_PATH     =%s\n", qemu_libqflex_state.cfg_path);
-    qemu_log("> [Libqflex] CKPT_PATH    =%s\n", qemu_libqflex_state.ckpt_path);
-    qemu_log("> [Libqflex] CYCLES       =%d\n", qemu_libqflex_state.cycles);
-    qemu_log("> [Libqflex] DEBUG        =%s\n", qemu_libqflex_state.debug_lvl);
+    qemu_log("> [Libqflex] LIB_PATH               =%s\n", qemu_libqflex_state.lib_path);
+    qemu_log("> [Libqflex] CFG_PATH               =%s\n", qemu_libqflex_state.cfg_path);
+    qemu_log("> [Libqflex] CKPT_PATH              =%s\n", qemu_libqflex_state.ckpt_path);
+    qemu_log("> [Libqflex] CYCLES_SIM             =%li\n", qemu_libqflex_state.cycles.until_stop);
+    qemu_log("> [Libqflex] CYCLES_STATS_INTERVAL  =%li\n", qemu_libqflex_state.cycles.stats_interval);
+    qemu_log("> [Libqflex] CYCLES_LOG_DELAY       =%li\n", qemu_libqflex_state.cycles.log_delay);
+    qemu_log("> [Libqflex] DEBUG                  =%s\n", qemu_libqflex_state.debug_lvl);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -206,16 +204,39 @@ libqflex_parse_opts(char const * optarg)
     char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
     char const * const ckpt_path = qemu_opt_get(opts, "ckpt-path");
     char const * const debug_lvl = qemu_opt_get(opts, "debug");
-    uint32_t const cycles       = qemu_opt_get_number(opts, "cycles", 0);
-    uint32_t const cycles_mask  = qemu_opt_get_number(opts, "cycles-mask", 1);
-
-    qemu_libqflex_state.cycles = cycles;
-    qemu_libqflex_state.cycles_mask = cycles_mask;
+    char const * const cycles    = qemu_opt_get(opts, "cycles");
 
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
     if (debug_lvl) qemu_libqflex_state.debug_lvl = strdup(debug_lvl);
     if (ckpt_path) qemu_libqflex_state.ckpt_path = strdup(ckpt_path);
+    if (cycles)
+    {
+        char const * cycle_args = strdup(cycles);
+        char** cycle_split_args =  g_strsplit(cycle_args, ":", 3);
+
+        uint8_t args_length = g_strv_length(cycle_split_args);
+
+        switch(args_length)
+        {
+            case 3:
+                qemu_libqflex_state.cycles.log_delay = g_ascii_strtoull(cycle_split_args[2], NULL, 10);
+                __attribute__ ((fallthrough));
+            case 2:
+                qemu_libqflex_state.cycles.stats_interval = g_ascii_strtoull(cycle_split_args[1], NULL, 10);
+                __attribute__ ((fallthrough));
+            case 1:
+                qemu_libqflex_state.cycles.until_stop = g_ascii_strtoull(cycle_split_args[0], NULL, 10);
+                break;
+
+            case 0:
+            default:
+                break;
+        }
+
+        g_assert(qemu_libqflex_state.cycles.until_stop > 0);
+    }
+
 
     if (mode)
     {

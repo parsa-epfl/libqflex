@@ -1,5 +1,4 @@
 #include "qemu/osdep.h"
-
 #include "hw/core/tcg-cpu-ops.h"
 #include "sysemu/cpu-timers.h"
 #include "include/qemu/seqlock.h"
@@ -295,7 +294,6 @@ uint64_t
 libqflex_advance(size_t cpu_index, bool trigger_count)
 {
     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
-    if (trigger_count) qemu_libqflex_state.cycles--;
 
     return libqflex_step(cpu_wrapper->state);
 }
