@@ -110,6 +110,8 @@ static gpointer compress_state_file(gpointer user_data)
         GInputStream *input_stream = NULL;
         GOutputStream *output_stream = NULL;
         ZSTD_CStream *cstream = NULL;
+        /* Create output filename */
+        gchar* compressed_file = g_strdup_printf("%s.zst", data->filepath);
 
         /* Allocate compression buffers */
         size_t const buff_in_size = ZSTD_CStreamInSize();
@@ -123,8 +125,6 @@ static gpointer compress_state_file(gpointer user_data)
                 goto cleanup;
         }
 
-        /* Create output filename */
-        gchar *compressed_file = g_strdup_printf("%s.zst", data->filepath);
 
         /* Setup input and output files */
         input_file = g_file_new_for_path(data->filepath);
