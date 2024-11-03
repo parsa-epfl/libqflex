@@ -4,6 +4,11 @@
 #include "include/hw/core/cpu.h"
 #include "target/arm/cpu.h"
 
+#include "hw/pci/pci-internal.h"
+#include "include/hw/pci/pci.h"
+#include "include/hw/pci/pci_host.h"
+#include "include/hw/pci/pci_bus.h"
+#include "include/hw/pci/pci_device.h"
 #include "libqflex-legacy-api.h"
 
 extern struct libqflex_state_t qemu_libqflex_state;
@@ -102,6 +107,15 @@ physical_address_t
 libqflex_translate_va2pa(
     size_t,
     logical_address_t);
+
+/**
+ * Obtain a list of valid BDFs for IO devices currently in QEMU
+ * 
+ * @param bdf_array BDF array to be populated
+ */
+void
+libqflex_get_bdf_array(
+    uint16_t * bdf_array);
 
 /**
  * Return the current PC of a core

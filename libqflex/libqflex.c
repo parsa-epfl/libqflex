@@ -253,6 +253,19 @@ libqflex_translate_va2pa(size_t cpu_index, logical_address_t va)
     return (pa == -1) ? -1 : (physical_address_t)pa;
 }
 
+void
+libqflex_get_bdf_array(uint16_t * bdf_array) 
+{
+    PCIBus *root_bus = QLIST_FIRST (&pci_host_bridges)->bus; // Assuming that the first bus in pci_host_bridges is the root bus and there's only one root bus
+                                                            // This should be bus number 0 (B in BDF is 0)
+    for (int i = 0; i < 256; i++) {
+        if (root_bus->devices[i] != NULL) {
+            bdf_array[i] = 1;
+        }
+    }
+
+}
+
 logical_address_t
 libqflex_get_pc(size_t cpu_index)
 {
