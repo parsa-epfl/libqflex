@@ -132,6 +132,7 @@ libqflex_flexus_init(void)
         .is_busy            = libqflex_is_core_busy,
 
         .get_bdf_array      = libqflex_get_bdf_array,
+        .get_pcie_config    = libqflex_get_pcie_config,
     };
 
     // Flexus is stupid, so it's to put with its stupidity

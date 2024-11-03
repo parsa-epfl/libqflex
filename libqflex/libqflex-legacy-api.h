@@ -247,6 +247,7 @@ typedef void              (*QEMU_STOP_t)            (char const * const msg);
 typedef char*             (*QEMU_DISASS_t)          (size_t core_index, uint64_t addr, size_t size);
 typedef bool              (*QEMU_CPU_BUSY_t)        (size_t core_index);
 typedef void              (*QEMU_PCIe_GET_BDF_t)    (uint16_t * bdf_array);
+typedef uint32_t          (*QEMU_PCIe_CONFIG_t)     (uint16_t bdf, uint32_t address);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void              (*FLEXUS_START_t)        (uint64_t);
@@ -291,6 +292,7 @@ typedef struct QEMU_API_t
   // ─────────────────────────────────────────────────────────────────────
 
   QEMU_PCIe_GET_BDF_t get_bdf_array;
+  QEMU_PCIe_CONFIG_t  get_pcie_config;
 
 
 } QEMU_API_t;

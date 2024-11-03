@@ -117,6 +117,19 @@ void
 libqflex_get_bdf_array(
     uint16_t * bdf_array);
 
+
+/**
+ * Get the 32 bits of PCIe configuration space 
+ * starting at address for the device referred by BDF
+ * 
+ * @param bdf Bus Device Function for the device
+ * @param address Address in the configuration space
+ * 
+ * @return 32 bit configuration data
+ */
+uint32_t
+libqflex_get_pcie_config(uint16_t bdf, uint32_t address);
+
 /**
  * Return the current PC of a core
  *

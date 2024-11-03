@@ -266,6 +266,15 @@ libqflex_get_bdf_array(uint16_t * bdf_array)
 
 }
 
+uint32_t libqflex_get_pcie_config(uint16_t bdf, uint32_t address) 
+{
+    PCIBus *root_bus = QLIST_FIRST (&pci_host_bridges)->bus;
+
+    PCIDevice *device = root_bus->devices[bdf];
+
+    return pci_default_read_config (device, address, 4);
+}
+
 logical_address_t
 libqflex_get_pc(size_t cpu_index)
 {
