@@ -9,3 +9,8 @@ void qmp_flexus_save_measure(const char *path, Error **errp)
 {
     printf("Hello, world!\n");
 }
+
+void qmp_flexus_save_ckpt(const char *path, Error **errp)
+{
+        printf("Hello, world!\n");
+}
