@@ -9,6 +9,7 @@
 #include "include/hw/pci/pci_host.h"
 #include "include/hw/pci/pci_bus.h"
 #include "include/hw/pci/pci_device.h"
+#include "include/exec/memory.h"
 #include "libqflex-legacy-api.h"
 
 extern struct libqflex_state_t qemu_libqflex_state;
@@ -129,6 +130,22 @@ libqflex_get_bdf_array(
  */
 uint32_t
 libqflex_get_pcie_config(uint16_t bdf, uint32_t address);
+
+
+/**
+ * Translate the guest IO virtual address to the guest physical address
+ * for Flexus
+ *
+ * @param uint16_t BDF of the IO device
+ * @param logical_address_t the address to translate
+ *
+ * @return a 64bits address
+ */
+physical_address_t
+libqflex_translate_iova2pa(
+    uint16_t,
+    logical_address_t);
+
 
 /**
  * Return the current PC of a core

@@ -133,6 +133,7 @@ libqflex_flexus_init(void)
 
         .get_bdf_array      = libqflex_get_bdf_array,
         .get_pcie_config    = libqflex_get_pcie_config,
+        .translate_iova2pa  = libqflex_translate_iova2pa,
     };
 
     // Flexus is stupid, so it's to put with its stupidity

@@ -275,6 +275,24 @@ uint32_t libqflex_get_pcie_config(uint16_t bdf, uint32_t address)
     return pci_default_read_config (device, address, 4);
 }
 
+physical_address_t
+libqflex_translate_iova2pa(uint16_t bdf, logical_address_t va)
+{
+
+    PCIBus *root_bus = QLIST_FIRST (&pci_host_bridges)->bus;
+
+    PCIDevice *device = root_bus->devices[bdf];
+
+    AddressSpace * pciDevAs = pci_device_iommu_address_space(device);   // Obtain the PCIe device Address Space
+
+    IOMMUTLBEntry IOTLBEntry = address_space_get_iotlb_entry(pciDevAs, va,
+                                            false, MEMTXATTRS_UNSPECIFIED);
+
+    // Return the error if there is one, otherwise cast the returned address
+    return IOTLBEntry.translated_addr == 0 ? -1 : (physical_address_t)(IOTLBEntry.translated_addr + (va & 0xFFF));  //! Assuming 4KB Page Size
+}
+
+
 logical_address_t
 libqflex_get_pc(size_t cpu_index)
 {
