@@ -162,6 +162,10 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
         return cpu_wrapper->cpu->isar.id_aa64mmfr0;
         break;
 
+    case DAIF:
+        return cpu_wrapper->env->daif;
+        break;
+
     default:
         g_assert_not_reached();
     };
