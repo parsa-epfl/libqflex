@@ -205,7 +205,11 @@ libqflex_read_sysreg(size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, ui
     {
         return ri->readfn(cpu_wrapper->env, ri);
     }
-    
+
+    if (ri && (strcmp(ri->name, "DCZID_EL0") == 0))
+    {
+        return ri->readfn(cpu_wrapper->env, ri);
+    }
 
     // Msutherl: do it the slow way by linear searching if previous encoding didn't work
     for (size_t i = 0; i < cpu_wrapper->cpu->cpreg_array_len; i++)
