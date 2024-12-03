@@ -135,7 +135,7 @@ libqflex_read_register(size_t cpu_index, register_type_t reg_type, size_t idx)
         return cpu_wrapper->env->pc;
 
     case PSTATE:
-        return cpu_wrapper->env->pstate;
+        return pstate_read(cpu_wrapper->env);
 
     case SCTLR:
         assert_index_in_range(idx, 1, 3);
