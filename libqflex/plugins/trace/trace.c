@@ -177,6 +177,27 @@ dispatch_vcpu_tb_trans(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
     }
 }
 
+static void dispatch_io_memory_access (unsigned int bdf, uint64_t vaddr, void *userdata) {
+    memory_transaction_t tr = {0};
+
+    tr.io = 1;
+    tr.dev_initiated = 1;
+    tr.bdf = (uint16_t) bdf;
+
+    tr.s.pc                 = 0;
+    tr.s.opcode             = 0;
+    tr.s.logical_address    = vaddr;
+    tr.s.exception          = 1;
+    tr.s.physical_address   = vaddr;
+
+    tr.s.size   = 8;
+    tr.s.atomic = 0;
+    tr.s.type   = QEMU_Trans_Store;
+
+    tr.s.data   = userdata; // Sometimes QEMU needs to supply data along with memory access to avoid Multiple IO devices accessing same memory concurrently
+
+    flexus_api.trace_mem(0, &tr);
+}
 
 static void
 exit_plugin(qemu_plugin_id_t id, void* p)
@@ -223,4 +244,6 @@ libqflex_trace_init(void)
     qemu_plugin_register_vcpu_tb_trans_cb(qflex_trace_id, dispatch_vcpu_tb_trans);
     // Register plugin's exit mechanism
     qemu_plugin_register_atexit_cb(qflex_trace_id, exit_plugin, NULL);
+    // Register IO memory access callback
+    qemu_plugin_register_io_mem_cb(dispatch_io_memory_access);
 }
