@@ -101,7 +101,8 @@ libqflex_get_nb_cores(void);
 physical_address_t
 libqflex_translate_va2pa(
     size_t,
-    logical_address_t);
+    logical_address_t,
+    bool);
 
 /**
  * Return the current PC of a core

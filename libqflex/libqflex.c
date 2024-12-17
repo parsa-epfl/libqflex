@@ -14,6 +14,10 @@
 #include "libqflex-module.h"
 #include "libqflex-legacy-api.h"
 
+
+#include "cpu.h"
+#include "internals.h"
+
 #include "target/arm/cpregs.h" // Need to be last
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -249,15 +253,37 @@ libqflex_is_core_busy(size_t cpu_index)
 }
 
 physical_address_t
-libqflex_translate_va2pa(size_t cpu_index, logical_address_t va)
+libqflex_translate_va2pa(size_t cpu_index, logical_address_t va, bool unprivileged)
 {
-    MemTxAttrs attrs;
     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
 
-    hwaddr pa = arm_cpu_get_phys_page_attrs_debug(cpu_wrapper->state, va, &attrs);
+    ARMMMUIdx mmu_idx = arm_mmu_idx(cpu_wrapper->env);
+    if (unprivileged) {
+        switch (mmu_idx) {
+            case ARMMMUIdx_E10_1:
+            case ARMMMUIdx_E10_1_PAN:
+                mmu_idx = ARMMMUIdx_E10_0;
+                break;
+            case ARMMMUIdx_E20_2:
+            case ARMMMUIdx_E20_2_PAN:
+                mmu_idx = ARMMMUIdx_E20_0;
+                break;
+            default:
+                g_assert_not_reached();
+        }
+    }
 
-    // Return the error if there is one, otherwise cast the returned address
-    return (pa == -1) ? -1 : (physical_address_t)pa;
+    
+    GetPhysAddrResult res = {};
+    ARMMMUFaultInfo fi = {};
+
+    int ret = get_phys_addr(cpu_wrapper->env, va, MMU_DATA_LOAD,
+                        mmu_idx, &res, &fi);
+
+    if (ret) {
+        return -1;
+    }
+    return res.f.phys_addr;
 }
 
 logical_address_t
