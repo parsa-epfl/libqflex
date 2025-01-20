@@ -9,6 +9,7 @@
 #include "migration/migration.h"
 #include "migration/qemu-file.h"
 #include "migration/savevm.h"
+#include "migration/options.h"
 #include "monitor/hmp.h"
 #include "monitor/monitor.h"
 #include "qapi/error.h"
@@ -29,180 +30,6 @@
 #include <gio/gio.h> /* Required for GIO error codes */
 #include <zstd.h>
 
-typedef struct {
-        gchar *filepath;
-        gint compression_level;
-        GError *error;
-} CompressionData;
-
-static gboolean compress_chunk(ZSTD_CStream *cstream, GInputStream *input,
-                               GOutputStream *output, void *buff_in,
-                               void *buff_out, size_t buff_in_size,
-                               size_t buff_out_size, ZSTD_EndDirective mode,
-                               GError **error)
-{
-        gsize bytes_read;
-        gboolean success = g_input_stream_read_all(input, buff_in, buff_in_size,
-                                                   &bytes_read, NULL, error);
-        if (!success) {
-                return FALSE;
-        }
-
-        ZSTD_inBuffer input_buf = {buff_in, bytes_read, 0};
-        while (input_buf.pos < input_buf.size) {
-                ZSTD_outBuffer output_buf = {buff_out, buff_out_size, 0};
-                size_t ret = ZSTD_compressStream2(cstream, &output_buf,
-                                                  &input_buf, mode);
-                if (ZSTD_isError(ret)) {
-                        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                                    "ZSTD compression error: %s",
-                                    ZSTD_getErrorName(ret));
-                        return FALSE;
-                }
-
-                if (output_buf.pos > 0) {
-                        if (!g_output_stream_write_all(output, buff_out,
-                                                       output_buf.pos, NULL,
-                                                       NULL, error)) {
-                                return FALSE;
-                        }
-                }
-        }
-
-        return TRUE;
-}
-
-static gboolean flush_remaining_data(ZSTD_CStream *cstream,
-                                     GOutputStream *output, void *buff_out,
-                                     size_t buff_out_size, GError **error)
-{
-        size_t remaining;
-        do {
-                ZSTD_outBuffer output_buf = {buff_out, buff_out_size, 0};
-                remaining = ZSTD_endStream(cstream, &output_buf);
-                if (ZSTD_isError(remaining)) {
-                        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                                    "ZSTD flush error: %s",
-                                    ZSTD_getErrorName(remaining));
-                        return FALSE;
-                }
-
-                if (output_buf.pos > 0) {
-                        if (!g_output_stream_write_all(output, buff_out,
-                                                       output_buf.pos, NULL,
-                                                       NULL, error)) {
-                                return FALSE;
-                        }
-                }
-        } while (remaining > 0);
-
-        return TRUE;
-}
-
-static gpointer compress_state_file(gpointer user_data)
-{
-        CompressionData *data = (CompressionData *)user_data;
-        GError *error = NULL;
-        void *buff_in = NULL;
-        void *buff_out = NULL;
-        GFile *input_file = NULL;
-        GFile *output_file = NULL;
-        GInputStream *input_stream = NULL;
-        GOutputStream *output_stream = NULL;
-        ZSTD_CStream *cstream = NULL;
-        /* Create output filename */
-        gchar* compressed_file = g_strdup_printf("%s.zst", data->filepath);
-
-        /* Allocate compression buffers */
-        size_t const buff_in_size = ZSTD_CStreamInSize();
-        size_t const buff_out_size = ZSTD_CStreamOutSize();
-        buff_in = g_malloc(buff_in_size);
-        buff_out = g_malloc(buff_out_size);
-
-        if (!buff_in || !buff_out) {
-                g_set_error(&error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                            "Failed to allocate compression buffers");
-                goto cleanup;
-        }
-
-
-        /* Setup input and output files */
-        input_file = g_file_new_for_path(data->filepath);
-        output_file = g_file_new_for_path(compressed_file);
-        input_stream = G_INPUT_STREAM(g_file_read(input_file, NULL, &error));
-        if (!input_stream) {
-                goto cleanup;
-        }
-
-        output_stream = G_OUTPUT_STREAM(g_file_replace(
-            output_file, NULL, FALSE, G_FILE_CREATE_PRIVATE, NULL, &error));
-        if (!output_stream) {
-                goto cleanup;
-        }
-
-        /* Initialize compression */
-        cstream = ZSTD_createCStream();
-        if (!cstream) {
-                g_set_error(&error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                            "Failed to initialize ZSTD compression");
-                goto cleanup;
-        }
-
-        ZSTD_CCtx_setParameter(cstream, ZSTD_c_compressionLevel,
-                               data->compression_level);
-
-        /* Compress file content */
-        while (!g_input_stream_is_closed(input_stream)) {
-                if (!compress_chunk(cstream, input_stream, output_stream,
-                                    buff_in, buff_out, buff_in_size,
-                                    buff_out_size, ZSTD_e_continue, &error)) {
-                        goto cleanup;
-                }
-        }
-
-        /* Flush remaining data */
-        if (!flush_remaining_data(cstream, output_stream, buff_out,
-                                  buff_out_size, &error)) {
-                goto cleanup;
-        }
-
-cleanup:
-        if (cstream) {
-                ZSTD_freeCStream(cstream);
-        }
-        g_clear_object(&input_stream);
-        g_clear_object(&output_stream);
-        g_clear_object(&input_file);
-        g_clear_object(&output_file);
-        g_free(buff_in);
-        g_free(buff_out);
-        g_free(compressed_file);
-
-        if (error) {
-                data->error = error;
-                g_warning("Compression failed: %s", error->message);
-        }
-
-        // TODO - xusine
-        // If this work well here can be added a line that delete the original dump
-        // g_unlink(data->filepath) == 0 || g_error("Failed to delete file: %s", data->filepath);
-
-        return NULL;
-}
-
-static void start_compression_thread(const char *filepath)
-{
-        CompressionData *data = g_new0(CompressionData, 1);
-        data->filepath = g_strdup(filepath);
-        data->compression_level = 3; /* Default compression level */
-        data->error = NULL;
-
-        GThread *thread =
-            g_thread_new("state-compression", compress_state_file, data);
-
-        /* We don't need the thread reference since we're not joining */
-        g_thread_unref(thread);
-}
 
 bool save_snapshot_external(const char *name, bool overwrite,
                             const char *vmstate, bool has_devices,
@@ -294,7 +121,6 @@ bool save_snapshot_external(const char *name, bool overwrite,
         }
 
         ret = 0;
-        start_compression_thread(output_state_file);
 
 the_end:
         bdrv_drain_all_end();
