@@ -10,6 +10,7 @@ typedef void (*FLEXUS_INIT_t)(
     const char *,
     const char *,
     const struct cycles_opts,
+    const char * freq,
     const char *);
 
 extern QemuOptsList qemu_libqflex_opts;
@@ -26,8 +27,8 @@ struct libqflex_state_t {
     char const *   ckpt_path;
     char const *   debug_lvl;
 
-
     struct cycles_opts cycles;
+    char const * freq;
 
     enum { MODE_TRACE, MODE_TIMING, } mode;
 
