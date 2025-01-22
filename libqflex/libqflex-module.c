@@ -13,7 +13,6 @@
 #include "libqflex-legacy-api.h"
 #include "libqflex-module.h"
 #include "libqflex.h"
-#include "plugins/trace/trace.h"
 
 
 
@@ -83,7 +82,7 @@ struct libqflex_state_t qemu_libqflex_state = {
     .freq                       = "1:1", // 1GHz on core, 1Ghz un-core
 
     .debug_lvl                  = "vverb",
-    .mode                       = MODE_TRACE,
+    .mode                       = MODE_TIMING,
 };
 
 // ─── Local Variable ──────────────────────────────────────────────────────────
@@ -174,10 +173,6 @@ libqflex_init(void)
     ret = libqflex_flexus_init();
     if (!ret) exit(EXIT_FAILURE);
 
-    if (qemu_libqflex_state.mode == MODE_TRACE)
-        libqflex_trace_init();
-
-
     if (qemu_libqflex_state.ckpt_path)
         libqflex_load_ckpt(qemu_libqflex_state.ckpt_path);
 
@@ -207,18 +202,20 @@ libqflex_parse_opts(char const * optarg)
     if (opts == NULL)
         exit(EXIT_FAILURE);
 
-    char const * const mode = qemu_opt_get(opts, "mode");
-    char const * const lib_path = qemu_opt_get(opts, "lib-path");
-    char const * const cfg_path = qemu_opt_get(opts, "cfg-path");
-    char const * const ckpt_path = qemu_opt_get(opts, "ckpt-path");
-    char const * const debug_lvl = qemu_opt_get(opts, "debug");
-    char const * const cycles    = qemu_opt_get(opts, "cycles");
-    char const * const freq = qemu_opt_get(opts, "freq");
+    char const * const mode         = qemu_opt_get(opts, "mode");
+    char const * const lib_path     = qemu_opt_get(opts, "lib-path");
+    char const * const cfg_path     = qemu_opt_get(opts, "cfg-path");
+    char const * const ckpt_path    = qemu_opt_get(opts, "ckpt-path");
+    char const * const debug_lvl    = qemu_opt_get(opts, "debug");
+    char const * const cycles       = qemu_opt_get(opts, "cycles");
+    char const * const freq         = qemu_opt_get(opts, "freq");
 
     if (lib_path) qemu_libqflex_state.lib_path = strdup(lib_path);
     if (cfg_path) qemu_libqflex_state.cfg_path = strdup(cfg_path);
     if (debug_lvl) qemu_libqflex_state.debug_lvl = strdup(debug_lvl);
     if (ckpt_path) qemu_libqflex_state.ckpt_path = strdup(ckpt_path);
+    if (freq) qemu_libqflex_state.freq = strdup(freq);
+
     if (cycles)
     {
         char const * cycle_args = strdup(cycles);
@@ -246,11 +243,9 @@ libqflex_parse_opts(char const * optarg)
         g_assert(qemu_libqflex_state.cycles.until_stop > 0);
     }
 
-    if (freq) qemu_libqflex_state.freq = strdup(freq);
 
     if (mode)
     {
-        if (strcmp(strdup(mode), "trace") == 0)  qemu_libqflex_state.mode = MODE_TRACE;
         if (strcmp(strdup(mode), "timing") == 0) qemu_libqflex_state.mode = MODE_TIMING;
     }
 

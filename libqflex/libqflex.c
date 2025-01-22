@@ -346,13 +346,6 @@ libqflex_stop(char const * const msg)
 
     qmp_stop(&err);
 
-//    if (qemu_libqflex_state.is_running) {
-
-        //if (qflex_state.update && (qflex_state.cycles <= 0))
-        //    qflex_state.update++;
-        //else
-        //qmp_quit(errp);
-  //  }
     qemu_libqflex_state.is_running = false;
     qmp_quit(&err);
 }
@@ -395,12 +388,3 @@ libqflex_load_ckpt(char const * const dirname)
     if (saved_vm_running)
         vm_start();
 }
-// int
-// libqflex_get_el(size_t cpu_index)
-// {
-
-//     vCPU_t* cpu_wrapper = lookup_vcpu(cpu_index);
-
-//     return arm_current_el(cpu_wrapper->env);
-
-// }

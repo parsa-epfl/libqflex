@@ -30,7 +30,9 @@ struct libqflex_state_t {
     struct cycles_opts cycles;
     char const * freq;
 
-    enum { MODE_TRACE, MODE_TIMING, } mode;
+    // Even if trace mode has been removed,
+    // this could still be usefull to add other mode in the future
+    enum { MODE_TIMING, } mode;
 
 };
 
