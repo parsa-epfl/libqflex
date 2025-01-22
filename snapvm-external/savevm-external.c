@@ -28,7 +28,6 @@
 #include "snapvm-external.h"
 
 #include <gio/gio.h> /* Required for GIO error codes */
-#include <zstd.h>
 
 
 bool save_snapshot_external(const char *name, bool overwrite,
@@ -106,11 +105,6 @@ bool save_snapshot_external(const char *name, bool overwrite,
 
         ret = qemu_savevm_state(f, errp);
         ret2 = qemu_fclose(f);
-
-        /**
-         * TODO: Create new thread that will compress the outputed file using
-         * libzstd
-         * */
 
         if (ret < 0) {
                 goto the_end;

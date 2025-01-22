@@ -51,6 +51,16 @@ bool load_snapshot_external(const char *name, const char *vmstate,
         qemu_snapvm_state.name = name;
         g_autofree char* snapshot_name = g_build_filename(qemu_snapvm_state.path, name, NULL);
 
+        if (!g_file_test(snapshot_name, G_FILE_TEST_IS_REGULAR)) {
+                error_setg(errp, "Could not open file: %s", snapshot_name);
+        }
+        /**
+        * This command line will decompress a zstd compressed file,
+        * if it was compressed using zstd compression, otherwise, it will just pipe the file
+        * file content. It is not clear how safe this is to use for both compressed and
+        * not compressed file altogether, and might be implementation dependent.
+        * For now, this can succesfully load a new state
+        */
         const char *args[] = {zstd, "-f", "-q","-T0", "-d", "-c", snapshot_name, NULL};
         QIOChannelCommand *ioc = qio_channel_command_new_spawn(args, O_RDONLY, errp);
 
@@ -59,12 +69,6 @@ bool load_snapshot_external(const char *name, const char *vmstate,
                 return false;
         }
 
-
-        if (!g_file_test(snapshot_name, G_FILE_TEST_IS_REGULAR)) {
-                error_setg(errp, "Could not open file: %s", snapshot_name);
-        }
-
-        //QIOChannelFile* ioc = qio_channel_file_new_path(snapshot_name, O_WRONLY | O_CREAT | O_TRUNC, 0660, errp);
         qio_channel_set_name(QIO_CHANNEL(ioc), "load_snapshot_external");
 
         f = qemu_file_new_input(QIO_CHANNEL(ioc));
