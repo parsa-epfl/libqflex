@@ -260,6 +260,8 @@ libqflex_translate_va2pa(size_t cpu_index, logical_address_t va, bool unprivileg
     ARMMMUIdx mmu_idx = arm_mmu_idx(cpu_wrapper->env);
     if (unprivileged) {
         switch (mmu_idx) {
+            case ARMMMUIdx_E10_0:
+                break;
             case ARMMMUIdx_E10_1:
             case ARMMMUIdx_E10_1_PAN:
                 mmu_idx = ARMMMUIdx_E10_0;
@@ -268,8 +270,11 @@ libqflex_translate_va2pa(size_t cpu_index, logical_address_t va, bool unprivileg
             case ARMMMUIdx_E20_2_PAN:
                 mmu_idx = ARMMMUIdx_E20_0;
                 break;
-            default:
+            default: {
+                // Output the input MMU index.
+                qemu_log("ERROR: Unpexted MMU index for unprivileged translation: %d\n", mmu_idx);
                 g_assert_not_reached();
+            }
         }
     }
 
