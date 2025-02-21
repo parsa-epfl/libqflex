@@ -79,7 +79,7 @@ struct libqflex_state_t qemu_libqflex_state = {
         .log_delay           = 0,
      },
 
-    .freq                       = "1:1", // 1GHz on core, 1Ghz un-core
+    .freq                       = "", // 1GHz on core, 1Ghz un-core
 
     .debug_lvl                  = "vverb",
     .mode                       = MODE_TIMING,
