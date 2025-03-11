@@ -170,6 +170,17 @@ libqflex_init(void)
     qemu_libqflex_state.n_vcpus = current_machine->smp.cpus;
     libqflex_populate_vcpus(qemu_libqflex_state.n_vcpus);
 
+    if (!*qemu_libqflex_state.freq) {
+        char *str = (char *)malloc((2*qemu_libqflex_state.n_vcpus+2) * sizeof(char));
+        str[0] = '\0';
+        for (int i = 0; i < qemu_libqflex_state.n_vcpus; i++)
+            strcat(str, "1:");
+        strcat(str, "1");
+        qemu_libqflex_state.freq = strdup(str);
+        qemu_log("> [Libqflex] Using default FREQ =%s\n", qemu_libqflex_state.freq);
+    } else 
+        qemu_log("> [Libqflex] Using FREQ         =%s\n", qemu_libqflex_state.freq);
+    
     ret = libqflex_flexus_init();
     if (!ret) exit(EXIT_FAILURE);
 
