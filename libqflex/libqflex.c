@@ -312,7 +312,6 @@ libqflex_has_interrupt(size_t cpu_index)
                 cpu_wrapper->state->interrupt_request);
 }
 
-
 void
 libqflex_tick(bool paused)
 {
@@ -320,46 +319,37 @@ libqflex_tick(bool paused)
     g_assert(qemu_libqflex_state.is_running);
     g_assert(qemu_libqflex_state.mode == MODE_TIMING);
 
-
-    // Check if we are paused, if we are paused we should call timers but not update icount
-    // The instructions are already executed, but that is because IPC can be higher than 1 and timers can be went past
-
     if (icount_enabled()) {
-        if(!paused ){
-            // proceed one clock cycle
-            seqlock_write_lock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
+        if (!paused) {
+            seqlock_write_lock(&timers_state.vm_clock_seqlock,
+                               &timers_state.vm_clock_lock);
             int64_t icount = icount_drain_executed();
-            qatomic_set_i64(&timers_state.qemu_icount, timers_state.qemu_icount + icount);
-            seqlock_write_unlock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
-            // fire qemu timers to generate guest timer interrupts
-            icount_account_warp_timer();
-            icount_handle_deadline();
+            qatomic_set_i64(&timers_state.qemu_icount,
+                            timers_state.qemu_icount + icount);
+            seqlock_write_unlock(&timers_state.vm_clock_seqlock,
+                                 &timers_state.vm_clock_lock);
         }
-    }else{
+    } else {
         assert(false && "Tick should not be called when icount is disabled");
     }
 
-    // Similar to libqflex_step, but step is not called at all when flexus is paused (called by invokeDrives()), yet this is (called by FLEXUS_start and doCycle, advanceCycles) and still need to account for time passing and timer firing.
-    qemu_mutex_unlock_iothread();
-    replay_mutex_lock();
-    qemu_mutex_lock_iothread();
-
-    if (icount_enabled()) {
-        /* Account partial waits to QEMU_CLOCK_VIRTUAL.  */
-        icount_account_warp_timer();
-        /*
-         * Run the timers here.  This is much more efficient than
-         * waking up the I/O thread and waiting for completion.
-         */
-        icount_handle_deadline();
+    if (!paused) {
+        qemu_mutex_unlock_iothread();
+        replay_mutex_lock();
+        qemu_mutex_lock_iothread();
+        if (icount_enabled()) {
+            icount_account_warp_timer();
+            icount_handle_deadline();
+        }
+        replay_mutex_unlock();
     }
-
-    replay_mutex_unlock();
 
     if (icount_enabled() && all_cpu_threads_idle()) {
         qemu_notify_event();
     }
 
+    // ALWAYS call this on vCPU thread — this is how the vCPU
+    // acknowledges vm_stop and blocks until vm_start
     rr_wait_io_event();
 }
 
