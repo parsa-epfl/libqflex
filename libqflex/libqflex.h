@@ -175,7 +175,7 @@ uint64_t
 libqflex_advance(size_t, bool);
 
 void
-libqflex_tick(void);
+libqflex_tick(bool paused);
 
 uint64_t
 libqflex_step(struct CPUState*);

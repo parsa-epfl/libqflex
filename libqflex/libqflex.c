@@ -314,21 +314,27 @@ libqflex_has_interrupt(size_t cpu_index)
 
 
 void
-libqflex_tick(void)
+libqflex_tick(bool paused)
 {
     g_assert(qemu_libqflex_state.is_configured);
     g_assert(qemu_libqflex_state.is_running);
     g_assert(qemu_libqflex_state.mode == MODE_TIMING);
 
+
+    // Check if we are paused, if we are paused we should call timers but not update icount
+    // The instructions are already executed, but that is because IPC can be higher than 1 and timers can be went past
+
     if (icount_enabled()) {
-        // proceed one clock cycle
-        seqlock_write_lock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
-        int64_t icount = icount_drain_executed();
-        qatomic_set_i64(&timers_state.qemu_icount, timers_state.qemu_icount + icount);
-        seqlock_write_unlock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
-        // fire qemu timers to generate guest timer interrupts
-        icount_account_warp_timer();
-        icount_handle_deadline();
+        if(!paused ){
+            // proceed one clock cycle
+            seqlock_write_lock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
+            int64_t icount = icount_drain_executed();
+            qatomic_set_i64(&timers_state.qemu_icount, timers_state.qemu_icount + icount);
+            seqlock_write_unlock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
+            // fire qemu timers to generate guest timer interrupts
+            icount_account_warp_timer();
+            icount_handle_deadline();
+        }
     }else{
         assert(false && "Tick should not be called when icount is disabled");
     }
