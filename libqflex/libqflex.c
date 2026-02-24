@@ -18,6 +18,7 @@
 
 #include "cpu.h"
 #include "internals.h"
+#include "net/pdes-engine.h"
 
 #include "target/arm/cpregs.h" // Need to be last
 // ─────────────────────────────────────────────────────────────────────────────
@@ -372,6 +373,17 @@ libqflex_stop(char const * const msg)
 {
     Error* err = NULL;
     qemu_log("> [Libqflex] Stopping: %s\n", msg);
+    printf("> [Libqflex] Stopping: %s\n", msg);
+    // get engine
+    PDESEngine* engine = get_singleton_engine();
+    if (engine != NULL) {
+        if(!engine->notified_neighbors_for_exit){
+            // TODO check if extra message is ok
+            notify_neighbours_of_end(engine);
+            return;
+        }
+    }
+
 
     qmp_stop(&err);
 
