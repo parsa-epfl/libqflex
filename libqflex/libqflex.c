@@ -313,6 +313,15 @@ libqflex_has_interrupt(size_t cpu_index)
                 cpu_wrapper->state->interrupt_request);
 }
 
+bool libqflex_can_stop(void)
+{
+    PDESEngine* engine = get_singleton_engine();
+    if(engine == NULL){
+        return true;
+    }
+    return can_stop(engine);
+}
+
 void
 libqflex_tick(bool paused)
 {
