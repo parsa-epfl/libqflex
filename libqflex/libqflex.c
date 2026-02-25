@@ -319,14 +319,14 @@ libqflex_tick(bool paused)
     g_assert(qemu_libqflex_state.is_configured);
     g_assert(qemu_libqflex_state.is_running);
     g_assert(qemu_libqflex_state.mode == MODE_TIMING);
-
     if (icount_enabled()) {
         if (!paused) {
             seqlock_write_lock(&timers_state.vm_clock_seqlock,
                                &timers_state.vm_clock_lock);
+            // TODO remove accumulated icount between cycles
             int64_t icount = icount_drain_executed();
             qatomic_set_i64(&timers_state.qemu_icount,
-                            timers_state.qemu_icount + icount);
+                            timers_state.qemu_icount + 1);
             seqlock_write_unlock(&timers_state.vm_clock_seqlock,
                                  &timers_state.vm_clock_lock);
         }
@@ -380,8 +380,10 @@ libqflex_stop(char const * const msg)
         if(!engine->notified_neighbors_for_exit){
             // TODO check if extra message is ok
             notify_neighbours_of_end(engine);
+            destroy_strategy();
             return;
         }
+        destroy_strategy();
     }
 
 
