@@ -343,16 +343,17 @@ libqflex_tick(bool paused)
         assert(false && "Tick should not be called when icount is disabled");
     }
 
+    
+    qemu_mutex_unlock_iothread();
+    replay_mutex_lock();
+    qemu_mutex_lock_iothread();
     if (!paused) {
-        qemu_mutex_unlock_iothread();
-        replay_mutex_lock();
-        qemu_mutex_lock_iothread();
         if (icount_enabled()) {
             icount_account_warp_timer();
             icount_handle_deadline();
         }
-        replay_mutex_unlock();
     }
+    replay_mutex_unlock();
 
     if (icount_enabled() && all_cpu_threads_idle()) {
         qemu_notify_event();
