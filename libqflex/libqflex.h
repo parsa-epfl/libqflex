@@ -194,6 +194,8 @@ libqflex_is_core_busy(size_t cpu_index);
 
 bool libqflex_save_chpt_request(const char *snapshot_name);
 
+void libqflex_notify_save_statistics(const char *file_name);
+
 void
 libqflex_save_ckpt(char const * const dirname);
 

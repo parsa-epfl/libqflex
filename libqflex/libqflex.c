@@ -17,6 +17,7 @@
 #include "libqflex-module.h"
 #include "libqflex-legacy-api.h"
 
+#include "qemu/plugin-pf.h"
 
 #include "cpu.h"
 #include "internals.h"
@@ -263,6 +264,12 @@ bool libqflex_save_chpt_request(const char *snapshot_name){
     } else {
         error_report_err(err);
         return false;
+    }
+}
+
+void libqflex_notify_save_statistics(const char *file_name) {
+    if (pf_save_statistics_cb) {
+        pf_save_statistics_cb(file_name);
     }
 }
 

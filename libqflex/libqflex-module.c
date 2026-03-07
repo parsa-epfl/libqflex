@@ -136,7 +136,8 @@ libqflex_flexus_init(void)
         .tick               = libqflex_tick,
         .disassembly        = libqflex_disas,
         .is_busy            = libqflex_is_core_busy,
-        .save_checkpoint_request = libqflex_save_chpt_request
+        .save_checkpoint_request = libqflex_save_chpt_request,
+        .notify_save_statistics = libqflex_notify_save_statistics
     };
 
     flexus(
