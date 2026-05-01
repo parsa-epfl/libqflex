@@ -1,5 +1,7 @@
 # CLAUDE.md — qemu/middleware/
 
+@MULTI_NODE.md
+
 This is a **sub-submodule** of the QFlex simulator. The qflex root is at `../..`; its [CLAUDE.md](../../CLAUDE.md) describes the four-phase pipeline. The parent submodule (the timing QEMU fork) is at `..`; its [CLAUDE.md](../CLAUDE.md) describes how this directory is wired in. This file documents only what's specific to *qemu/middleware/* itself.
 
 ## What this submodule is
