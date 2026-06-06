@@ -385,14 +385,11 @@ libqflex_stop(char const * const msg)
     qemu_log("> [Libqflex] Stopping: %s\n", msg);
     printf("> [Libqflex] Stopping: %s\n", msg);
     // get engine
+    // Flexus only reaches here (terminateSimulation -> qemu_api.stop) once can_stop() is true, i.e. the
+    // END handshake is already complete and our END already went out via the can_stop/sync path. So we
+    // never need to defer here — just tear down the engine timers and stop the VM.
     PDESEngine* engine = get_singleton_engine();
     if (engine != NULL) {
-        if(!engine->notified_neighbors_for_exit){
-            // TODO check if extra message is ok
-            notify_neighbours_of_end(engine);
-            destroy_strategy();
-            return;
-        }
         destroy_strategy();
     }
 
