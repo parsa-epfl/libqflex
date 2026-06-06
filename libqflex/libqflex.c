@@ -9,6 +9,7 @@
 #include "qapi/qapi-commands-control.h"
 #include "sysemu/runstate.h"
 #include "include/disas/disas.h"
+#include "qemu/main-loop.h"
 
 #include "libqflex.h"
 #include "libqflex-module.h"
@@ -17,6 +18,7 @@
 
 #include "cpu.h"
 #include "internals.h"
+#include "net/pdes-engine.h"
 
 #include "target/arm/cpregs.h" // Need to be last
 // ─────────────────────────────────────────────────────────────────────────────
@@ -311,22 +313,55 @@ libqflex_has_interrupt(size_t cpu_index)
                 cpu_wrapper->state->interrupt_request);
 }
 
+bool libqflex_can_stop(void)
+{
+    PDESEngine* engine = get_singleton_engine();
+    if(engine == NULL){
+        return true;
+    }
+    return can_stop(engine);
+}
 
 void
-libqflex_tick(void)
+libqflex_tick(bool paused)
 {
     g_assert(qemu_libqflex_state.is_configured);
     g_assert(qemu_libqflex_state.is_running);
     g_assert(qemu_libqflex_state.mode == MODE_TIMING);
+    if (icount_enabled()) {
+        if (!paused) {
+            seqlock_write_lock(&timers_state.vm_clock_seqlock,
+                               &timers_state.vm_clock_lock);
+            // TODO remove accumulated icount between cycles
+            int64_t icount = icount_drain_executed();
+            qatomic_set_i64(&timers_state.qemu_icount,
+                            timers_state.qemu_icount + 1);
+            seqlock_write_unlock(&timers_state.vm_clock_seqlock,
+                                 &timers_state.vm_clock_lock);
+        }
+    } else {
+        assert(false && "Tick should not be called when icount is disabled");
+    }
 
-    // proceed one clock cycle
-    seqlock_write_lock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
-    qatomic_set_i64(&timers_state.qemu_icount, timers_state.qemu_icount + 1);
-    seqlock_write_unlock(&timers_state.vm_clock_seqlock, &timers_state.vm_clock_lock);
-    // fire qemu timers to generate guest timer interrupts
-    icount_account_warp_timer();
-    icount_handle_deadline();
+    
+    qemu_mutex_unlock_iothread();
+    replay_mutex_lock();
+    qemu_mutex_lock_iothread();
+    if (!paused) {
+        if (icount_enabled()) {
+            icount_account_warp_timer();
+            icount_handle_deadline();
+        }
+    }
+    replay_mutex_unlock();
 
+    if (icount_enabled() && all_cpu_threads_idle()) {
+        qemu_notify_event();
+    }
+
+    // ALWAYS call this on vCPU thread — this is how the vCPU
+    // acknowledges vm_stop and blocks until vm_start
+    rr_wait_io_event();
 }
 
 uint64_t
@@ -348,6 +383,16 @@ libqflex_stop(char const * const msg)
 {
     Error* err = NULL;
     qemu_log("> [Libqflex] Stopping: %s\n", msg);
+    printf("> [Libqflex] Stopping: %s\n", msg);
+    // get engine
+    // Flexus only reaches here (terminateSimulation -> qemu_api.stop) once can_stop() is true, i.e. the
+    // END handshake is already complete and our END already went out via the can_stop/sync path. So we
+    // never need to defer here — just tear down the engine timers and stop the VM.
+    PDESEngine* engine = get_singleton_engine();
+    if (engine != NULL) {
+        destroy_strategy();
+    }
+
 
     qmp_stop(&err);
 

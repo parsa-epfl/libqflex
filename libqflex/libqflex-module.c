@@ -133,6 +133,7 @@ libqflex_flexus_init(void)
         .stop               = libqflex_stop,
         .get_mem            = libqflex_read_main_memory,
         .tick               = libqflex_tick,
+        .can_stop           = libqflex_can_stop,
         .disassembly        = libqflex_disas,
         .is_busy            = libqflex_is_core_busy,
     };
