@@ -1,4 +1,5 @@
  #include <dlfcn.h>
+ #include <sys/stat.h>
 
 #include "qemu/osdep.h"
 
@@ -135,6 +136,8 @@ libqflex_flexus_init(void)
         .tick               = libqflex_tick,
         .disassembly        = libqflex_disas,
         .is_busy            = libqflex_is_core_busy,
+        .save_checkpoint_request = libqflex_save_chpt_request,
+        .notify_save_statistics = libqflex_notify_save_statistics
     };
 
     flexus(
@@ -178,14 +181,19 @@ libqflex_init(void)
         strcat(str, "1");
         qemu_libqflex_state.freq = strdup(str);
         qemu_log("> [Libqflex] Using default FREQ =%s\n", qemu_libqflex_state.freq);
-    } else 
+    } else
         qemu_log("> [Libqflex] Using FREQ         =%s\n", qemu_libqflex_state.freq);
-    
+
     ret = libqflex_flexus_init();
     if (!ret) exit(EXIT_FAILURE);
 
-    if (qemu_libqflex_state.ckpt_path)
+    if (qemu_libqflex_state.ckpt_path){
         libqflex_load_ckpt(qemu_libqflex_state.ckpt_path);
+        // As a test, immediately save a checkpoint after loading.
+        // mkdir
+        mkdir("snapshot-reproduced", 0755);
+        libqflex_save_ckpt("snapshot-reproduced");
+    }
 
 
     qemu_libqflex_state.is_running = true;

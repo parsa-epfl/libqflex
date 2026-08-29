@@ -1,5 +1,7 @@
 #include "qemu/osdep.h"
+#include "qapi/error.h"
 #include "hw/core/tcg-cpu-ops.h"
+#include "qemu/typedefs.h"
 #include "sysemu/cpu-timers.h"
 #include "include/qemu/seqlock.h"
 #include "softmmu/timers-state.h"
@@ -9,11 +11,13 @@
 #include "qapi/qapi-commands-control.h"
 #include "sysemu/runstate.h"
 #include "include/disas/disas.h"
+#include "include/migration/snapshot.h"
 
 #include "libqflex.h"
 #include "libqflex-module.h"
 #include "libqflex-legacy-api.h"
 
+#include "qemu/plugin-pf.h"
 
 #include "cpu.h"
 #include "internals.h"
@@ -252,6 +256,23 @@ libqflex_is_core_busy(size_t cpu_index)
     return !cpu_wrapper->state->halted;
 }
 
+bool libqflex_save_chpt_request(const char *snapshot_name){
+    Error *err = NULL;
+    bool result = save_snapshot(snapshot_name, true, NULL, false, NULL, SNAPSHOT_FORMAT_EXTERNAL_INCREMENTAL_DELTA, &err);
+    if (result) {
+        return true;
+    } else {
+        error_report_err(err);
+        return false;
+    }
+}
+
+void libqflex_notify_save_statistics(const char *file_name) {
+    if (pf_save_statistics_cb) {
+        pf_save_statistics_cb(file_name);
+    }
+}
+
 physical_address_t
 libqflex_translate_va2pa(size_t cpu_index, logical_address_t va, bool unprivileged)
 {
@@ -278,7 +299,7 @@ libqflex_translate_va2pa(size_t cpu_index, logical_address_t va, bool unprivileg
         }
     }
 
-    
+
     GetPhysAddrResult res = {};
     ARMMMUFaultInfo fi = {};
 

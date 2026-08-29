@@ -186,11 +186,15 @@ libqflex_stop(char const * const msg);
 void
 libqflex_read_main_memory(uint8_t* buffer, physical_address_t pa, size_t bytes);
 
-char* 
+char*
 libqflex_disas(size_t, uint64_t, size_t);
 
 bool
 libqflex_is_core_busy(size_t cpu_index);
+
+bool libqflex_save_chpt_request(const char *snapshot_name);
+
+void libqflex_notify_save_statistics(const char *file_name);
 
 void
 libqflex_save_ckpt(char const * const dirname);
